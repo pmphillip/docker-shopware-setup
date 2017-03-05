@@ -1,0 +1,80 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="shopware_media.service_subscriber" class="Shopware\Bundle\MediaBundle\Subscriber\ServiceSubscriber">
+            <argument type="service" id="service_container" />
+            <tag name="shopware.event_subscriber" />
+        </service>
+
+        <service id="shopware_media.media_migration" class="Shopware\Bundle\MediaBundle\MediaMigration" />
+
+        <service id="shopware_media.garbage_collector_factory" class="Shopware\Bundle\MediaBundle\GarbageCollectorFactory">
+            <argument type="service" id="events"/>
+            <argument type="service" id="dbal_connection" />
+            <argument type="service" id="shopware_media.media_service" />
+        </service>
+        <service id="shopware_media.garbage_collector" class="Shopware\Bundle\MediaBundle\GarbageCollector">
+            <factory service="shopware_media.garbage_collector_factory" method="factory" />
+        </service>
+
+        <service id="shopware_media.media_service" class="Shopware\Bundle\MediaBundle\MediaService">
+            <factory service="shopware_media.media_service_factory" method="factory" />
+            <argument>%shopware.cdn.backend%</argument>
+        </service>
+        <service id="shopware_media.media_service_factory" class="Shopware\Bundle\MediaBundle\MediaServiceFactory">
+            <argument type="service" id="service_container" />
+            <argument type="collection" />
+            <argument>%shopware.cdn%</argument>
+        </service>
+
+        <service id="shopware_media.strategy_factory" class="Shopware\Bundle\MediaBundle\Strategy\StrategyFactory">
+            <argument>%shopware.cdn%</argument>
+        </service>
+        <service id="shopware_media.strategy" class="Shopware\Bundle\MediaBundle\Strategy\StrategyInterface">
+            <factory service="shopware_media.strategy_factory" method="factory" />
+            <argument>%shopware.cdn.strategy%</argument>
+        </service>
+
+        <!-- Optimizer -->
+        <service id="shopware_media.optimizer_service" class="Shopware\Bundle\MediaBundle\OptimizerService">
+            <argument type="collection" />
+        </service>
+
+        <service id="shopware_media.cache_optimizer_service" class="Shopware\Bundle\MediaBundle\CacheOptimizerService"
+                 decorates="shopware_media.optimizer_service" public="false">
+            <argument type="service" id="shopware_media.cache_optimizer_service.inner" />
+        </service>
+
+        <service id="shopware_media.optimizer.jpegoptim" class="Shopware\Bundle\MediaBundle\Optimizer\JpegoptimOptimizer">
+            <tag name="shopware_media.optimizer" priority="100" />
+        </service>
+
+        <service id="shopware_media.optimizer.jpegtran" class="Shopware\Bundle\MediaBundle\Optimizer\JpegtranOptimizer">
+            <tag name="shopware_media.optimizer" priority="90" />
+        </service>
+
+        <service id="shopware_media.optimizer.pngout" class="Shopware\Bundle\MediaBundle\Optimizer\PngoutOptimizer">
+            <tag name="shopware_media.optimizer" priority="100" />
+        </service>
+
+        <service id="shopware_media.optimizer.optipng" class="Shopware\Bundle\MediaBundle\Optimizer\OptipngOptimizer">
+            <tag name="shopware_media.optimizer" priority="90" />
+        </service>
+
+        <service id="shopware_media.optimizer.pngcrush" class="Shopware\Bundle\MediaBundle\Optimizer\PngcrushOptimizer">
+            <tag name="shopware_media.optimizer" priority="80" />
+        </service>
+
+        <!-- Media Adapters -->
+        <service id="shopware_media.adapter.local" class="Shopware\Bundle\MediaBundle\Adapters\LocalAdapterFactory">
+            <tag name="shopware_media.adapter" />
+        </service>
+        <service id="shopware_media.adapter.ftp" class="Shopware\Bundle\MediaBundle\Adapters\FtpAdapterFactory">
+            <tag name="shopware_media.adapter" />
+        </service>
+    </services>
+</container>
