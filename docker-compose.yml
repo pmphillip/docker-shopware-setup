@@ -8,7 +8,7 @@ web:
     links:
         - php-7.0       
 php-7.0:
-    image: php
+    image: pmphillip/shopware-php7
     volumes:
         - ./public:/var/www/html
     links:
