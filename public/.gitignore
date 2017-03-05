@@ -1,0 +1,30 @@
+# PhpStorm
+.idea
+
+# OSX Files
+.DS_STORE
+*~
+
+node_modules
+
+# SW4
+/cache/doctrine/*/*
+/cache/general/*
+/cache/templates*
+/cache/proxies/*
+/cache/shopgate/*
+/cache/productexport/*
+
+# SW5
+/cache/*
+/web/cache/*.*
+
+/logs/*
+/files/*
+/media/*
+
+# SW 5.1
+/var/cache/*
+/var/log/*
+
+!.gitkeep
