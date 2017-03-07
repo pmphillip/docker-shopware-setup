@@ -1,10 +1,10 @@
-<?php
-return [
-    'db' => [
-        'username' => '%db.user%',
-        'password' => '%db.password%',
-        'dbname' => '%db.database%',
-        'host' => '%db.host%',
-        'port' => '%db.port%'
-    ]
-];
+<?php return array (
+  'db' => 
+  array (
+    'host' => 'mysql',
+    'port' => '3306',
+    'username' => 'shopware',
+    'password' => 'shopware',
+    'dbname' => 'db',
+  ),
+);
