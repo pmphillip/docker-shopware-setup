@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<phpunit bootstrap="./Tests/bootstrap.php"
+         colors="true"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/5.3/phpunit.xsd"
+>
+    <php>
+        <env name="SHOPWARE_ENV" value="testing" />
+    </php>
+
+    <testsuites>
+        <testsuite name="Shopware ImportExport Plugin">
+            <directory>./Tests/Functional</directory>
+            <directory>./Tests/Shopware</directory>
+            <directory>./Tests/Unit</directory>
+        </testsuite>
+
+        <testsuite name="unit">
+            <directory>./Tests/Unit</directory>
+        </testsuite>
+
+        <testsuite name="functional">
+            <directory>./Tests/Functional</directory>
+        </testsuite>
+    </testsuites>
+
+    <groups>
+        <exclude>
+            <group>disable</group>
+        </exclude>
+    </groups>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./</directory>
+        </whitelist>
+    </filter>
+</phpunit>

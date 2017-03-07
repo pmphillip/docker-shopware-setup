@@ -1,0 +1,57 @@
+testRead:
+    test1:
+        columns: 'na.email, ng.name'
+        ids: [9999, 10000]
+        expected:
+            2:
+                name: 'Newsletter-Empf'
+        expectedCount: 2
+    test2:
+        columns: 'na.email, cd.firstName, cd.lastName'
+        ids: [9999, 10000, 10001]
+        expected:
+            0:
+                email: 'info@shopware.de'
+                firstName: 'Bito'
+                lastName: 'Bee'
+            1:
+                email: 'max.mustermann@mail.com'
+                firstName: 'Max'
+                lastName: 'Mustermann'
+            2:
+                email: 'mustermann@b2b.de'
+                firstName: 'Com'
+                lastName: 'Pany'
+        expectedCount: 3
+testReadRecordIds:
+    test1:
+        start: 0
+        limit: 2
+        expectedCount: 2
+testWrite:
+    test1:
+        data:
+            default:
+                0:
+                    id: 9999
+                    email: test1@shopware.de
+                1:
+                    id: 10000
+                    email: test2@shopware.de
+                2:
+                    id: 10001
+                    email: test3@shopware.de
+        expectedInsertedRows: 3
+testUpdateOne:
+    test1:
+        data:
+            default:
+                0:
+                    email: test1@shopware.de
+                    lastread: 2
+        expectedRow:
+            customer: 0
+            groupID: 1
+            email: test1@shopware.de
+            lastmailing: 0
+            lastread: 2

@@ -1,0 +1,5 @@
+date/time;file;profile;message;successFlag
+2017-03-07 16:40:25;/var/www/html/files/import_export/shopware.csv;default_articles_minimal;1  erfolgreich importiert;true
+2017-03-07 16:42:48;/var/www/html/files/import_export/shopware.csv;default_articles_minimal;1  erfolgreich importiert;true
+2017-03-07 16:51:27;/var/www/html/files/import_cron/ImportTest.shopware.csv;ImportTest;1  erfolgreich importiert;false
+2017-03-07 16:53:10;/var/www/html/files/import_cron/ImportTest.shopware.csv;ImportTest;1  erfolgreich importiert;false

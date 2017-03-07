@@ -1,0 +1,55 @@
+testRead:
+    test1:
+        columns:
+          article:
+            [article.id as articleId, article.name as name, variant.number as orderNumber]
+          price:
+            [prices.price as price]
+          image:
+            [images.path as path]
+          propertyValues:
+            [propertyGroup.name as propertyGroupName, propertyOptions.name as propertyOptionName, propertyValues.value as propertyValueName]
+          configurator:
+            [configuratorSet.name as configSetName, configuratorGroup.name as configGroupName, configuratorOptions.name as configOptionName]
+          similar:
+            [similarDetail.number as ordernumber]
+          accessory:
+            [accessoryDetail.number as ordernumber]
+          category:
+            [categories.id as categoryId]
+        ids: [3, 123]
+        expected:
+          article:
+            0:
+              name: 'Münsterländer Lagerkorn 32%'
+              orderNumber: 'SW10002.1'
+            1:
+              name: 'Münsterländer Aperitif 16%'
+              orderNumber: 'SW10003'
+testReadRecordIds:
+    test1:
+        start: 0
+        limit: 6
+        expectedCount: 2
+testWrite:
+    test1:
+        data:
+          article:
+            0:
+              mainNumber: 'test9999'
+              orderNumber: 'test9999'
+              name: 'shopware-test1'
+              supplierName: 'Testhersteller'
+              tax: "19.00"
+              active: 1
+              description: 'Short description'
+              descriptionLong: 'Long description'
+          price:
+            0:
+              priceGroup: 'EK'
+              price: 100
+              parentIndexElement: 0
+            1:
+              priceGroup: 'H'
+              price: 50
+              parentIndexElement: 0

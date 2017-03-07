@@ -1,1 +1,4 @@
 id;userID;articlename;articleID;ordernumber;quantity;price;datum;description;isAvailable;link;orderNumber
+2;1;"Tolles Produkt";1;SW10001;1;50,00;"2017-03-07 16:23:01";;1;shopware.php?sViewport=detail&sArticle=1;20003
+3;1;"Tolles Produkt";1;SW10001;1;50,00;"2017-03-07 16:23:50";;1;shopware.php?sViewport=detail&sArticle=1;20004
+as
