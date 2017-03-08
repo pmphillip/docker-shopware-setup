@@ -10,41 +10,17 @@ class PmImport extends Plugin {
     public static function getSubscribedEvents()
     {
         return [
-            'Shopware_CronJob_MyCoolCron' => 'MyCoolCronRun'
+            'Shopware_CronJob_ImportFTPDataAction' => 'ImportFTPDataAction'
         ];
     }
 
     public function install(InstallContext $context)
     {
-        $this->addCron();
     }
 
     public function uninstall(UninstallContext $context)
     {
         $this->removeCron();
-    }
-
-    public function addCron()
-    {
-    	/*
-        $connection = $this->container->get('dbal_connection');
-        $connection->insert(
-            's_crontab',
-            [
-                'name'             => 'PmImportCron',
-                'action'           => 'Shopware_CronJob_ImportFTPDataAction',
-                'next'             => new \DateTime(),
-                'start'            => null,
-                '`interval`'       => '30',
-                'active'           => true,
-                'end'              => null,
-                'pluginID'         => null
-            ],
-            [
-                'next' => 'datetime',
-                'end'  => 'datetime',
-            ]
-        );*/
     }
 
     public function removeCron()
@@ -66,11 +42,7 @@ class PmImport extends Plugin {
 		}
 		fclose($fp);
 
-
-		echo 'test';
-		return true;
-
-        //return 'Yes its running!';
+		return 'Yes its running!';
 	}
 
     public function ftp() {

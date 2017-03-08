@@ -4,7 +4,7 @@
 
     <cronjob>
         <name>PmImportCron</name>
-        <action>ImportFTPDataAction</action>
+        <action>Shopware_CronJob_ImportFTPDataAction</action>
         <active>true</active>
         <interval>30</interval>
         <disableOnError>false</disableOnError>
