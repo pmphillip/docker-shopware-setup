@@ -9,22 +9,24 @@ class Theme extends \Shopware\Components\Theme
     protected $extend = 'Responsive';
 
     protected $name = <<<'SHOPWARE_EOD'
-Pm and stuff
+PmTheme
 SHOPWARE_EOD;
 
     protected $description = <<<'SHOPWARE_EOD'
-PM
+Theme zum Rumspielen
 SHOPWARE_EOD;
 
     protected $author = <<<'SHOPWARE_EOD'
-PM
+pm-florian
 SHOPWARE_EOD;
 
     protected $license = <<<'SHOPWARE_EOD'
-PM
+
 SHOPWARE_EOD;
 
     public function createConfig(Form\Container\TabContainer $container)
     {
     }
+
+    protected $javascript = array('src/js/quantity.js');
 }

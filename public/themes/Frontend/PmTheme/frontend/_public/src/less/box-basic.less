@@ -1,0 +1,102 @@
+.box--basic {
+  width: 25% !important;
+
+  .pm-article-actions-wrapper {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: -10px;
+  }
+
+  .pm-article-image a {
+    position: static !important;
+    margin: 0 auto !important;
+    height: 10em !important;
+  }
+
+  .product--title {
+    margin-top: 15px;
+  }
+
+  .product--price {
+    float: right;
+  }
+
+  .product--actions {
+    display: inline-block;
+  }
+
+  .pm-float-left {
+    float: left !important;
+  }
+
+  .product--action.action--note {
+    margin: 0 5px;
+    width: 30px;
+    height: 30px;
+    border: solid 1px #dadae5;
+
+    i {
+      margin: 0;
+    }
+  }
+
+  .pm-quantity-wrapper {
+    .pm-quantity-minus,
+    .pm-quantity-plus,
+    .pm-quantity-input {
+      float: left;
+      display: inline-block;
+    }
+
+    .pm-quantity-input {
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        /* display: none; <- Crashes Chrome on hover */
+        -webkit-appearance: none;
+        margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+      }
+
+      input {
+        width: 30px;
+        height: 28px;
+        border: 0;
+        text-align: center;
+      }
+
+      &:before {
+        font-family: 'shopware';
+        content: "\e68e";
+        margin-left: 5px;
+      }
+
+      &:after {
+        font-family: 'shopware';
+        content: "\e68f";
+        margin-right: 5px;
+      }
+    }
+
+    border: solid 1px #dadae5;
+    display: inline-block;
+    float: left;
+    height: 30px;
+  }
+
+  .pm-cart-wrapper {
+    background-color: green;
+    color: white;
+    margin: 0 5px;
+    height: 30px;
+    width: 30px;
+    border: solid 1px #dadae5;
+  }
+
+  .price--default {
+    color: green !important;
+  }
+
+  .pm-price-discount {
+    font-size: 8pt !important;
+  }
+
+}
