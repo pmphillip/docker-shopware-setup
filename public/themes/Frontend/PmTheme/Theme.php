@@ -27,4 +27,9 @@ SHOPWARE_EOD;
     public function createConfig(Form\Container\TabContainer $container)
     {
     }
+
+    /** @var array Defines the files which should be compiled by the javascript compressor */
+    protected $javascript = array(
+        //'src/js/jquery.advancedmenu.js',
+    );
 }
