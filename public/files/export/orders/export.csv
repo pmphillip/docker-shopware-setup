@@ -1,1 +1,3 @@
 id;userID;articlename;articleID;ordernumber;quantity;price;datum;description;isAvailable;link;orderNumber
+1;0;"Zartbitter mit Birne und Mandeln";120;SW10120;1;3,00;"2017-03-09 16:12:52";;1;shopware.php?sViewport=detail&sArticle=120;20046
+7;0;Mindermengenzuschlag;0;sw-surcharge;1;5,00;"2017-03-09 16:34:57";;;shopware.php?sViewport=detail&sArticle=0;20046

@@ -6,7 +6,7 @@
 
         {* Note button *}
         {block name='frontend_listing_box_article_actions_save'}
-            <form action="{url controller='note' action='add' ordernumber=$sArticle.ordernumber _seo=false}" method="post" class="pm-full-border  pm-action-item-secondary">
+            <form action="{url controller='note' action='add' ordernumber=$sArticle.ordernumber _seo=false}" method="post" class="pm-full-border  pm-action-item-secondary pm-action-form-small">
                 <button type="submit"
                    title="{"{s name='DetailLinkNotepad' namespace='frontend/detail/actions'}{/s}"|escape}"
                    class="product--action action--note pm-item"
@@ -19,11 +19,10 @@
 
         {* Amount buttons *}
         {block name='frontend_listing_box_article_actions_set_amount'}
-            <form class="pm-full-border">
+            <form class="pm-full-border pm-action-form-big">
                 <button 
                    title="{"{s name='DetailLinkNotepad' namespace='frontend/detail/actions'}{/s}"|escape}"
                    class="product--action action--decrease pm-item pm-inactive"
-                   data-ajaxUrl="{url controller='set_amount' action='ajaxAdd' ordernumber=$sArticle.ordernumber _seo=false}"
                    data-text="{s name="DetailNotepadMarked"}{/s}">
                     <i class="icon--minus"></i> <span class="action--text"></span>
                 </button>
@@ -31,7 +30,6 @@
                 <button 
                    title="{"{s name='DetailLinkNotepad' namespace='frontend/detail/actions'}{/s}"|escape}"
                    class="product--action action--increase pm-item pm-active"
-                   data-ajaxUrl="{url controller='set_amount' action='ajaxAdd' ordernumber=$sArticle.ordernumber _seo=false}"
                    data-text="{s name="DetailNotepadMarked"}{/s}">
                     <i class="icon--plus"></i> <span class="action--text"></span>
                 </button>
@@ -40,7 +38,7 @@
 
         {* Add to cart button *}
         {block name='frontend_listing_box_article_actions_add_to_cart'}
-            <form action="{url controller='note' action='add' ordernumber=$sArticle.ordernumber _seo=false}" method="post" class="pm-full-border pm-action-item-primary">
+            <form action="{url controller='note' action='add' ordernumber=$sArticle.ordernumber _seo=false}" method="post" class="pm-full-border pm-action-item-primary pm-action-form-small">
                 <button type="submit"
                    title="{"{s name='DetailLinkNotepad' namespace='frontend/detail/actions'}{/s}"|escape}"
                    class="product--action action--note pm-item"

@@ -3,9 +3,14 @@
 		color: @green-primary;
 	}
 
+	.product--box .product--action:hover {
+		color: @green-primary;
+	}
+
 	.box--basic {
 		.box--content {
-			padding: 0.6rem
+			padding: 0.6rem;
+    		margin: 5px;
 		}
 
 		padding: .625rem .625rem .625rem .625rem;
@@ -44,6 +49,7 @@
 			.pm-product-actions {
 				margin-top: 1.25rem;
 				clear: both;
+    			text-align: center;
 
 				.pm-box-input {
 					border: 0px;
@@ -52,13 +58,20 @@
 				}
 
 				.pm-item {
-				    height: 21px;
-				    width: 21px;
 				    margin-right: 0px;
 
 				    i {
 				    	margin-right: 0px;
 				    }
+				}
+
+				.pm-action-form-small {
+					width: 20%;
+				}
+
+				.pm-action-form-big {
+					width: 50%;
+    				padding-right: 2px;
 				}
 
 				.pm-action-item-primary {
@@ -86,12 +99,25 @@
 				    border-style: solid;
 				    border-color: @disabled-text;			
 				}
+
+				.action--decrease {
+					width: 20%
+				}
+
+				.pm-box-input {
+					width: 40%
+				}
+
+				.action--increase {
+					width: 20%
+				}
+
 			}
 		}
 	}
 }
 
-@media screen and (min-width: 64em) {
+@media screen and (min-width: 1200px) {
 	.listing {
     	padding: 10px !important;
 
