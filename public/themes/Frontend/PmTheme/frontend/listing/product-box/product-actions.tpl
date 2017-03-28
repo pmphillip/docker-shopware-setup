@@ -19,9 +19,15 @@
         {block name='frontend_listing_box_article_actions_quantity'}
             <div class="pm-quantity-wrapper pm-float-left">
                 <form>
+                    <button class="pm-quantity-minus" type="button">
+                        <i class="icon--minus3"></i>
+                    </button>
                     <div class="pm-quantity-input">
                         <input type="number" min="1" max="99" value="1"/>
                     </div>
+                    <button class="pm-quantity-plus" type="button">
+                        <i class="icon--plus3"></i>
+                    </button>
                 </form>
             </div>
         {/block}
