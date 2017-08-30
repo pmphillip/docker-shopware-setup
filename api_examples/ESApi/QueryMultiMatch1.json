@@ -1,0 +1,18 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "title": "frankreich"
+          }
+        },
+        {
+          "match": {
+            "shortDescription": "täler"
+          }
+        }
+      ]
+    }
+  }
+}

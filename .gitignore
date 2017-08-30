@@ -1,0 +1,27 @@
+# PhpStorm
+.idea
+
+# OSX Files
+.DS_STORE
+*~
+
+# composer
+/public/node_modules
+/public/vendor
+/public/composer.phar
+
+# mysql volume
+/shopwaredemo_db/*
+/shopwaredemo_es/*
+
+# shopware
+/public/logs/*
+/public/files/*
+/public/media/*
+/public/var/cache/*
+/public/web/cache/*
+/public/var/log/*
+install.lock
+/public/engine/Shopware/Plugins/Community/Frontend/SwagDemoDataDE/*
+
+!.gitkeep

@@ -41,6 +41,8 @@ use Shopware\Models\Tax\Tax as TaxModel;
 use Shopware\Models\Property\Option as PropertyGroupModel;
 use Shopware\Models\Property\Value as PropertyOptionModel;
 
+// TODO-ES: Events Backlog Subscriber
+
 class ORMBacklogSubscriber implements EventSubscriber
 {
     const EVENT_ARTICLE_DELETED = 'article_deleted';

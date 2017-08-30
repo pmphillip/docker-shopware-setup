@@ -104,6 +104,7 @@ class ShopIndexer implements ShopIndexerInterface
 
     /**
      * {@inheritdoc}
+     * TODO-ES: ShopIndexer->index(...)
      */
     public function index(Shop $shop, ProgressHelperInterface $helper)
     {
@@ -113,10 +114,10 @@ class ShopIndexer implements ShopIndexerInterface
 
         $this->createIndex($configuration);
         $this->updateSettings($shopIndex);
-        $this->updateMapping($shopIndex);
-        $this->populate($shopIndex, $helper);
-        $this->applyBacklog($shopIndex, $lastBacklogId);
-        $this->createAlias($configuration);
+        $this->updateMapping($shopIndex);                   // BlogMapping->get()
+        $this->populate($shopIndex, $helper);               // BlogDataIndexer->populate()
+        $this->applyBacklog($shopIndex, $lastBacklogId);    // in ORMBacklogSubscriber wird die s_es_backlog erweitert, welche hier applied wird.
+        $this->createAlias($configuration);                 // alias auf grad erzeugten Index setzen
     }
 
     /**

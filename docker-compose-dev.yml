@@ -1,0 +1,5 @@
+version: "2"
+services:
+  web:
+   volumes:
+     - ./public:/var/www/html:rw # will be mounted on /var/www

@@ -1,0 +1,12 @@
+version: "2"
+options:
+  compose-file-path: 'docker-compose.yml'
+  verbose: true
+  max_attempt: 500000000
+syncs:
+  web-sync:
+    sync_strategy: 'unison'
+    src: './public'
+    sync_host_ip: '127.0.0.1'
+    sync_excludes: ['db_backups', '.DS_Store', '.git', 'files', 'media', 'cache']
+    sync_excludes_type: 'Name'

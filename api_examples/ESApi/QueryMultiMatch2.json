@@ -1,0 +1,20 @@
+{
+  "query": {
+    "multi_match": {
+      "fields": [
+        "keywords",
+        "name",
+        "shortDescription",
+        "longDescription",
+        "number",
+        "properties.name",
+        "manufacturer.name"
+      ],
+      "match": {
+        "query": "beeindr",
+        "slop": 1,
+        "type": "phrase_prefix"
+      }
+    }
+  }
+}

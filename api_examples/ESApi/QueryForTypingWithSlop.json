@@ -1,0 +1,10 @@
+{
+  "query": {
+    "match_phrase_prefix": {
+      "shortDescription": {
+        "query": "beeindruckende täler",
+        "slop": 5
+      }
+    }
+  }
+}

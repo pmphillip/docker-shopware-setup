@@ -30,6 +30,8 @@ use Shopware\Bundle\ESIndexingBundle\MappingInterface;
 use Shopware\Bundle\ESIndexingBundle\TextMappingInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\Shop;
 
+
+// TODO-ES: ES-Product-Mapping. TYPE ist der ES-Index-type. _source sind die Felder, die als Response auf einen Request ausgegeben werden.
 /**
  * Class ProductMapping
  * @package Shopware\Bundle\ESIndexingBundle\Product

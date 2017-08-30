@@ -13,6 +13,7 @@ use Elasticsearch\Namespaces\NodesNamespace;
 use Elasticsearch\Namespaces\SnapshotNamespace;
 use Elasticsearch\Namespaces\TaskNamespace;
 
+//TODO-ES: der Client
 /**
  * Class Client
  *
