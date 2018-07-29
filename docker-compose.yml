@@ -1,24 +1,53 @@
-web:
-    image: nginx:latest
+version: '2' 
+
+networks:
+  backend:
+
+volumes:
+  database: {}
+
+services:
+  web:
+    image: ${DOCKER_IMAGE}
+    container_name: ${DOCKER_CONTAINER_NAME_LOCAL_WEB}
     ports:
-        - "8080:80"
+      - "80:80"
     volumes:
-        - ./public:/var/www/html
-        - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-    links:
-        - php-7.0       
-php-7.0:
-    image: pmphillip/shopware-php7
-    volumes:
-        - ./public:/var/www/html
-    links:
-        - mysql
-mysql:
-    image: mysql
-    ports:
-      - "3306:3306"
+      - ./public:/var/www/html    
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=db
-      - MYSQL_USER=shopware
-      - MYSQL_PASSWORD=shopware
+      - MYSQL_DATABASE=${MYSQL_DB_NAME_LOCAL}
+      - MYSQL_USER=${MYSQL_USER_LOCAL}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD_LOCAL}
+      - MYSQL_HOST=${MYSQL_HOST_LOCAL}
+    networks:
+      - backend
+
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    container_name: ${DOCKER_CONTAINER_NAME_LOCAL_DB}
+    volumes:
+      - database:/var/lib/mysql
+    expose:
+      - 3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD_LOCAL}
+      - MYSQL_DATABASE=${MYSQL_DB_NAME_LOCAL}
+      - MYSQL_USER=${MYSQL_USER_LOCAL}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD_LOCAL}
+    networks:
+      - backend
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOSTS: ${MYSQL_HOST_LOCAL}
+      PMA_USER: ${MYSQL_USER_LOCAL}
+      PMA_PASSWORD: ${MYSQL_PASSWORD_LOCAL}
+      TZ: ${TIMEZONE_LOCAL}
+    expose:
+      - 80
+    ports:
+      - "8083:80"
+    networks:
+      - backend
