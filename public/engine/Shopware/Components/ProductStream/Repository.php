@@ -25,11 +25,11 @@
 namespace Shopware\Components\ProductStream;
 
 use Doctrine\DBAL\Connection;
-use Shopware\Bundle\SearchBundle\Condition\OrdernumberCondition;
+use Shopware\Bundle\SearchBundle\Condition\ProductIdCondition;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\SortingInterface;
-use Shopware\Components\ReflectionHelper;
+use Shopware\Components\LogawareReflectionHelper;
 
 class Repository implements RepositoryInterface
 {
@@ -39,22 +39,23 @@ class Repository implements RepositoryInterface
     private $conn;
 
     /**
-     * @var ReflectionHelper
+     * @var LogawareReflectionHelper
      */
     private $reflector;
 
     /**
-     * @param Connection $conn
+     * @param Connection               $conn
+     * @param LogawareReflectionHelper $reflector
      */
-    public function __construct(Connection $conn)
+    public function __construct(Connection $conn, LogawareReflectionHelper $reflector)
     {
         $this->conn = $conn;
-        $this->reflector = new ReflectionHelper();
+        $this->reflector = $reflector;
     }
 
     /**
      * @param Criteria $criteria
-     * @param int $productStreamId
+     * @param int      $productStreamId
      */
     public function prepareCriteria(Criteria $criteria, $productStreamId)
     {
@@ -62,17 +63,29 @@ class Repository implements RepositoryInterface
 
         if ($productStream['type'] == 1) {
             $this->prepareConditionStream($productStream, $criteria);
+
             return;
         }
 
         if ($productStream['type'] == 2) {
             $this->prepareSelectionStream($productStream, $criteria);
+
             return;
         }
     }
 
     /**
-     * @param array $productStream
+     * @param array $serializedConditions
+     *
+     * @return object[]
+     */
+    public function unserialize($serializedConditions)
+    {
+        return $this->reflector->unserialize($serializedConditions, 'Serialization error in Product stream');
+    }
+
+    /**
+     * @param array    $productStream
      * @param Criteria $criteria
      */
     private function prepareConditionStream(array $productStream, Criteria $criteria)
@@ -86,14 +99,13 @@ class Repository implements RepositoryInterface
     }
 
     /**
-     * @param array $productStream
+     * @param array    $productStream
      * @param Criteria $criteria
      */
     private function prepareSelectionStream(array $productStream, Criteria $criteria)
     {
-        $ordernumbers = $this->getOrdernumbers($productStream['id']);
-
-        $criteria->addBaseCondition(new OrdernumberCondition($ordernumbers));
+        $productIds = $this->getProductIds($productStream['id']);
+        $criteria->addBaseCondition(new ProductIdCondition($productIds));
 
         $sortings = $criteria->getSortings();
         if (empty($sortings)) {
@@ -102,53 +114,35 @@ class Repository implements RepositoryInterface
     }
 
     /**
-     * @param array $serializedConditions
-     * @return object[]
+     * @param int $productStreamId
+     *
+     * @return int[]
      */
-    public function unserialize($serializedConditions)
+    private function getProductIds($productStreamId)
     {
-        $conditions = [];
-        foreach ($serializedConditions as $className => $arguments) {
-            $className = explode('|', $className);
-            $className = $className[0];
+        $query = $this->conn->createQueryBuilder();
+        $query->select('article_id')
+            ->from('s_product_streams_selection')
+            ->where('stream_id = :productStreamId')
+            ->setParameter(':productStreamId', $productStreamId);
 
-            $conditions[] = $this->reflector->createInstanceFromNamedArguments($className, $arguments);
-        }
-
-        return $conditions;
+        return $query->execute()->fetchAll(\PDO::FETCH_COLUMN);
     }
 
     /**
      * @param int $productStreamId
-     * @return string[]
-     */
-    private function getOrdernumbers($productStreamId)
-    {
-        $query = <<<SQL
-SELECT
-    s_articles_details.ordernumber
-FROM s_product_streams_selection
-INNER JOIN s_articles_details ON s_product_streams_selection.article_id = s_articles_details.articleID
-WHERE stream_id = :productStreamId
-AND s_articles_details.kind = 1
-SQL;
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute(['productStreamId' => $productStreamId]);
-
-        $result = $stmt->fetchAll(\PDO::FETCH_COLUMN);
-
-        return $result;
-    }
-
-    /**
-     * @param int $productStreamId
+     *
      * @return array
      */
     private function getStreamById($productStreamId)
     {
         $row = $this->conn->fetchAssoc(
-            "SELECT * FROM s_product_streams WHERE id = :productStreamId LIMIT 1",
+            'SELECT streams.*, customSorting.sortings as customSortings
+             FROM s_product_streams streams
+             LEFT JOIN s_search_custom_sorting customSorting
+                 ON customSorting.id = streams.sorting_id
+             WHERE streams.id = :productStreamId
+             LIMIT 1',
             ['productStreamId' => $productStreamId]
         );
 
@@ -156,14 +150,19 @@ SQL;
     }
 
     /**
-     * @param array $productStream
+     * @param array    $productStream
      * @param Criteria $criteria
      */
     private function assignSortings(array $productStream, Criteria $criteria)
     {
-        $serializedSortings = json_decode($productStream['sorting'], true);
+        $sorting = $productStream['sorting'];
+        if (!empty($productStream['customSortings'])) {
+            $sorting = $productStream['customSortings'];
+        }
 
-        /** @var SortingInterface $sortings */
+        $serializedSortings = json_decode($sorting, true);
+
+        /** @var SortingInterface[] $sortings */
         $sortings = $this->unserialize($serializedSortings);
         foreach ($sortings as $sorting) {
             $criteria->addSorting($sorting);
@@ -171,7 +170,7 @@ SQL;
     }
 
     /**
-     * @param array $productStream
+     * @param array    $productStream
      * @param Criteria $criteria
      */
     private function assignConditions(array $productStream, Criteria $criteria)

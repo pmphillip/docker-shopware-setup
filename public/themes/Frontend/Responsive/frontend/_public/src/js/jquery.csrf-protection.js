@@ -50,7 +50,7 @@
          * @returns {boolean}
          */
         checkToken: function() {
-            return $.getCookie('invalidate-xcsrf-token') === undefined && this.getToken() !== undefined;
+            return this.getToken() !== undefined;
         },
 
         /**
@@ -131,13 +131,20 @@
         },
 
         /**
-         * Append X-CSRF-Token header to every request
+         * Append X-CSRF-Token header
          *
          * @param event
          * @param request
+         * @param settings
          * @private
          */
-        _ajaxBeforeSend: function(event, request) {
+        _ajaxBeforeSend: function(event, request, settings) {
+            settings = settings || {};
+
+            if (settings.hasOwnProperty('ignoreCSRFHeader') || settings.ignoreCSRFHeader === true) {
+                return;
+            }
+
             request.setRequestHeader('X-CSRF-Token', this.getToken());
         },
 
@@ -147,15 +154,16 @@
         requestToken: function() {
             var me = this;
 
-            $.ajax({
-                url: window.csrfConfig.generateUrl,
-                success: function(response, status, xhr) {
-                    me.saveToken(xhr.getResponseHeader('x-csrf-token'));
-                    $.removeCookie('invalidate-xcsrf-token');
-                    $.publish('plugin/swCsrfProtection/requestToken', [ me, me.getToken() ]);
-                    me.afterInit();
-                }
-            });
+            if (window.StateManager.hasCookiesAllowed() || window.cookieRemoval === 1) {
+                $.ajax({
+                    url: window.csrfConfig.generateUrl,
+                    success: function(response, status, xhr) {
+                        me.saveToken(xhr.getResponseHeader('x-csrf-token'));
+                        $.publish('plugin/swCsrfProtection/requestToken', [ me, me.getToken() ]);
+                        me.afterInit();
+                    }
+                });
+            }
         },
 
         /**

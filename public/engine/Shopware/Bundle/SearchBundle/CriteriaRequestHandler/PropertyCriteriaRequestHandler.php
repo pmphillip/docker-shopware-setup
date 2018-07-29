@@ -29,53 +29,38 @@ use Enlight_Controller_Request_RequestHttp as Request;
 use Shopware\Bundle\SearchBundle\Condition\PropertyCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\CriteriaRequestHandlerInterface;
-use Shopware\Bundle\SearchBundle\Facet\PropertyFacet;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
- * @package Shopware\Bundle\SearchBundleDBAL\CriteriaRequestHandler
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class PropertyCriteriaRequestHandler implements CriteriaRequestHandlerInterface
 {
-    /**
-     * @var \Shopware_Components_Config
-     */
-    private $config;
-
     /**
      * @var Connection
      */
     private $connection;
 
     /**
-     * @param \Shopware_Components_Config $config
      * @param Connection $connection
      */
-    public function __construct(
-        \Shopware_Components_Config $config,
-        Connection $connection
-    ) {
-        $this->config = $config;
+    public function __construct(Connection $connection)
+    {
         $this->connection = $connection;
     }
 
     /**
-     * @param Request $request
-     * @param Criteria $criteria
+     * @param Request              $request
+     * @param Criteria             $criteria
      * @param ShopContextInterface $context
      */
     public function handleRequest(Request $request, Criteria $criteria, ShopContextInterface $context)
     {
         $this->addPropertyCondition($request, $criteria);
-
-        if ($this->config->get('displayFiltersInListings')) {
-            $criteria->addFacet(new PropertyFacet());
-        }
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addPropertyCondition(Request $request, Criteria $criteria)
@@ -98,7 +83,6 @@ class PropertyCriteriaRequestHandler implements CriteriaRequestHandlerInterface
         }
     }
 
-
     /**
      * Helper function which groups the passed filter option ids
      * by the filter group.
@@ -106,6 +90,7 @@ class PropertyCriteriaRequestHandler implements CriteriaRequestHandlerInterface
      * object
      *
      * @param $filters
+     *
      * @return array
      */
     private function getGroupedFilters($filters)

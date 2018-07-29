@@ -41,15 +41,6 @@ class DateTimeToStringTransformer extends BaseDateTimeTransformer
     private $parseFormat;
 
     /**
-     * Whether to parse by appending a pipe "|" to the parse format.
-     *
-     * This only works as of PHP 5.3.7.
-     *
-     * @var bool
-     */
-    private $parseUsingPipe;
-
-    /**
      * Transforms a \DateTime instance to a string.
      *
      * @see \DateTime::format() for supported formats
@@ -57,17 +48,14 @@ class DateTimeToStringTransformer extends BaseDateTimeTransformer
      * @param string $inputTimezone  The name of the input timezone
      * @param string $outputTimezone The name of the output timezone
      * @param string $format         The date format
-     * @param bool   $parseUsingPipe Whether to parse by appending a pipe "|" to the parse format
      *
      * @throws UnexpectedTypeException if a timezone is not a string
      */
-    public function __construct($inputTimezone = null, $outputTimezone = null, $format = 'Y-m-d H:i:s', $parseUsingPipe = true)
+    public function __construct($inputTimezone = null, $outputTimezone = null, $format = 'Y-m-d H:i:s')
     {
         parent::__construct($inputTimezone, $outputTimezone);
 
         $this->generateFormat = $this->parseFormat = $format;
-
-        $this->parseUsingPipe = $parseUsingPipe || null === $parseUsingPipe;
 
         // See http://php.net/manual/en/datetime.createfromformat.php
         // The character "|" in the format makes sure that the parts of a date
@@ -77,7 +65,7 @@ class DateTimeToStringTransformer extends BaseDateTimeTransformer
         // where the time corresponds to the current server time.
         // With "|" and "Y-m-d", "2010-02-03" becomes "2010-02-03 00:00:00",
         // which is at least deterministic and thus used here.
-        if ($this->parseUsingPipe && false === strpos($this->parseFormat, '|')) {
+        if (false === strpos($this->parseFormat, '|')) {
             $this->parseFormat .= '|';
         }
     }
@@ -86,35 +74,30 @@ class DateTimeToStringTransformer extends BaseDateTimeTransformer
      * Transforms a DateTime object into a date string with the configured format
      * and timezone.
      *
-     * @param \DateTime|\DateTimeInterface $value A DateTime object
+     * @param \DateTime|\DateTimeInterface $dateTime A DateTime object
      *
      * @return string A value as produced by PHP's date() function
      *
-     * @throws TransformationFailedException If the given value is not a \DateTime
-     *                                       instance or if the output timezone
-     *                                       is not supported.
+     * @throws TransformationFailedException If the given value is not an
+     *                                       instance of \DateTime or \DateTimeInterface
      */
-    public function transform($value)
+    public function transform($dateTime)
     {
-        if (null === $value) {
+        if (null === $dateTime) {
             return '';
         }
 
-        if (!$value instanceof \DateTime && !$value instanceof \DateTimeInterface) {
+        if (!$dateTime instanceof \DateTime && !$dateTime instanceof \DateTimeInterface) {
             throw new TransformationFailedException('Expected a \DateTime or \DateTimeInterface.');
         }
 
-        if (!$value instanceof \DateTimeImmutable) {
-            $value = clone $value;
+        if (!$dateTime instanceof \DateTimeImmutable) {
+            $dateTime = clone $dateTime;
         }
 
-        try {
-            $value = $value->setTimezone(new \DateTimeZone($this->outputTimezone));
-        } catch (\Exception $e) {
-            throw new TransformationFailedException($e->getMessage(), $e->getCode(), $e);
-        }
+        $dateTime = $dateTime->setTimezone(new \DateTimeZone($this->outputTimezone));
 
-        return $value->format($this->generateFormat);
+        return $dateTime->format($this->generateFormat);
     }
 
     /**
@@ -125,8 +108,7 @@ class DateTimeToStringTransformer extends BaseDateTimeTransformer
      * @return \DateTime An instance of \DateTime
      *
      * @throws TransformationFailedException If the given value is not a string,
-     *                                       if the date could not be parsed or
-     *                                       if the input timezone is not supported.
+     *                                       or could not be transformed
      */
     public function reverseTransform($value)
     {
@@ -153,70 +135,6 @@ class DateTimeToStringTransformer extends BaseDateTimeTransformer
         }
 
         try {
-            // On PHP versions < 5.3.7 we need to emulate the pipe operator
-            // and reset parts not given in the format to their equivalent
-            // of the UNIX base timestamp.
-            if (!$this->parseUsingPipe) {
-                list($year, $month, $day, $hour, $minute, $second) = explode('-', $dateTime->format('Y-m-d-H-i-s'));
-
-                // Check which of the date parts are present in the pattern
-                preg_match(
-                    '/('.
-                    '(?P<day>[djDl])|'.
-                    '(?P<month>[FMmn])|'.
-                    '(?P<year>[Yy])|'.
-                    '(?P<hour>[ghGH])|'.
-                    '(?P<minute>i)|'.
-                    '(?P<second>s)|'.
-                    '(?P<dayofyear>z)|'.
-                    '(?P<timestamp>U)|'.
-                    '[^djDlFMmnYyghGHiszU]'.
-                    ')*/',
-                    $this->parseFormat,
-                    $matches
-                );
-
-                // preg_match() does not guarantee to set all indices, so
-                // set them unless given
-                $matches = array_merge(array(
-                    'day' => false,
-                    'month' => false,
-                    'year' => false,
-                    'hour' => false,
-                    'minute' => false,
-                    'second' => false,
-                    'dayofyear' => false,
-                    'timestamp' => false,
-                ), $matches);
-
-                // Reset all parts that don't exist in the format to the
-                // corresponding part of the UNIX base timestamp
-                if (!$matches['timestamp']) {
-                    if (!$matches['dayofyear']) {
-                        if (!$matches['day']) {
-                            $day = 1;
-                        }
-                        if (!$matches['month']) {
-                            $month = 1;
-                        }
-                    }
-                    if (!$matches['year']) {
-                        $year = 1970;
-                    }
-                    if (!$matches['hour']) {
-                        $hour = 0;
-                    }
-                    if (!$matches['minute']) {
-                        $minute = 0;
-                    }
-                    if (!$matches['second']) {
-                        $second = 0;
-                    }
-                    $dateTime->setDate($year, $month, $day);
-                    $dateTime->setTime($hour, $minute, $second);
-                }
-            }
-
             if ($this->inputTimezone !== $this->outputTimezone) {
                 $dateTime->setTimezone(new \DateTimeZone($this->inputTimezone));
             }

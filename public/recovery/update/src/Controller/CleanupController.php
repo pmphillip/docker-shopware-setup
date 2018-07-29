@@ -25,9 +25,6 @@
 namespace Shopware\Recovery\Update\Controller;
 
 use DirectoryIterator;
-use FilesystemIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use Shopware\Recovery\Update\Cleanup;
 use Shopware\Recovery\Update\CleanupFilesFinder;
 use Shopware\Recovery\Update\DummyPluginFinder;
@@ -35,11 +32,11 @@ use Shopware\Recovery\Update\Utils;
 use Slim\Http\Request;
 use Slim\Http\Response;
 use Slim\Slim;
-use SplFileInfo;
+use Symfony\Component\Finder\Finder;
 
 /**
  * @category  Shopware
- * @package   Shopware\Recovery\Update\Controller
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CleanupController
@@ -90,14 +87,14 @@ class CleanupController
     private $cleanupService;
 
     /**
-     * @param Request $request
-     * @param Response $response
-     * @param DummyPluginFinder $pluginFinder
+     * @param Request            $request
+     * @param Response           $response
+     * @param DummyPluginFinder  $pluginFinder
      * @param CleanupFilesFinder $filesFinder
-     * @param Slim $app
-     * @param string $shopwarePath
-     * @param \PDO $conn
-     * @param string $backupDir
+     * @param Slim               $app
+     * @param string             $shopwarePath
+     * @param \PDO               $conn
+     * @param string             $backupDir
      */
     public function __construct(
         Request $request,
@@ -169,42 +166,52 @@ class CleanupController
         }
     }
 
+    /**
+     * Deletes outdated folders from earlier shopware versions.
+     */
+    public function deleteOutdatedFolders()
+    {
+        echo $this->cleanupService->cleanup();
+        exit();
+    }
+
     private function cleanupMedia()
     {
-        $mediaPath = $this->shopwarePath . '/media/image';
-        $thumbnailPath = $this->shopwarePath . '/media/image/thumbnail';
+        $mediaPath = $this->shopwarePath . '/media';
+        $blacklistMapping = ['ad' => 'g0'];
 
-        $iterator = new RecursiveIteratorIterator(
-            new \RecursiveRegexIterator(
-                new RecursiveDirectoryIterator($mediaPath, RecursiveDirectoryIterator::SKIP_DOTS),
-                '/ad/'
-            ),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        );
+        $finder = new Finder();
+        $files = $finder
+            ->in($mediaPath)
+            ->files()
+            ->path('#/(' . implode('|', array_keys($blacklistMapping)) . ')/#')
+            ->getIterator();
 
-        if (!file_exists($thumbnailPath)) {
-            mkdir($thumbnailPath);
-        }
+        /** @var \SplFileInfo $file */
+        foreach ($files as $file) {
+            $sanitizedPath = str_replace($mediaPath, '', $file->getPathname());
 
-        /** @var SplFileInfo $a */
-        foreach ($iterator as $a) {
-            $isThumbnail = preg_match('#_(\d)+x(\d)+\.#', $a->getFilename());
-
-            if (!$isThumbnail) {
-                $isThumbnail = preg_match('#_(\d)+x(\d)+@2x\.#', $a->getFilename());
+            foreach ($blacklistMapping as $search => $replace) {
+                // must be called 2 times, because the second level won't be matched in the first call
+                $sanitizedPath = str_replace('/' . $search . '/', '/' . $replace . '/', $sanitizedPath);
+                $sanitizedPath = str_replace('/' . $search . '/', '/' . $replace . '/', $sanitizedPath);
             }
 
-            if ($isThumbnail) {
-                rename($a->getPathname(), $thumbnailPath . "/" . $a->getFilename());
-            } else {
-                rename($a->getPathname(), $mediaPath . "/" . $a->getFilename());
+            $sanitizedPath = $mediaPath . $sanitizedPath;
+
+            // create target directory for the case that the new structure does not exist yet
+            $saveDirectoryPath = str_replace($file->getFilename(), '', $sanitizedPath);
+            if (!is_dir($saveDirectoryPath)) {
+                @mkdir($saveDirectoryPath, 0777, true);
             }
+
+            rename($file->getPathname(), $sanitizedPath);
         }
     }
 
     private function cleanupTemplateRelations()
     {
-        $affectedShopsSql = <<<SQL
+        $affectedShopsSql = <<<'SQL'
 SELECT shops.id, template.id as tplId, doctemplate.id as docTplId, template.version as tplVersion, doctemplate.version as docTplVersion
 FROM `s_core_shops` as shops
 LEFT JOIN `s_core_templates` as template ON shops.template_id = template.id
@@ -224,7 +231,7 @@ SQL;
             return;
         }
 
-        $sql = "SELECT id FROM `s_core_templates` WHERE version = 3 AND parent_id IS NOT NULL ORDER BY id ASC LIMIT 1";
+        $sql = 'SELECT id FROM `s_core_templates` WHERE version = 3 AND parent_id IS NOT NULL ORDER BY id ASC LIMIT 1';
         $templateId = $this->conn->query($sql)->fetchColumn();
 
         foreach ($affectedShops as $shop) {
@@ -247,15 +254,16 @@ SQL;
      */
     private function updateShopConfig($field, $value, $shopId)
     {
-        $this->conn->prepare("UPDATE `s_core_shops` SET " . $field . " = :newValue WHERE id = :shopId")
+        $this->conn->prepare('UPDATE `s_core_shops` SET ' . $field . ' = :newValue WHERE id = :shopId')
             ->execute([
                 ':newValue' => $value,
-                ':shopId' => $shopId
+                ':shopId' => $shopId,
             ]);
     }
 
     /**
      * @param string $path
+     *
      * @return array|DirectoryIterator
      */
     private function getDirectoryIterator($path)
@@ -287,15 +295,6 @@ SQL;
         );
 
         return $cleanupList;
-    }
-
-    /**
-     * Deletes outdated folders from earlier shopware versions.
-     */
-    public function deleteOutdatedFolders()
-    {
-        echo $this->cleanupService->cleanup();
-        exit();
     }
 
     /**

@@ -21,7 +21,6 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
 use Shopware\Bundle\SearchBundle\Condition\CategoryCondition;
 use Shopware\Bundle\SearchBundle\Condition\CustomerGroupCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
@@ -51,58 +50,84 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
 
     public function loadPreviewAction()
     {
-        $conditions = $this->Request()->getParam('conditions');
-        $conditions = json_decode($conditions, true);
+        try {
+            /** @var RepositoryInterface $streamRepo */
+            $streamRepo = $this->get('shopware_product_stream.repository');
+            $criteria = new Criteria();
 
-        $sorting = $this->Request()->getParam('sort');
+            $sorting = $this->Request()->getParam('sort');
 
-        $criteria = new Criteria();
+            if (null !== $sorting) {
+                $sorting = $streamRepo->unserialize($sorting);
 
-        /** @var RepositoryInterface $streamRepo */
-        $streamRepo = $this->get('shopware_product_stream.repository');
-        $sorting = $streamRepo->unserialize($sorting);
+                foreach ($sorting as $sort) {
+                    $criteria->addSorting($sort);
+                }
+            }
 
-        foreach ($sorting as $sort) {
-            $criteria->addSorting($sort);
+            $conditions = $this->Request()->getParam('conditions');
+
+            if (null !== $conditions) {
+                $conditions = json_decode($conditions, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \InvalidArgumentException('Could not decode JSON: ' . json_last_error_msg());
+                }
+
+                $conditions = $streamRepo->unserialize($conditions);
+
+                foreach ($conditions as $condition) { /* @var $condition \Shopware\Bundle\SearchBundle\ConditionInterface */
+                    $criteria->addCondition($condition);
+                }
+            }
+
+            $criteria->offset($this->Request()->getParam('start', 0));
+            $criteria->limit($this->Request()->getParam('limit', 20));
+
+            $context = $this->createContext(
+                $this->Request()->getParam('shopId'),
+                $this->Request()->getParam('currencyId'),
+                $this->Request()->getParam('customerGroupKey')
+            );
+
+            $criteria->addBaseCondition(
+                new CustomerGroupCondition([$context->getCurrentCustomerGroup()->getId()])
+            );
+
+            $category = $context->getShop()->getCategory()->getId();
+            $criteria->addBaseCondition(
+                new CategoryCondition([$category])
+            );
+
+            $result = Shopware()->Container()->get('shopware_search.product_search')
+                ->search($criteria, $context);
+
+            $products = array_values($result->getProducts());
+
+            $success = true;
+            $error = false;
+            $data = $products;
+            $total = $result->getTotalCount();
+        } catch (\Exception $e) {
+            $success = false;
+            $error = $e->getMessage();
+            $data = [];
+            $total = 0;
         }
-
-        $conditions = $streamRepo->unserialize($conditions);
-
-        foreach ($conditions as $condition) {
-            $criteria->addCondition($condition);
-        }
-
-        $criteria->offset($this->Request()->getParam('start', 0));
-        $criteria->limit($this->Request()->getParam('limit', 20));
-
-
-        $context = $this->createContext(
-            $this->Request()->getParam('shopId'),
-            $this->Request()->getParam('currencyId'),
-            $this->Request()->getParam('customerGroupKey')
-        );
-
-        $criteria->addBaseCondition(
-            new CustomerGroupCondition([$context->getCurrentCustomerGroup()->getId()])
-        );
-
-        $category = $context->getShop()->getCategory()->getId();
-        $criteria->addBaseCondition(
-            new CategoryCondition([$category])
-        );
-
-        $result = Shopware()->Container()->get('shopware_search.product_search')
-            ->search($criteria, $context);
-
-        $products = array_values($result->getProducts());
 
         $this->View()->assign([
-            'success' => true,
-            'data' => $products,
-            'total' => $result->getTotalCount()
+            'success' => $success,
+            'data' => $data,
+            'total' => $total,
+            'error' => $error,
         ]);
     }
 
+    /**
+     * @param array $data
+     *
+     * @return array
+     */
     public function save($data)
     {
         if (isset($data['conditions'])) {
@@ -116,6 +141,11 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
         return parent::save($data);
     }
 
+    /**
+     * @param int $id
+     *
+     * @return array
+     */
     public function getDetail($id)
     {
         $data = parent::getDetail($id);
@@ -124,32 +154,6 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
         $data['data']['sorting'] = json_decode($data['data']['sorting'], true);
 
         return $data;
-    }
-
-    /**
-     * @param $shopId
-     * @param int $currencyId
-     * @param int $customerGroupKey
-     * @return ProductContext
-     */
-    private function createContext($shopId, $currencyId = null, $customerGroupKey = null)
-    {
-        /** @var Shopware\Models\Shop\Repository $repo */
-        $repo = Shopware()->Container()->get('models')->getRepository('Shopware\Models\Shop\Shop');
-
-        $shop = $repo->getActiveById($shopId);
-        $shopId = $shop->getId();
-
-        if (!$currencyId) {
-            $currencyId = $shop->getCurrency()->getId();
-        }
-
-        if (!$customerGroupKey) {
-            $customerGroupKey = ContextService::FALLBACK_CUSTOMER_GROUP;
-        }
-
-        return Shopware()->Container()->get('shopware_storefront.context_service')
-            ->createShopContext($shopId, $currencyId, $customerGroupKey);
     }
 
     public function loadSelectedProductsAction()
@@ -183,7 +187,7 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
         $articleId = $this->Request()->getParam('articleId');
 
         Shopware()->Container()->get('dbal_connection')->executeUpdate(
-            "DELETE FROM s_product_streams_selection WHERE stream_id = :streamId AND article_id = :articleId",
+            'DELETE FROM s_product_streams_selection WHERE stream_id = :streamId AND article_id = :articleId',
             [':streamId' => $streamId, ':articleId' => $articleId]
         );
 
@@ -196,7 +200,7 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
         $articleId = $this->Request()->getParam('articleId');
 
         Shopware()->Container()->get('dbal_connection')->executeUpdate(
-            "INSERT IGNORE INTO s_product_streams_selection(stream_id, article_id) VALUES (:streamId, :articleId)",
+            'INSERT IGNORE INTO s_product_streams_selection(stream_id, article_id) VALUES (:streamId, :articleId)',
             [':streamId' => $streamId, ':articleId' => $articleId]
         );
 
@@ -208,18 +212,29 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
         $service = Shopware()->Container()->get('shopware_attribute.crud_service');
         $data = $service->getList('s_articles_attributes');
 
+        $offset = (int) $this->Request()->getParam('start', 0);
+        $limit = (int) $this->Request()->getParam('limit', 20);
+
         $columns = [];
-        foreach ($data as $struct) {
+        for ($i = $offset; $i <= $offset + $limit; ++$i) {
+            if (!isset($data[$i])) {
+                break;
+            }
+            $struct = $data[$i];
             if (!$struct->displayInBackend()) {
                 continue;
             }
             $columns[] = [
                 'column' => $struct->getColumnName(),
-                'label' => $struct->getLabel() ?: $struct->getColumnName()
+                'label' => $struct->getLabel() ?: $struct->getColumnName(),
             ];
         }
 
-        $this->View()->assign(['success' => true, 'data' => $columns]);
+        $this->View()->assign([
+            'success' => true,
+            'data' => $columns,
+            'total' => count($data),
+        ]);
     }
 
     public function copySelectedProductsAction()
@@ -232,10 +247,44 @@ class Shopware_Controllers_Backend_ProductStream extends Shopware_Controllers_Ba
         }
 
         Shopware()->Container()->get('dbal_connection')->executeUpdate(
-            "INSERT IGNORE INTO s_product_streams_selection (stream_id, article_id) SELECT :targetStreamId, article_id FROM s_product_streams_selection WHERE stream_id = :sourceStreamId",
+            'INSERT IGNORE INTO s_product_streams_selection (stream_id, article_id) SELECT :targetStreamId, article_id FROM s_product_streams_selection WHERE stream_id = :sourceStreamId',
             [':targetStreamId' => $targetStreamId, ':sourceStreamId' => $sourceStreamId]
         );
 
         $this->View()->assign('success', true);
+    }
+
+    /**
+     * @param int      $shopId
+     * @param int|null $currencyId
+     * @param int|null $customerGroupKey
+     *
+     * @throws \InvalidArgumentException if the specified shop couldn't be found
+     *
+     * @return ProductContext
+     */
+    private function createContext($shopId, $currencyId = null, $customerGroupKey = null)
+    {
+        /** @var Shopware\Models\Shop\Repository $repo */
+        $repo = Shopware()->Container()->get('models')->getRepository('Shopware\Models\Shop\Shop');
+
+        $shop = $repo->getActiveById($shopId);
+
+        if (!$shop) {
+            throw new \InvalidArgumentException('Shop not found');
+        }
+
+        $shopId = $shop->getId();
+
+        if (!$currencyId) {
+            $currencyId = $shop->getCurrency()->getId();
+        }
+
+        if (!$customerGroupKey) {
+            $customerGroupKey = ContextService::FALLBACK_CUSTOMER_GROUP;
+        }
+
+        return Shopware()->Container()->get('shopware_storefront.context_service')
+            ->createShopContext($shopId, $currencyId, $customerGroupKey);
     }
 }

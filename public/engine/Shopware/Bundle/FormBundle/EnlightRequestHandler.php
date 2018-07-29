@@ -27,6 +27,7 @@ namespace Shopware\Bundle\FormBundle;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\RequestHandlerInterface;
+use Symfony\Component\HttpFoundation\File\File;
 
 class EnlightRequestHandler implements RequestHandlerInterface
 {
@@ -57,9 +58,20 @@ class EnlightRequestHandler implements RequestHandlerInterface
     }
 
     /**
+     * @param mixed $data
+     *
+     * @return bool
+     */
+    public function isFileUpload($data)
+    {
+        return $data instanceof File;
+    }
+
+    /**
      * remove shopware GET parameters from the request
      *
      * @param array $data
+     *
      * @return array
      */
     private function filterDefaultParameters(array $data)
@@ -70,10 +82,11 @@ class EnlightRequestHandler implements RequestHandlerInterface
     }
 
     /**
-     * @param string $name
-     * @param string $method
+     * @param string                              $name
+     * @param string                              $method
      * @param \Enlight_Controller_Request_Request $request
-     * @param array|null $defaultValue
+     * @param array|null                          $defaultValue
+     *
      * @return array|bool
      */
     private function getDataByRequest($name, $method, \Enlight_Controller_Request_Request $request, $defaultValue)
@@ -95,7 +108,8 @@ class EnlightRequestHandler implements RequestHandlerInterface
      * Checks if the form has at least one field present
      *
      * @param FormInterface $form
-     * @param array $data
+     * @param array         $data
+     *
      * @return bool
      */
     private function hasFieldsSet(FormInterface $form, array $data)
@@ -107,7 +121,8 @@ class EnlightRequestHandler implements RequestHandlerInterface
      * Gather data from request query strings based on the form name
      *
      * @param \Enlight_Controller_Request_Request $request
-     * @param string $name
+     * @param string                              $name
+     *
      * @return bool|array
      */
     private function handleRequestWithoutBody(\Enlight_Controller_Request_Request $request, $name)
@@ -131,8 +146,9 @@ class EnlightRequestHandler implements RequestHandlerInterface
      * Gather data from request body based on the form name
      *
      * @param \Enlight_Controller_Request_Request $request
-     * @param string $name
-     * @param array|null $defaultValue
+     * @param string                              $name
+     * @param array|null                          $defaultValue
+     *
      * @return array|bool
      */
     private function handleRequestWithBody(\Enlight_Controller_Request_Request $request, $name, $defaultValue)

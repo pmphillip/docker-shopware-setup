@@ -25,70 +25,71 @@
 namespace Shopware\Components\Theme\EventListener;
 
 use Enlight\Event\SubscriberInterface;
-use Shopware\Components\DependencyInjection\Container;
 use Shopware\Models\Shop\Shop;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ConfigLoader
- * @package Shopware\Components\Theme\EventListener
  */
 class ConfigLoader implements SubscriberInterface
 {
     /**
-     * @var Container
+     * @var ContainerInterface
      */
     private $container;
 
     /**
-     * @param Container $container
+     * @param ContainerInterface $container
      */
-    public function __construct(Container $container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function getSubscribedEvents()
     {
         return [
             'Enlight_Controller_Action_PostDispatch_Frontend' => 'onDispatch',
-            'Enlight_Controller_Action_PostDispatch_Widgets'  => 'onDispatch',
+            'Enlight_Controller_Action_PostDispatch_Widgets' => 'onDispatch',
         ];
     }
 
     /**
      * @param \Enlight_Event_EventArgs $args
+     *
      * @throws \Exception
      */
     public function onDispatch(\Enlight_Event_EventArgs $args)
     {
-        /**@var $controller \Enlight_Controller_Action*/
+        /** @var $controller \Enlight_Controller_Action */
         $controller = $args->get('subject');
 
         if (!$controller->View() || !$controller->View()->hasTemplate()) {
             return;
         }
 
-        /**@var $shop Shop*/
+        /** @var $shop Shop */
         $shop = $this->container->get('shop');
 
+        $inheritance = $this->container->get('theme_inheritance');
+
         $templateManager = $this->container->get('template');
+        $templateManager->addPluginsDir(
+            $inheritance->getSmartyDirectories($shop->getTemplate())
+        );
+
         $themeSettings = $templateManager->getTemplateVars('theme');
         if (!empty($themeSettings)) {
             return;
         }
 
-        $inheritance = $this->container->get('theme_inheritance');
         $config = $inheritance->buildConfig(
             $shop->getTemplate(),
             $shop,
             false
-        );
-
-        $templateManager->addPluginsDir(
-            $inheritance->getSmartyDirectories($shop->getTemplate())
         );
 
         $templateManager->assign('theme', $config);

@@ -29,20 +29,20 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class PriceCondition implements ConditionInterface
+class PriceCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * @var float
      */
-    private $minPrice;
+    protected $minPrice;
 
     /**
      * @var float
      */
-    private $maxPrice;
+    protected $maxPrice;
 
     /**
      * @param float $minPrice
@@ -52,8 +52,8 @@ class PriceCondition implements ConditionInterface
     {
         Assertion::numeric($minPrice);
         Assertion::numeric($maxPrice);
-        $this->minPrice = (float)$minPrice;
-        $this->maxPrice = (float)$maxPrice;
+        $this->minPrice = (float) $minPrice;
+        $this->maxPrice = (float) $maxPrice;
     }
 
     /**
@@ -78,5 +78,13 @@ class PriceCondition implements ConditionInterface
     public function getMaxPrice()
     {
         return $this->maxPrice;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

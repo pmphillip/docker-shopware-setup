@@ -11,7 +11,7 @@
 
 namespace Symfony\Component\Form\Extension\Core\ChoiceList;
 
-@trigger_error('The '.__NAMESPACE__.'\SimpleChoiceList class is deprecated since version 2.7 and will be removed in 3.0. Use Symfony\Component\Form\ChoiceList\ArrayChoiceList instead.', E_USER_DEPRECATED);
+@trigger_error('The '.__NAMESPACE__.'\SimpleChoiceList class is deprecated since Symfony 2.7 and will be removed in 3.0. Use Symfony\Component\Form\ChoiceList\ArrayChoiceList instead.', E_USER_DEPRECATED);
 
 /**
  * A choice list for choices of type string or integer.
@@ -45,7 +45,7 @@ class SimpleChoiceList extends ChoiceList
      *                                arrays. The title of the sub-hierarchy is stored
      *                                in the array key pointing to the nested array.
      * @param array $preferredChoices A flat array of choices that should be
-     *                                presented to the user with priority.
+     *                                presented to the user with priority
      */
     public function __construct(array $choices, array $preferredChoices = array())
     {
@@ -83,13 +83,11 @@ class SimpleChoiceList extends ChoiceList
      * Takes care of splitting the single $choices array passed in the
      * constructor into choices and labels.
      *
-     * @param array              $bucketForPreferred The bucket where to store the preferred
-     *                                               view objects.
-     * @param array              $bucketForRemaining The bucket where to store the
-     *                                               non-preferred view objects.
-     * @param array|\Traversable $choices            The list of choices.
-     * @param array              $labels             Ignored.
-     * @param array              $preferredChoices   The preferred choices.
+     * @param array              $bucketForPreferred The bucket where to store the preferred view objects
+     * @param array              $bucketForRemaining The bucket where to store the non-preferred view objects
+     * @param array|\Traversable $choices            The list of choices
+     * @param array              $labels             Ignored
+     * @param array              $preferredChoices   The preferred choices
      */
     protected function addChoices(array &$bucketForPreferred, array &$bucketForRemaining, $choices, array $labels, array $preferredChoices)
     {
@@ -126,10 +124,10 @@ class SimpleChoiceList extends ChoiceList
      * Optimized for performance by treating the preferred choices as array
      * where choices are stored in the keys.
      *
-     * @param mixed $choice           The choice to test.
-     * @param array $preferredChoices An array of preferred choices.
+     * @param mixed $choice           The choice to test
+     * @param array $preferredChoices An array of preferred choices
      *
-     * @return bool Whether the choice is preferred.
+     * @return bool Whether the choice is preferred
      */
     protected function isPreferred($choice, array $preferredChoices)
     {

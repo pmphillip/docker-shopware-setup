@@ -27,7 +27,7 @@ namespace Shopware\Bundle\SearchBundleES\DependencyInjection\Factory;
 use Doctrine\Common\Collections\ArrayCollection;
 use Shopware\Bundle\SearchBundleES\HandlerInterface;
 use Shopware\Bundle\SearchBundleES\ProductNumberSearch;
-use Shopware\Components\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ProductNumberSearchFactory
 {
@@ -45,26 +45,39 @@ class ProductNumberSearchFactory
     }
 
     /**
-     * @param Container $container
+     * @param ContainerInterface $container
+     *
      * @return ProductNumberSearch
      */
-    public function factory(Container $container)
+    public function factory(ContainerInterface $container)
     {
-        $handlers = $this->registerHandlers($container);
-
         return new ProductNumberSearch(
             $container->get('shopware_elastic_search.client'),
             $container->get('shopware_elastic_search.index_factory'),
-            $handlers
+            $container->get('shopware_search_es.handler_collection')->toArray()
         );
     }
 
     /**
-     * @param Container $container
-     * @return \Shopware\Bundle\SearchBundleES\HandlerInterface[]
-     * @throws \Exception
+     * @param ContainerInterface $container
+     *
+     * @return ArrayCollection
      */
-    private function registerHandlers(Container $container)
+    public function registerHandlerCollection(ContainerInterface $container)
+    {
+        $handlers = $this->registerHandlers($container);
+
+        return new ArrayCollection($handlers);
+    }
+
+    /**
+     * @param ContainerInterface $container
+     *
+     * @throws \Exception
+     *
+     * @return \Shopware\Bundle\SearchBundleES\HandlerInterface[]
+     */
+    private function registerHandlers(ContainerInterface $container)
     {
         $handlers = new ArrayCollection();
         $handlers = $container->get('events')->collect(

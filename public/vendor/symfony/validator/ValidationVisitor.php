@@ -11,7 +11,7 @@
 
 namespace Symfony\Component\Validator;
 
-@trigger_error('The '.__NAMESPACE__.'\ValidationVisitor class is deprecated since version 2.5 and will be removed in 3.0.', E_USER_DEPRECATED);
+@trigger_error('The '.__NAMESPACE__.'\ValidationVisitor class is deprecated since Symfony 2.5 and will be removed in 3.0.', E_USER_DEPRECATED);
 
 use Symfony\Component\Translation\TranslatorInterface;
 use Symfony\Component\Validator\Exception\NoSuchMetadataException;
@@ -27,55 +27,24 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
  */
 class ValidationVisitor implements ValidationVisitorInterface, GlobalExecutionContextInterface
 {
-    /**
-     * @var mixed
-     */
     private $root;
-
-    /**
-     * @var MetadataFactoryInterface
-     */
     private $metadataFactory;
-
-    /**
-     * @var ConstraintValidatorFactoryInterface
-     */
     private $validatorFactory;
-
-    /**
-     * @var TranslatorInterface
-     */
     private $translator;
-
-    /**
-     * @var null|string
-     */
     private $translationDomain;
-
-    /**
-     * @var array
-     */
     private $objectInitializers;
-
-    /**
-     * @var ConstraintViolationList
-     */
     private $violations;
-
-    /**
-     * @var array
-     */
     private $validatedObjects = array();
 
     /**
      * Creates a new validation visitor.
      *
-     * @param mixed                               $root               The value passed to the validator.
-     * @param MetadataFactoryInterface            $metadataFactory    The factory for obtaining metadata instances.
-     * @param ConstraintValidatorFactoryInterface $validatorFactory   The factory for creating constraint validators.
-     * @param TranslatorInterface                 $translator         The translator for translating violation messages.
-     * @param string|null                         $translationDomain  The domain of the translation messages.
-     * @param ObjectInitializerInterface[]        $objectInitializers The initializers for preparing objects before validation.
+     * @param mixed                               $root               The value passed to the validator
+     * @param MetadataFactoryInterface            $metadataFactory    The factory for obtaining metadata instances
+     * @param ConstraintValidatorFactoryInterface $validatorFactory   The factory for creating constraint validators
+     * @param TranslatorInterface                 $translator         The translator for translating violation messages
+     * @param string|null                         $translationDomain  The domain of the translation messages
+     * @param ObjectInitializerInterface[]        $objectInitializers The initializers for preparing objects before validation
      *
      * @throws UnexpectedTypeException If any of the object initializers is not an instance of ObjectInitializerInterface
      */

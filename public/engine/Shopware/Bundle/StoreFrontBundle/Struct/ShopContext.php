@@ -31,10 +31,10 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Product\PriceGroup;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ShopContext extends Extendable implements ProductContextInterface, \JsonSerializable
+class ShopContext extends Extendable implements ProductContextInterface
 {
     /**
      * @var Group
@@ -87,6 +87,11 @@ class ShopContext extends Extendable implements ProductContextInterface, \JsonSe
     protected $state;
 
     /**
+     * @var int[]
+     */
+    protected $customerStreamIds;
+
+    /**
      * @param string       $baseUrl
      * @param Shop         $shop
      * @param Currency     $currency
@@ -97,6 +102,7 @@ class ShopContext extends Extendable implements ProductContextInterface, \JsonSe
      * @param Area|null    $area
      * @param Country|null $country
      * @param State|null   $state
+     * @param int[]        $customerStreamIds
      */
     public function __construct(
         $baseUrl,
@@ -108,7 +114,8 @@ class ShopContext extends Extendable implements ProductContextInterface, \JsonSe
         array $priceGroups,
         Area $area = null,
         Country $country = null,
-        State $state = null
+        State $state = null,
+        $customerStreamIds = []
     ) {
         $this->baseUrl = $baseUrl;
         $this->shop = $shop;
@@ -120,6 +127,7 @@ class ShopContext extends Extendable implements ProductContextInterface, \JsonSe
         $this->area = $area;
         $this->country = $country;
         $this->state = $state;
+        $this->customerStreamIds = $customerStreamIds;
     }
 
     /**
@@ -210,6 +218,11 @@ class ShopContext extends Extendable implements ProductContextInterface, \JsonSe
     public function getState()
     {
         return $this->state;
+    }
+
+    public function getActiveCustomerStreamIds()
+    {
+        return $this->customerStreamIds;
     }
 
     /**

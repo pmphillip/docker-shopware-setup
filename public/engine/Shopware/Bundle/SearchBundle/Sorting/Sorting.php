@@ -28,7 +28,7 @@ use Shopware\Bundle\SearchBundle\SortingInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Sorting
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 abstract class Sorting implements SortingInterface
@@ -43,7 +43,7 @@ abstract class Sorting implements SortingInterface
      */
     public function __construct($direction = SortingInterface::SORT_ASC)
     {
-        $this->direction = $direction;
+        $this->direction = strtoupper($direction);
     }
 
     /**

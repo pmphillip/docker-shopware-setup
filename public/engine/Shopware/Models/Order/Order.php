@@ -24,10 +24,11 @@
 
 namespace   Shopware\Models\Order;
 
-use Shopware\Components\Model\ModelEntity;
-use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
+use Shopware\Components\Security\AttributeCleanerTrait;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Shopware order model represents a single order in your shop.
@@ -69,221 +70,11 @@ use Doctrine\Common\Collections\ArrayCollection;
  */
 class Order extends ModelEntity
 {
-    /**
-     * Unique identifier field.
-     * @var integer $id
-     *
-     * @ORM\Column(name="id", type="integer", nullable=false)
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="IDENTITY")
+    /*
+     * HTML Cleansing trait for different attributes in a class (implemented in setters)
+     * @see \Shopware\Components\Security\AttributeCleanerTrait
      */
-    private $id;
-
-    /**
-     * Contains the alphanumeric order number. If the
-     * @var string $number
-     * @ORM\Column(name="ordernumber", type="string", length=255, nullable=true)
-     */
-    private $number;
-
-    /**
-     * @var integer $customerId
-     *
-     * @ORM\Column(name="userID", type="integer", nullable=false)
-     */
-    private $customerId;
-
-    /**
-     * @var integer $status
-     *
-     * @ORM\Column(name="status", type="integer", nullable=false)
-     */
-    private $status;
-
-    /**
-     * @var integer $cleared
-     *
-     * @ORM\Column(name="cleared", type="integer", nullable=false)
-     */
-    private $cleared;
-
-    /**
-     * @var integer $paymentId
-     *
-     * @ORM\Column(name="paymentID", type="integer", nullable=false)
-     */
-    private $paymentId;
-
-    /**
-     * @var string $dispatchId
-     *
-     * @ORM\Column(name="dispatchID", type="integer", nullable=true)
-     */
-    private $dispatchId;
-
-    /**
-     * @var string $partnerId
-     *
-     * @ORM\Column(name="partnerID", type="string", length=255, nullable=false)
-     */
-    private $partnerId;
-
-    /**
-     * @var integer $shopId
-     *
-     * @ORM\Column(name="subshopID", type="integer", nullable=false)
-     */
-    private $shopId;
-
-    /**
-     * @var float $invoiceAmount
-     *
-     * @ORM\Column(name="invoice_amount", type="float", nullable=false)
-     */
-    private $invoiceAmount;
-
-    /**
-     * @var float $invoiceAmountNet
-     *
-     * @ORM\Column(name="invoice_amount_net", type="float", nullable=false)
-     */
-    private $invoiceAmountNet;
-
-    /**
-     * @var float $invoiceShipping
-     *
-     * @ORM\Column(name="invoice_shipping", type="float", nullable=false)
-     */
-    private $invoiceShipping;
-
-    /**
-     * @var float $invoiceShippingNet
-     *
-     * @ORM\Column(name="invoice_shipping_net", type="float", nullable=false)
-     */
-    private $invoiceShippingNet;
-
-    /**
-     * @var \DateTime $orderTime
-     *
-     * @ORM\Column(name="ordertime", type="datetime", nullable=false)
-     */
-    private $orderTime = null;
-
-    /**
-     * @var string $transactionId
-     *
-     * @ORM\Column(name="transactionID", type="string", length=255, nullable=false)
-     */
-    private $transactionId;
-
-    /**
-     * @var string $comment
-     *
-     * @ORM\Column(name="comment", type="text", nullable=false)
-     */
-    private $comment;
-
-    /**
-     * @var string $customerComment
-     *
-     * @ORM\Column(name="customercomment", type="text", nullable=false)
-     */
-    private $customerComment;
-
-    /**
-     * @var string $internalComment
-     *
-     * @ORM\Column(name="internalcomment", type="text", nullable=false)
-     */
-    private $internalComment;
-
-    /**
-     * @var integer $net
-     *
-     * @ORM\Column(name="net", type="integer", nullable=false)
-     */
-    private $net;
-
-    /**
-     * @var integer $taxFree
-     *
-     * @ORM\Column(name="taxfree", type="integer", nullable=false)
-     */
-    private $taxFree;
-
-    /**
-     * @var string $temporaryId
-     *
-     * @ORM\Column(name="temporaryID", type="string", length=255, nullable=false)
-     */
-    private $temporaryId;
-
-    /**
-     * @var string $referer
-     *
-     * @ORM\Column(name="referer", type="text", nullable=false)
-     */
-    private $referer;
-
-    /**
-     * @var \DateTime $clearedDate
-     *
-     * @ORM\Column(name="cleareddate", type="datetime", nullable=true)
-     */
-    private $clearedDate = null;
-
-    /**
-     * @var string $trackingCode
-     *
-     * @ORM\Column(name="trackingcode", type="string", length=255, nullable=false)
-     */
-    private $trackingCode;
-
-    /**
-     * @var string $languageIso
-     * @ORM\Column(name="language", type="string", length=10, nullable=false)
-     */
-    private $languageIso;
-
-    /**
-     * OWNING SIDE
-     *
-     * Used for the language subshop association
-     * @var \Shopware\Models\Shop\Shop
-     * @ORM\ManyToOne(targetEntity="Shopware\Models\Shop\Shop")
-     * @ORM\JoinColumn(name="language", referencedColumnName="id")
-     */
-    private $languageSubShop;
-
-
-    /**
-     * @var string $currency
-     *
-     * @ORM\Column(name="currency", type="string", length=5, nullable=false)
-     */
-    private $currency;
-
-    /**
-     * @var float $currencyFactor
-     *
-     * @ORM\Column(name="currencyfactor", type="float", nullable=false)
-     */
-    private $currencyFactor;
-
-    /**
-     * @var string $remoteAddress
-     *
-     * @ORM\Column(name="remote_addr", type="string", length=255, nullable=false)
-     */
-    private $remoteAddress;
-
-    /**
-     * @var string $deviceType
-     *
-     * @ORM\Column(name="deviceType", type="string", length=50, nullable=true)
-     */
-    private $deviceType = 'desktop';
+    use AttributeCleanerTrait;
 
     /**
      * @var \Shopware\Models\Customer\Customer
@@ -293,6 +84,8 @@ class Order extends ModelEntity
     protected $customer;
 
     /**
+     * @Assert\NotBlank
+     *
      * @var \Shopware\Models\Payment\Payment
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Payment\Payment")
      * @ORM\JoinColumn(name="paymentID", referencedColumnName="id")
@@ -300,6 +93,8 @@ class Order extends ModelEntity
     protected $payment;
 
     /**
+     * @Assert\NotBlank
+     *
      * @var \Shopware\Models\Dispatch\Dispatch
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Dispatch\Dispatch")
      * @ORM\JoinColumn(name="dispatchID", referencedColumnName="id")
@@ -310,6 +105,8 @@ class Order extends ModelEntity
      * The shop property is the owning side of the association between order and shop.
      * The association is joined over the order userID field and the id field of the shop.
      *
+     * @Assert\NotBlank
+     *
      * @var \Shopware\Models\Shop\Shop
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Shop\Shop")
      * @ORM\JoinColumn(name="subshopID", referencedColumnName="id")
@@ -319,34 +116,45 @@ class Order extends ModelEntity
     /**
      * @ORM\ManyToOne(targetEntity="Shopware\Models\Partner\Partner", inversedBy="orders")
      * @ORM\JoinColumn(name="partnerID", referencedColumnName="idcode")
+     *
      * @var \Shopware\Models\Partner\Partner
      */
     protected $partner;
 
     /**
      * INVERSE SIDE
+     *
      * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\Order", mappedBy="order", orphanRemoval=true, cascade={"persist"})
+     *
      * @var \Shopware\Models\Attribute\Order
      */
     protected $attribute;
 
     /**
+     * @Assert\NotBlank
+     *
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Order\Status")
      * @ORM\JoinColumn(name="cleared", referencedColumnName="id")
+     *
      * @var \Shopware\Models\Order\Status
      */
     protected $paymentStatus;
 
     /**
+     * @Assert\NotBlank
+     *
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Order\Status")
      * @ORM\JoinColumn(name="status", referencedColumnName="id")
+     *
      * @var \Shopware\Models\Order\Status
      */
     protected $orderStatus;
 
     /**
      * INVERSE SIDE
+     *
      * @ORM\OneToMany(targetEntity="Shopware\Models\Order\Detail", mappedBy="order", orphanRemoval=true, cascade={"persist"})
+     *
      * @var \Doctrine\Common\Collections\ArrayCollection
      */
     protected $details;
@@ -357,6 +165,7 @@ class Order extends ModelEntity
      * The association is joined over the billing orderID field and the id field of the order
      *
      * @ORM\OneToOne(targetEntity="Shopware\Models\Order\Billing", mappedBy="order", orphanRemoval=true, cascade={"persist"})
+     *
      * @var \Shopware\Models\Order\Billing
      */
     protected $billing;
@@ -367,13 +176,16 @@ class Order extends ModelEntity
      * The association is joined over the shipping orderID field and the id field of the order
      *
      * @ORM\OneToOne(targetEntity="Shopware\Models\Order\Shipping", mappedBy="order", orphanRemoval=true, cascade={"persist"})
+     *
      * @var \Shopware\Models\Order\Shipping
      */
     protected $shipping;
 
     /**
      * INVERSE SIDE
+     *
      * @ORM\OneToMany(targetEntity="Shopware\Models\Order\Document\Document", mappedBy="order", orphanRemoval=true, cascade={"persist"})
+     *
      * @var \Doctrine\Common\Collections\ArrayCollection
      */
     protected $documents;
@@ -381,7 +193,8 @@ class Order extends ModelEntity
     /**
      * @ORM\OneToMany(targetEntity="\Shopware\Models\Order\History", mappedBy="order", orphanRemoval=true)
      * @ORM\JoinColumn(name="id", referencedColumnName="orderID")
-     * @var \Doctrine\Common\Collections\ArrayCollection $history
+     *
+     * @var \Doctrine\Common\Collections\ArrayCollection
      */
     protected $history;
 
@@ -389,28 +202,266 @@ class Order extends ModelEntity
      * INVERSE SIDE
      *
      * @ORM\OneToOne(targetEntity="Shopware\Models\Order\Esd", mappedBy="order")
+     *
      * @var \Shopware\Models\Order\Esd
      */
     protected $esd;
 
     /**
-     * @var \Doctrine\Common\Collections\ArrayCollection $paymentInstances
+     * @var \Doctrine\Common\Collections\ArrayCollection
      *
      * @ORM\OneToMany(targetEntity="Shopware\Models\Payment\PaymentInstance", mappedBy="order")
      */
     protected $paymentInstances;
 
+    /**
+     * Unique identifier field.
+     *
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer", nullable=false)
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="IDENTITY")
+     */
+    private $id;
+
+    /**
+     * Contains the alphanumeric order number. If the
+     *
+     * @var string
+     * @ORM\Column(name="ordernumber", type="string", length=255, nullable=true)
+     */
+    private $number;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="userID", type="integer", nullable=false)
+     */
+    private $customerId;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="status", type="integer", nullable=false)
+     */
+    private $status;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="cleared", type="integer", nullable=false)
+     */
+    private $cleared;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="paymentID", type="integer", nullable=false)
+     */
+    private $paymentId;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="dispatchID", type="integer", nullable=true)
+     */
+    private $dispatchId;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="partnerID", type="string", length=255, nullable=false)
+     */
+    private $partnerId;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="subshopID", type="integer", nullable=false)
+     */
+    private $shopId;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var float
+     *
+     * @ORM\Column(name="invoice_amount", type="float", nullable=false)
+     */
+    private $invoiceAmount;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var float
+     *
+     * @ORM\Column(name="invoice_amount_net", type="float", nullable=false)
+     */
+    private $invoiceAmountNet;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var float
+     *
+     * @ORM\Column(name="invoice_shipping", type="float", nullable=false)
+     */
+    private $invoiceShipping;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var float
+     *
+     * @ORM\Column(name="invoice_shipping_net", type="float", nullable=false)
+     */
+    private $invoiceShippingNet;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="ordertime", type="datetime", nullable=false)
+     */
+    private $orderTime = null;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="transactionID", type="string", length=255, nullable=false)
+     */
+    private $transactionId;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="comment", type="text", nullable=false)
+     */
+    private $comment;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="customercomment", type="text", nullable=false)
+     */
+    private $customerComment;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="internalcomment", type="text", nullable=false)
+     */
+    private $internalComment;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var int
+     *
+     * @ORM\Column(name="net", type="integer", nullable=false)
+     */
+    private $net;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var int
+     *
+     * @ORM\Column(name="taxfree", type="integer", nullable=false)
+     */
+    private $taxFree;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="temporaryID", type="string", length=255, nullable=false)
+     */
+    private $temporaryId;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="referer", type="text", nullable=false)
+     */
+    private $referer;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="cleareddate", type="datetime", nullable=true)
+     */
+    private $clearedDate = null;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="trackingcode", type="string", length=255, nullable=false)
+     */
+    private $trackingCode;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var string
+     * @ORM\Column(name="language", type="string", length=10, nullable=false)
+     */
+    private $languageIso;
+
+    /**
+     * OWNING SIDE
+     *
+     * Used for the language subshop association
+     *
+     * @var \Shopware\Models\Shop\Shop
+     * @ORM\ManyToOne(targetEntity="Shopware\Models\Shop\Shop")
+     * @ORM\JoinColumn(name="language", referencedColumnName="id")
+     */
+    private $languageSubShop;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var string
+     *
+     * @ORM\Column(name="currency", type="string", length=5, nullable=false)
+     */
+    private $currency;
+
+    /**
+     * @Assert\NotBlank
+     *
+     * @var float
+     *
+     * @ORM\Column(name="currencyfactor", type="float", nullable=false)
+     */
+    private $currencyFactor;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="remote_addr", type="string", length=255, nullable=true)
+     */
+    private $remoteAddress;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="deviceType", type="string", length=50, nullable=true)
+     */
+    private $deviceType = 'desktop';
 
     public function __construct()
     {
         $this->details = new ArrayCollection();
+        $this->documents = new ArrayCollection();
+        $this->history = new ArrayCollection();
         $this->paymentInstances = new ArrayCollection();
     }
 
     /**
      * Get id
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -421,11 +472,13 @@ class Order extends ModelEntity
      * Set number
      *
      * @param string $number
+     *
      * @return Order
      */
     public function setNumber($number)
     {
-        $this->number = $number;
+        $this->number = $this->cleanup($number);
+
         return $this;
     }
 
@@ -443,11 +496,13 @@ class Order extends ModelEntity
      * Set invoiceAmount
      *
      * @param float $invoiceAmount
+     *
      * @return Order
      */
     public function setInvoiceAmount($invoiceAmount)
     {
         $this->invoiceAmount = $invoiceAmount;
+
         return $this;
     }
 
@@ -465,11 +520,13 @@ class Order extends ModelEntity
      * Set invoiceAmountNet
      *
      * @param float $invoiceAmountNet
+     *
      * @return Order
      */
     public function setInvoiceAmountNet($invoiceAmountNet)
     {
         $this->invoiceAmountNet = $invoiceAmountNet;
+
         return $this;
     }
 
@@ -487,11 +544,13 @@ class Order extends ModelEntity
      * Set invoiceShipping
      *
      * @param float $invoiceShipping
+     *
      * @return Order
      */
     public function setInvoiceShipping($invoiceShipping)
     {
         $this->invoiceShipping = $invoiceShipping;
+
         return $this;
     }
 
@@ -509,11 +568,13 @@ class Order extends ModelEntity
      * Set invoiceShippingNet
      *
      * @param float $invoiceShippingNet
+     *
      * @return Order
      */
     public function setInvoiceShippingNet($invoiceShippingNet)
     {
         $this->invoiceShippingNet = $invoiceShippingNet;
+
         return $this;
     }
 
@@ -531,6 +592,7 @@ class Order extends ModelEntity
      * Set orderTime
      *
      * @param \DateTime|string $orderTime
+     *
      * @return Order
      */
     public function setOrderTime($orderTime)
@@ -539,6 +601,7 @@ class Order extends ModelEntity
             $orderTime = new \DateTime($orderTime);
         }
         $this->orderTime = $orderTime;
+
         return $this;
     }
 
@@ -556,11 +619,13 @@ class Order extends ModelEntity
      * Set transactionId
      *
      * @param string $transactionId
+     *
      * @return Order
      */
     public function setTransactionId($transactionId)
     {
-        $this->transactionId = $transactionId;
+        $this->transactionId = $this->cleanup($transactionId);
+
         return $this;
     }
 
@@ -578,11 +643,13 @@ class Order extends ModelEntity
      * Set comment
      *
      * @param string $comment
+     *
      * @return Order
      */
     public function setComment($comment)
     {
-        $this->comment = $comment;
+        $this->comment = $this->cleanup($comment);
+
         return $this;
     }
 
@@ -600,11 +667,13 @@ class Order extends ModelEntity
      * Set customerComment
      *
      * @param string $customerComment
+     *
      * @return Order
      */
     public function setCustomerComment($customerComment)
     {
-        $this->customerComment = $customerComment;
+        $this->customerComment = $this->cleanup($customerComment);
+
         return $this;
     }
 
@@ -622,11 +691,13 @@ class Order extends ModelEntity
      * Set internalComment
      *
      * @param string $internalComment
+     *
      * @return Order
      */
     public function setInternalComment($internalComment)
     {
-        $this->internalComment = $internalComment;
+        $this->internalComment = $this->cleanup($internalComment);
+
         return $this;
     }
 
@@ -643,19 +714,21 @@ class Order extends ModelEntity
     /**
      * Set net
      *
-     * @param integer $net
+     * @param int $net
+     *
      * @return Order
      */
     public function setNet($net)
     {
         $this->net = $net;
+
         return $this;
     }
 
     /**
      * Get net
      *
-     * @return integer
+     * @return int
      */
     public function getNet()
     {
@@ -665,19 +738,21 @@ class Order extends ModelEntity
     /**
      * Set taxFree
      *
-     * @param integer $taxFree
+     * @param int $taxFree
+     *
      * @return Order
      */
     public function setTaxFree($taxFree)
     {
         $this->taxFree = $taxFree;
+
         return $this;
     }
 
     /**
      * Get taxFree
      *
-     * @return integer
+     * @return int
      */
     public function getTaxFree()
     {
@@ -688,11 +763,13 @@ class Order extends ModelEntity
      * Set temporaryId
      *
      * @param string $temporaryId
+     *
      * @return Order
      */
     public function setTemporaryId($temporaryId)
     {
-        $this->temporaryId = $temporaryId;
+        $this->temporaryId = $this->cleanup($temporaryId);
+
         return $this;
     }
 
@@ -710,11 +787,13 @@ class Order extends ModelEntity
      * Set referer
      *
      * @param string $referer
+     *
      * @return Order
      */
     public function setReferer($referer)
     {
         $this->referer = $referer;
+
         return $this;
     }
 
@@ -732,6 +811,7 @@ class Order extends ModelEntity
      * Set clearedDate
      *
      * @param \DateTime|string $clearedDate
+     *
      * @return Order
      */
     public function setClearedDate($clearedDate)
@@ -740,6 +820,7 @@ class Order extends ModelEntity
             $clearedDate = new \DateTime($clearedDate);
         }
         $this->clearedDate = $clearedDate;
+
         return $this;
     }
 
@@ -757,11 +838,13 @@ class Order extends ModelEntity
      * Set trackingCode
      *
      * @param string $trackingCode
+     *
      * @return Order
      */
     public function setTrackingCode($trackingCode)
     {
         $this->trackingCode = $trackingCode;
+
         return $this;
     }
 
@@ -779,11 +862,13 @@ class Order extends ModelEntity
      * Set languageIso
      *
      * @param string $languageIso
+     *
      * @return Order
      */
     public function setLanguageIso($languageIso)
     {
-        $this->languageIso = $languageIso;
+        $this->languageIso = $this->cleanup($languageIso);
+
         return $this;
     }
 
@@ -801,11 +886,13 @@ class Order extends ModelEntity
      * Set currency
      *
      * @param string $currency
+     *
      * @return Order
      */
     public function setCurrency($currency)
     {
-        $this->currency = $currency;
+        $this->currency = $this->cleanup($currency);
+
         return $this;
     }
 
@@ -823,11 +910,13 @@ class Order extends ModelEntity
      * Set currencyFactor
      *
      * @param float $currencyFactor
+     *
      * @return Order
      */
     public function setCurrencyFactor($currencyFactor)
     {
         $this->currencyFactor = $currencyFactor;
+
         return $this;
     }
 
@@ -845,11 +934,13 @@ class Order extends ModelEntity
      * Set remoteAddress
      *
      * @param string $remoteAddress
+     *
      * @return Order
      */
     public function setRemoteAddress($remoteAddress)
     {
-        $this->remoteAddress = $remoteAddress;
+        $this->remoteAddress = $this->cleanup($remoteAddress);
+
         return $this;
     }
 
@@ -937,7 +1028,6 @@ class Order extends ModelEntity
 
     /**
      * @param $orderStatus
-     * @return void
      */
     public function setOrderStatus($orderStatus)
     {
@@ -970,6 +1060,7 @@ class Order extends ModelEntity
 
     /**
      * @param \Shopware\Models\Order\Shipping|array|null $shipping
+     *
      * @return \Shopware\Models\Order\Shipping
      */
     public function setShipping($shipping)
@@ -987,6 +1078,7 @@ class Order extends ModelEntity
 
     /**
      * @param \Shopware\Models\Order\Billing|array|null $billing
+     *
      * @return \Shopware\Models\Order\Billing
      */
     public function setBilling($billing)
@@ -1004,6 +1096,7 @@ class Order extends ModelEntity
 
     /**
      * @param \Doctrine\Common\Collections\ArrayCollection|array|null $details
+     *
      * @return \Doctrine\Common\Collections\ArrayCollection
      */
     public function setDetails($details)
@@ -1037,9 +1130,11 @@ class Order extends ModelEntity
         $invoiceAmountNet = 0;
 
         //iterate order details to recalculate the amount.
-        /**@var $detail Detail*/
+        /** @var $detail Detail */
         foreach ($this->getDetails() as $detail) {
-            $invoiceAmount += $detail->getPrice() * $detail->getQuantity();
+            $price = round($detail->getPrice(), 2);
+
+            $invoiceAmount += $price * $detail->getQuantity();
 
             $tax = $detail->getTax();
 
@@ -1051,9 +1146,9 @@ class Order extends ModelEntity
             }
 
             if ($this->net) {
-                $invoiceAmountNet += round(($detail->getPrice() * $detail->getQuantity()) / 100 * (100 + $taxValue), 2);
+                $invoiceAmountNet += round(($price * $detail->getQuantity()) / 100 * (100 + $taxValue), 2);
             } else {
-                $invoiceAmountNet += ($detail->getPrice() * $detail->getQuantity()) / (100 + $taxValue) * 100;
+                $invoiceAmountNet += round(($price * $detail->getQuantity()) / (100 + $taxValue) * 100, 2);
             }
         }
 
@@ -1079,6 +1174,7 @@ class Order extends ModelEntity
 
     /**
      * @param \Shopware\Models\Attribute\Order|array|null $attribute
+     *
      * @return \Shopware\Models\Order\Order
      */
     public function setAttribute($attribute)
@@ -1103,7 +1199,7 @@ class Order extends ModelEntity
      */
     public function setPartner($partner)
     {
-        $this->partner = $partner;
+        $this->partner = $this->cleanup($partner);
     }
 
     /**
@@ -1116,6 +1212,7 @@ class Order extends ModelEntity
 
     /**
      * @param \Doctrine\Common\Collections\ArrayCollection|array|null $documents
+     *
      * @return \Doctrine\Common\Collections\ArrayCollection
      */
     public function setDocuments($documents)
@@ -1138,7 +1235,6 @@ class Order extends ModelEntity
     {
         return $this->esd;
     }
-
 
     /**
      * @param \Shopware\Models\Shop\Shop $languageSubShop
@@ -1177,7 +1273,7 @@ class Order extends ModelEntity
      */
     public function setDeviceType($deviceType)
     {
-        $this->deviceType = $deviceType;
+        $this->deviceType = $this->cleanup($deviceType);
     }
 
     /**

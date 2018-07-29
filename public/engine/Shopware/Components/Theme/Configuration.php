@@ -26,7 +26,7 @@ namespace Shopware\Components\Theme;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\Theme
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Configuration implements \JsonSerializable
@@ -34,17 +34,17 @@ class Configuration implements \JsonSerializable
     /**
      * @var string[]
      */
-    private $less = [];
+    private $less;
 
     /**
      * @var string[]
      */
-    private $js = [];
+    private $js;
 
     /**
      * @var array
      */
-    private $config = [];
+    private $config;
 
     /**
      * @var string
@@ -57,19 +57,26 @@ class Configuration implements \JsonSerializable
     private $jsTarget;
 
     /**
+     * @var string[]
+     */
+    private $inheritancePath;
+
+    /**
      * @param string[] $less
      * @param string[] $js
-     * @param array $config
-     * @param string $lessTarget
-     * @param string $jsTarget
+     * @param array    $config
+     * @param string   $lessTarget
+     * @param string   $jsTarget
+     * @param string[] $inheritancePath
      */
-    public function __construct($less, $js, $config, $lessTarget, $jsTarget)
+    public function __construct($less, $js, $config, $lessTarget, $jsTarget, $inheritancePath = [])
     {
         $this->less = $less;
         $this->js = $js;
         $this->config = $config;
         $this->lessTarget = $lessTarget;
         $this->jsTarget = $jsTarget;
+        $this->inheritancePath = $inheritancePath;
     }
 
     /**
@@ -113,7 +120,15 @@ class Configuration implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * @return string[]
+     */
+    public function getInheritancePath()
+    {
+        return $this->inheritancePath;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {

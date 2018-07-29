@@ -21,20 +21,24 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 namespace Shopware\Bundle\ESIndexingBundle\Product;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Bundle\ESIndexingBundle\IdentifierSelector;
 use Shopware\Bundle\ESIndexingBundle\Struct\Product;
+use Shopware\Bundle\SearchBundleDBAL\VariantHelper;
 use Shopware\Bundle\StoreFrontBundle\Gateway\DBAL\FieldHelper;
 use Shopware\Bundle\StoreFrontBundle\Gateway\DBAL\Hydrator\PropertyHydrator;
 use Shopware\Bundle\StoreFrontBundle\Gateway\ListProductGatewayInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\CheapestPriceServiceInterface;
+use Shopware\Bundle\StoreFrontBundle\Service\ConfiguratorServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\ContextServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\ContextService;
 use Shopware\Bundle\StoreFrontBundle\Service\PriceCalculationServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\VoteServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\BaseProduct;
+use Shopware\Bundle\StoreFrontBundle\Struct\Configurator\Group;
 use Shopware\Bundle\StoreFrontBundle\Struct\ListProduct;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product\PriceRule;
 use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
@@ -89,16 +93,25 @@ class ProductProvider implements ProductProviderInterface
     private $propertyHydrator;
 
     /**
-     * @param ListProductGatewayInterface $productGateway
-     * @param CheapestPriceServiceInterface $cheapestPriceService
-     * @param VoteServiceInterface $voteService
-     * @param ContextServiceInterface $contextService
-     * @param Connection $connection
-     * @param IdentifierSelector $identifierSelector
-     * @param PriceCalculationServiceInterface $priceCalculationService
-     * @param FieldHelper $fieldHelper
-     * @param PropertyHydrator $propertyHydrator
+     * @var ConfiguratorServiceInterface
      */
+    private $configuratorService;
+
+    /**
+     * @var VariantHelper
+     */
+    private $variantHelper;
+
+    /**
+     * @var ProductListingVariationLoader
+     */
+    private $listingVariationLoader;
+
+    /**
+     * @var ProductConfigurationLoader
+     */
+    private $configurationLoader;
+
     public function __construct(
         ListProductGatewayInterface $productGateway,
         CheapestPriceServiceInterface $cheapestPriceService,
@@ -108,7 +121,11 @@ class ProductProvider implements ProductProviderInterface
         IdentifierSelector $identifierSelector,
         PriceCalculationServiceInterface $priceCalculationService,
         FieldHelper $fieldHelper,
-        PropertyHydrator $propertyHydrator
+        PropertyHydrator $propertyHydrator,
+        ConfiguratorServiceInterface $configuratorService,
+        VariantHelper $variantHelper,
+        ProductConfigurationLoader $configurationLoader,
+        ProductListingVariationLoader $visibilityLoader
     ) {
         $this->productGateway = $productGateway;
         $this->cheapestPriceService = $cheapestPriceService;
@@ -119,6 +136,10 @@ class ProductProvider implements ProductProviderInterface
         $this->priceCalculationService = $priceCalculationService;
         $this->fieldHelper = $fieldHelper;
         $this->propertyHydrator = $propertyHydrator;
+        $this->configuratorService = $configuratorService;
+        $this->variantHelper = $variantHelper;
+        $this->configurationLoader = $configurationLoader;
+        $this->listingVariationLoader = $visibilityLoader;
     }
 
     /**
@@ -132,21 +153,76 @@ class ProductProvider implements ProductProviderInterface
             ContextService::FALLBACK_CUSTOMER_GROUP
         );
 
-        $products     = $this->productGateway->getList($numbers, $context);
-        $average      = $this->voteService->getAverages($products, $context);
-        $cheapest     = $this->getCheapestPrices($products, $shop->getId());
-        $calculated   = $this->getCalculatedPrices($shop, $products, $cheapest);
-        $categories   = $this->getCategories($products);
-        $properties   = $this->getProperties($products, $context);
+        $products = $this->productGateway->getList($numbers, $context);
+        $average = $this->voteService->getAverages($products, $context);
+        $cheapest = $this->getCheapestPrices($products, $shop->getId());
+        $calculated = $this->getCalculatedPrices($shop, $products, $cheapest);
+        $categories = $this->getCategories($products);
+        $properties = $this->getProperties($products, $context);
+
+        $variantFacet = $this->variantHelper->getVariantFacet();
+
+        if ($variantFacet) {
+            $variantConfiguration = $this->configuratorService->getProductsConfigurations($products, $context);
+
+            $articleIds = array_map(
+                function (ListProduct $product) {
+                    return $product->getId();
+                }, $products);
+
+            $configurations = $this->configurationLoader->getConfigurations($articleIds, $context);
+
+            $combinations = $this->configurationLoader->getCombinations($articleIds);
+
+            $listingPrices = $this->listingVariationLoader->getListingPrices($shop, $products, $variantConfiguration, $variantFacet);
+
+            $availability = $this->listingVariationLoader->getAvailability($products, $variantConfiguration, $variantFacet);
+        }
 
         $result = [];
         foreach ($products as $listProduct) {
             $product = Product::createFromListProduct($listProduct);
-            $number  = $product->getNumber();
-            $id      = $product->getId();
+            $number = $product->getNumber();
+            $id = $product->getId();
 
-            if (!$product->isMainVariant()) {
-                continue;
+            if ($variantFacet) {
+                if (array_key_exists($number, $variantConfiguration)) {
+                    $product->setConfiguration($variantConfiguration[$number]);
+                }
+                if (array_key_exists($id, $configurations)) {
+                    $product->setFullConfiguration($configurations[$id]);
+                }
+                if (array_key_exists($id, $combinations)) {
+                    $product->setAvailableCombinations($combinations[$id]);
+                }
+
+                if ($product->getConfiguration()) {
+                    $product->setVisibility(
+                        $this->listingVariationLoader->getVisibility($product, $variantFacet)
+                    );
+
+                    $product->setFilterConfiguration(
+                        $this->buildFilterConfiguration(
+                            $variantFacet->getExpandGroupIds(),
+                            $product->getConfiguration(),
+                            $product->getFullConfiguration()
+                        )
+                    );
+
+                    if (array_key_exists($product->getNumber(), $listingPrices)) {
+                        $product->setListingVariationPrices(
+                            $listingPrices[$product->getNumber()]
+                        );
+                    }
+
+                    if (array_key_exists($number, $availability)) {
+                        $product->setAvailability($availability[$number]);
+                    }
+                }
+            } else {
+                if (!$product->isMainVariant()) {
+                    continue;
+                }
             }
 
             if (isset($average[$number])) {
@@ -189,6 +265,7 @@ class ProductProvider implements ProductProviderInterface
 
     /**
      * @param \DateTime|null $date
+     *
      * @return null|string
      */
     private function formatDate(\DateTime $date = null)
@@ -198,6 +275,7 @@ class ProductProvider implements ProductProviderInterface
 
     /**
      * @param ListProduct[] $products
+     *
      * @return array[]
      */
     private function getCategories($products)
@@ -211,18 +289,16 @@ class ProductProvider implements ProductProviderInterface
             ->from('s_articles_categories', 'mapping')
             ->innerJoin('mapping', 's_categories', 'categories', 'categories.id = mapping.categoryID')
             ->where('mapping.articleID IN (:ids)')
-            ->setParameter(':ids', $ids, Connection::PARAM_INT_ARRAY)
-        ;
+            ->setParameter(':ids', $ids, Connection::PARAM_INT_ARRAY);
 
         $data = $query->execute()->fetchAll(\PDO::FETCH_ASSOC);
 
         $result = [];
         foreach ($data as $row) {
             $articleId = (int) $row['articleID'];
+            $categories = [];
             if (isset($result[$articleId])) {
                 $categories = $result[$articleId];
-            } else {
-                $categories = [];
             }
             $temp = explode('|', $row['path']);
             $temp[] = $row['id'];
@@ -236,8 +312,9 @@ class ProductProvider implements ProductProviderInterface
     }
 
     /**
-     * @param ListProduct[] $products
+     * @param ListProduct[]        $products
      * @param ShopContextInterface $context
+     *
      * @return \array[]
      */
     private function getProperties($products, ShopContextInterface $context)
@@ -262,13 +339,12 @@ class ProductProvider implements ProductProviderInterface
             ->addOrderBy('filterArticles.articleID')
             ->addOrderBy('propertyOption.value')
             ->addOrderBy('propertyOption.id')
-            ->setParameter(':ids', $ids, Connection::PARAM_INT_ARRAY)
-        ;
+            ->setParameter(':ids', $ids, Connection::PARAM_INT_ARRAY);
 
         $this->fieldHelper->addPropertyOptionTranslation($query, $context);
         $this->fieldHelper->addMediaTranslation($query, $context);
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $data = $statement->fetchAll(\PDO::FETCH_GROUP);
@@ -287,7 +363,8 @@ class ProductProvider implements ProductProviderInterface
 
     /**
      * @param ListProduct[] $products
-     * @param int $shopId
+     * @param int           $shopId
+     *
      * @return array[]
      */
     private function getCheapestPrices($products, $shopId)
@@ -295,30 +372,26 @@ class ProductProvider implements ProductProviderInterface
         $keys = $this->identifierSelector->getCustomerGroupKeys();
         $prices = [];
         foreach ($keys as $key) {
-            $context        = $this->contextService->createShopContext($shopId, null, $key);
+            $context = $this->contextService->createShopContext($shopId, null, $key);
             $customerPrices = $this->cheapestPriceService->getList($products, $context);
             foreach ($customerPrices as $number => $price) {
                 $prices[$number][$key] = $price;
             }
         }
+
         return $prices;
     }
 
     /**
-     * @param Shop $shop
+     * @param Shop          $shop
      * @param ListProduct[] $products
      * @param $priceRules
+     *
      * @return array
      */
     private function getCalculatedPrices($shop, $products, $priceRules)
     {
-        $currencies  = $this->identifierSelector->getShopCurrencyIds($shop->getId());
-        if (!$shop->isMain()) {
-            $currencies = $this->identifierSelector->getShopCurrencyIds($shop->getParentId());
-        }
-
-        $customerGroups = $this->identifierSelector->getCustomerGroupKeys();
-        $contexts       = $this->getContexts($shop->getId(), $customerGroups, $currencies);
+        $contexts = $this->getPriceContexts($shop);
 
         $prices = [];
         foreach ($products as $product) {
@@ -328,7 +401,7 @@ class ProductProvider implements ProductProviderInterface
             }
             $rules = $priceRules[$number];
 
-            /**@var $context ProductContextInterface*/
+            /** @var $context ProductContextInterface */
             foreach ($contexts as $context) {
                 $customerGroup = $context->getCurrentCustomerGroup()->getKey();
                 $key = $customerGroup . '_' . $context->getCurrency()->getId();
@@ -338,7 +411,7 @@ class ProductProvider implements ProductProviderInterface
                     $rule = $rules[$customerGroup];
                 }
 
-                /** @var PriceRule $rule */
+                /* @var PriceRule $rule */
                 $product->setCheapestPriceRule($rule);
                 $this->priceCalculationService->calculateProduct($product, $context);
 
@@ -352,9 +425,10 @@ class ProductProvider implements ProductProviderInterface
     }
 
     /**
-     * @param int $shopId
+     * @param int      $shopId
      * @param string[] $customerGroups
-     * @param int[] $currencies
+     * @param int[]    $currencies
+     *
      * @return array
      */
     private function getContexts($shopId, $customerGroups, $currencies)
@@ -365,12 +439,14 @@ class ProductProvider implements ProductProviderInterface
                 $contexts[] = $this->contextService->createShopContext($shopId, $currency, $customerGroup);
             }
         }
+
         return $contexts;
     }
 
     /**
-     * @param Shop $shop
+     * @param Shop    $shop
      * @param Product $product
+     *
      * @return bool
      */
     private function isValid(Shop $shop, $product)
@@ -381,5 +457,60 @@ class ProductProvider implements ProductProviderInterface
         }
 
         return true;
+    }
+
+    /**
+     * @param Shop $shop
+     *
+     * @return array
+     */
+    private function getPriceContexts(Shop $shop)
+    {
+        $currencies = $this->identifierSelector->getShopCurrencyIds($shop->getId());
+        if (!$shop->isMain()) {
+            $currencies = $this->identifierSelector->getShopCurrencyIds($shop->getParentId());
+        }
+
+        $customerGroups = $this->identifierSelector->getCustomerGroupKeys();
+
+        return $this->getContexts($shop->getId(), $customerGroups, $currencies);
+    }
+
+    /**
+     * @param int[]   $expandGroupIds
+     * @param Group[] $configurations
+     * @param Group[] $fullConfiguration
+     *
+     * @return array
+     */
+    private function buildFilterConfiguration(array $expandGroupIds, array $configurations, array $fullConfiguration)
+    {
+        $merged = [];
+        foreach ($configurations as $config) {
+            if (in_array($config->getId(), $expandGroupIds, true)) {
+                $merged[] = $config;
+                continue;
+            }
+            $merged[] = $this->getFullConfigurationGroup($config->getId(), $fullConfiguration);
+        }
+
+        return $merged;
+    }
+
+    /**
+     * @param int     $id
+     * @param Group[] $groups
+     *
+     * @return null|Group
+     */
+    private function getFullConfigurationGroup($id, $groups)
+    {
+        foreach ($groups as $group) {
+            if ($group->getId() === $id) {
+                return $group;
+            }
+        }
+
+        return null;
     }
 }

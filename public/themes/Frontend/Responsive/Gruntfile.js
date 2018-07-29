@@ -49,7 +49,7 @@ module.exports = function (grunt) {
                         nodeDir + '/jquery/dist/jquery.min.js',
                         nodeDir + '/jquery/dist/jquery.min.map',
                         nodeDir + '/jquery/README.md',
-                        nodeDir + '/jquery/MIT-LICENSE.txt'
+                        nodeDir + '/jquery/LICENSE.txt'
                     ],
                     dest: vendorDir + '/js/jquery',
                     flatten: true
@@ -91,12 +91,25 @@ module.exports = function (grunt) {
                     flatten: true
                 }]
             },
+            'flatpickr': {
+                files: [{
+                    expand: true,
+                    src: [
+                        nodeDir + '/flatpickr/dist/flatpickr.min.js',
+                        nodeDir + '/flatpickr/LICENSE.md',
+                        nodeDir + '/flatpickr/README.md'
+                    ],
+                    dest: vendorDir + '/js/flatpickr',
+                    flatten: true
+                }]
+            },
             'open-sans-fontface': {
                 files: [{
                     expand: true,
                     cwd: nodeDir + '/open-sans-fontface/fonts',
                     src: [
                         '*/**.ttf',
+                        '*/**.woff2',
                         '*/**.woff'
                     ],
                     dest: vendorDir + '/fonts/open-sans-fontface'
@@ -131,7 +144,7 @@ module.exports = function (grunt) {
         if (!grunt.file.isFile(htaccessFile)) {
 
             grunt.file.write(htaccessFile,
-                '<FilesMatch "\\.(ttf|eot|svg|woff)$">' + "\n    " +
+                '<FilesMatch "\\.(ttf|eot|svg|woff|woff2)$">' + "\n    " +
                     '<IfModule mod_expires.c>' + "\n        " +
                         'ExpiresActive on' + "\n        " +
                         'ExpiresDefault "access plus 1 year"' + "\n    " +

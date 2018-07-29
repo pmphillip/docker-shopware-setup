@@ -54,10 +54,10 @@ class ShopHydrator extends Hydrator
     private $customerGroupHydrator;
 
     /**
-     * @param TemplateHydrator $templateHydrator
-     * @param CategoryHydrator $categoryHydrator
-     * @param LocaleHydrator $localeHydrator
-     * @param CurrencyHydrator $currencyHydrator
+     * @param TemplateHydrator      $templateHydrator
+     * @param CategoryHydrator      $categoryHydrator
+     * @param LocaleHydrator        $localeHydrator
+     * @param CurrencyHydrator      $currencyHydrator
      * @param CustomerGroupHydrator $customerGroupHydrator
      */
     public function __construct(
@@ -76,6 +76,7 @@ class ShopHydrator extends Hydrator
 
     /**
      * @param array $data
+     *
      * @return Shop
      */
     public function hydrate($data)
@@ -100,11 +101,9 @@ class ShopHydrator extends Hydrator
         $shop->setParentId((int) $parent['__shop_id']);
         $shop->setHost($parent['__shop_host']);
         $shop->setPath($parent['__shop_base_path']);
-        $shop->setCustomerScope((bool) $data['__shop_customer_scope']);
+        $shop->setCustomerScope((bool) $parent['__shop_customer_scope']);
         $shop->setUrl($data['__shop_base_url'] ?: $parent['__shop_base_url']);
         $shop->setSecure((bool) $parent['__shop_secure']);
-        $shop->setSecureHost($parent['__shop_secure_host']);
-        $shop->setSecurePath($parent['__shop_secure_base_path']);
 
         $hosts = [];
         if ($parent['__shop_hosts']) {

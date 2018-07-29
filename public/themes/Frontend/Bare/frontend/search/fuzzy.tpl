@@ -1,12 +1,13 @@
 {extends file='frontend/index/index.tpl'}
 
 {* Breadcrumb *}
-{block name='frontend_index_start' prepend}
+{block name='frontend_index_start'}
     {if $sRequests.sSearchOrginal}
         {$sBreadcrumb = [['name' => "{s name="SearchResultsFor"}{/s}"]]}
     {else}
         {$sBreadcrumb = [['name' => "{s name="SearchResultsEmpty"}{/s}"]]}
     {/if}
+    {$smarty.block.parent}
 {/block}
 
 {* Main content *}
@@ -50,13 +51,9 @@
                 </h1>
             {/block}
 
-            {block name='frontend_search_category_filter'}
-                {foreach $facets as $facet}
-                    {if $facet|is_a: 'Shopware\Bundle\SearchBundle\FacetResult\TreeFacetResult' && $facet->getFacetName() === 'category'}
-                        {include file="frontend/search/category-filter.tpl" facet=$facet}
-                    {/if}
-                {/foreach}
-            {/block}
+			{block name="frontend_search_sidebar"}
+                {include file='frontend/listing/sidebar.tpl'}
+			{/block}
 
             {block name="frontend_search_results"}
                 <div class="search--results">

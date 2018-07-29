@@ -27,10 +27,15 @@
  */
 class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend_Forms
 {
+    public function __construct(Enlight_Controller_Request_Request $request, Enlight_Controller_Response_Response $response)
+    {
+        trigger_error(sprintf('%s is deprecated and will be removed in 5.5.', __CLASS__), E_USER_DEPRECATED);
+
+        parent::__construct($request, $response);
+    }
+
     /**
      * Check licence first
-     *
-     * @return void
      */
     public function preDispatch()
     {
@@ -39,8 +44,8 @@ class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend
 
     /**
      * Show Ticket formular
-     * @deprecated
-     * @return void
+     *
+     * @deprecated Will be removed in 5.5.
      */
     public function indexAction()
     {
@@ -48,8 +53,8 @@ class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend
 
     /**
      * Show ticket history
-     * @deprecated
-     * @return void
+     *
+     * @deprecated Will be removed in 5.5.
      */
     public function listingAction()
     {
@@ -57,8 +62,8 @@ class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend
 
     /**
      * Open new ticket mask
-     * @deprecated
-     * @return void
+     *
+     * @deprecated Will be removed in 5.5.
      */
     public function requestAction()
     {
@@ -66,8 +71,8 @@ class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend
 
     /**
      * Show ticket details
-     * @deprecated
-     * @return void
+     *
+     * @deprecated Will be removed in 5.5.
      */
     public function detailAction()
     {
@@ -75,8 +80,8 @@ class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend
 
     /**
      * Show ticket direct link
-     * @deprecated
-     * @return void
+     *
+     * @deprecated Will be removed in 5.5.
      */
     public function directAction()
     {
@@ -84,8 +89,8 @@ class Shopware_Controllers_Frontend_Ticket extends Shopware_Controllers_Frontend
 
     /**
      * Save new ticket into database
-     * @deprecated
-     * @return void
+     *
+     * @deprecated Will be removed in 5.5.
      */
     public function commitForm()
     {

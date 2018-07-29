@@ -25,15 +25,16 @@
 namespace Shopware\Bundle\SearchBundle;
 
 use Shopware\Bundle\StoreFrontBundle\Struct\ListProduct;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * Defines the search result of the search gateway.
  *
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ProductSearchResult extends ProductNumberSearchResult implements \JsonSerializable
+class ProductSearchResult extends ProductNumberSearchResult
 {
     /**
      * @var ListProduct[] Indexed by the product order number
@@ -41,15 +42,29 @@ class ProductSearchResult extends ProductNumberSearchResult implements \JsonSeri
     protected $products;
 
     /**
-     * @param ListProduct[] $products Indexed by the product order number
-     * @param int $totalCount
-     * @param FacetResultInterface[] $facets
+     * @var Criteria
      */
-    public function __construct($products, $totalCount, $facets)
+    protected $criteria;
+
+    /**
+     * @var ShopContextInterface
+     */
+    protected $context;
+
+    /**
+     * @param ListProduct[]          $products   Indexed by the product order number
+     * @param int                    $totalCount
+     * @param FacetResultInterface[] $facets
+     * @param Criteria               $criteria
+     * @param ShopContextInterface   $context
+     */
+    public function __construct($products, $totalCount, $facets, Criteria $criteria, ShopContextInterface $context)
     {
         $this->products = $products;
         $this->totalCount = $totalCount;
         $this->facets = $facets;
+        $this->criteria = $criteria;
+        $this->context = $context;
     }
 
     /**
@@ -61,10 +76,20 @@ class ProductSearchResult extends ProductNumberSearchResult implements \JsonSeri
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {
         return get_object_vars($this);
+    }
+
+    public function getContext()
+    {
+        return $this->context;
+    }
+
+    public function getCriteria()
+    {
+        return $this->criteria;
     }
 }

@@ -20,14 +20,23 @@
             <div class="blog--comments-form-errors">
             {if $sAction == "rating"}
                 {if isset($sErrorFlag)}
-                    {include file="frontend/_includes/messages.tpl" type="error" content="{s name="BlogInfoFailureFields"}{/s}"}
-                {else}
-                    {if {config name=OptInVote} && !{$smarty.get.sConfirmation} && !{$userLoggedIn}}
-                        {include file="frontend/_includes/messages.tpl" type="success" content="{s name="BlogInfoSuccessOptin"}{/s}"}
+                    {$type = "error"}
+                    {if $sErrorFlag['sCaptcha']}
+                        {$snippet = "{s name="BlogInfoFailureCaptcha"}{/s}"}
+                    {elseif $sErrorFlag['invalidHash']}
+                        {$snippet = "{s name="BlogInfoFailureDoubleOptIn"}{/s}"}
                     {else}
-                        {include file="frontend/_includes/messages.tpl" type="success" content="{s name="BlogInfoSuccess"}{/s}"}
+                        {$snippet = "{s name="BlogInfoFailureFields"}{/s}"}
+                    {/if}
+                {else}
+                    {$type = "success"}
+                    {if {config name=OptInVote} && !{$smarty.get.sConfirmation} && !{$userLoggedIn}}
+                        {$snippet = "{s name="BlogInfoSuccessOptin"}{/s}"}
+                    {else}
+                        {$snippet = "{s name="BlogInfoSuccess"}{/s}"}
                     {/if}
                 {/if}
+                {include file="frontend/_includes/messages.tpl" type=$type content=$snippet}
             {/if}
             </div>
         {/block}
@@ -73,7 +82,7 @@
 
                 {* Voting *}
                 {block name='frontend_blog_comments_input_voting'}
-                    <div class="blog--comments-voting">
+                    <div class="blog--comments-voting select-field">
                         <select required="required" aria-required="true" name="points" class="text{if $sErrorFlag.points} has--error{/if}">
                             <option value="">{s name="BlogLabelRating"}{/s}{s name="RequiredField" namespace="frontend/register/index"}{/s}</option>
                             <option value="10"{if $sFormData.points == 10} selected="selected"{/if}>{s name="rate10"}{/s}</option>
@@ -101,26 +110,37 @@
 
                 {* Captcha *}
                 {block name='frontend_blog_comments_input_captcha'}
-                    <div class="blog--comments-captcha">
+                    {if {config name=captchaMethod} === 'legacy'}
+                        <div class="blog--comments-captcha">
 
-                        {block name='frontend_blog_comments_input_captcha_placeholder'}
-                            <div class="captcha--placeholder" data-src="{url module=widgets controller=Captcha action=refreshCaptcha}"></div>
-                        {/block}
+                            {block name='frontend_blog_comments_input_captcha_placeholder'}
+                                <div class="captcha--placeholder" data-autoLoad="true"{if $sErrorFlag.sCaptcha} data-hasError="true"{/if} data-src="{url module=widgets controller=Captcha action=refreshCaptcha}"></div>
+                            {/block}
 
-                        {block name='frontend_blog_comments_input_captcha_placeholder'}
-                            <strong class="captcha--notice">{s name="BlogLabelCaptcha"}{/s}</strong>
-                        {/block}
+                            {block name='frontend_blog_comments_input_captcha_placeholder'}
+                                <strong class="captcha--notice">{s name="BlogLabelCaptcha"}{/s}</strong>
+                            {/block}
 
-                        {block name='frontend_blog_comments_input'}
-                            <div class="captcha--code">
-                                <input type="text" name="sCaptcha" class="input--field{if $sErrorFlag.sCaptcha} has--error{/if}" required="required" aria-required="true" />
-                            </div>
-                        {/block}
-                    </div>
+                            {block name='frontend_blog_comments_input'}
+                                <div class="captcha--code">
+                                    <input type="text" name="sCaptcha" class="input--field{if $sErrorFlag.sCaptcha} has--error{/if}" required="required" aria-required="true" />
+                                </div>
+                            {/block}
+                        </div>
+                    {else}
+                        <div class="captcha--placeholder" data-src="{url module=widgets controller=Captcha action=index}"{if isset($sErrorFlag) && count($sErrorFlag) > 0} data-hasError="true"{/if}></div>
+                    {/if}
                 {/block}
 
                 {block name='frontend_blog_comments_input_notice'}
                     <p class="required--notice">{s name="BlogInfoFields"}{/s}</p>
+                {/block}
+
+                {* Data protection information *}
+                {block name='frontend_blog_comments_input_privacy'}
+                    {if {config name=ACTDPRTEXT} || {config name=ACTDPRCHECK}}
+                        {include file="frontend/_includes/privacy.tpl"}
+                    {/if}
                 {/block}
 
                 {* Submit button *}

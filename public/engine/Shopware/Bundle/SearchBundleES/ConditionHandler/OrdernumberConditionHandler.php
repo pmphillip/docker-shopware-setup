@@ -29,40 +29,51 @@ use ONGR\ElasticsearchDSL\Search;
 use Shopware\Bundle\SearchBundle\Condition\OrdernumberCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleES\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
-class OrdernumberConditionHandler implements HandlerInterface
+class OrdernumberConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * {@inheritdoc}
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof OrdernumberCondition);
+        return $criteriaPart instanceof OrdernumberCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
         ShopContextInterface $context
     ) {
-        /** @var OrdernumberCondition $criteriaPart */
-        $filter = new TermsQuery('number', $criteriaPart->getOrdernumbers());
+        /* @var OrdernumberCondition $criteriaPart */
+        $search->addFilter(
+            new TermsQuery('number', $criteriaPart->getOrdernumbers())
+        );
+    }
 
-        if ($criteria->hasBaseCondition($criteriaPart->getName())) {
-            $search->addFilter($filter);
-        } else {
-            $search->addPostFilter($filter);
-        }
+    /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        /* @var OrdernumberCondition $criteriaPart */
+        $search->addPostFilter(
+            new TermsQuery('number', $criteriaPart->getOrdernumbers())
+        );
     }
 }

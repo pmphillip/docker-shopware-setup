@@ -34,13 +34,14 @@ The user can see the registration steps, advantages and required information.
     }
 
     .register--required-info {
+        .unitize(padding-bottom, 30);
         .unitize-margin(0, 26, 16);
         .unitize(font-size, 14);
     }
 
-    .js--fancy-select {
+    .select-field {
         .unitize(margin-bottom, 10);
-        width: 100%;
+        max-width: 100%;
     }
 
     .register--field {
@@ -74,7 +75,7 @@ The user can see the registration steps, advantages and required information.
         .clearfix();
         .unitize-margin(0, 0, 5, 0);
         display: block;
-        font-weight: bold;
+        font-weight: @font-bold-weight;
     }
 
     .register--password-description {
@@ -83,14 +84,14 @@ The user can see the registration steps, advantages and required information.
 
     .register--birthdate {
 
-        .js--fancy-select {
+        .select-field {
             .unitize(margin-bottom, 15);
-            width: 100%;
+            max-width: 100%;
             float: left;
         }
 
         .register--birthyear,
-        .register--birthyear .js--fancy-select {
+        .register--birthyear.select-field {
             .unitize(margin-right, 0);
         }
 
@@ -136,7 +137,7 @@ The user can see the registration steps, advantages and required information.
                 .unitize(right, 10);
                 position: absolute;
                 font-family: @sw-icon-fontname;
-                font-weight: normal;
+                font-weight: @font-base-weight;
                 content: @sw-icon-arrow-down;
                 color: inherit;
                 top: 50%;
@@ -214,7 +215,7 @@ The user can see the registration steps, advantages and required information.
         display: inline-block;
         text-align: center;
         color: #fff;
-        font-weight: bold;
+        font-weight: @font-bold-weight;
     }
 
     .is--active .icon {
@@ -240,7 +241,7 @@ The user can see the registration steps, advantages and required information.
     .is--active .text {
         color: @brand-primary;
         display: inline-block;
-        font-weight: bold;
+        font-weight: @font-bold-weight;
     }
 
     .steps--entry .text--inner, .steps--entry .text::after {
@@ -282,7 +283,7 @@ The user can see the registration steps, advantages and required information.
         float: right;
         display: block;
 
-        .js--fancy-select {
+        .select-field {
             .unitize(margin-bottom, 15);
 
             .register--birthday {
@@ -298,12 +299,12 @@ The user can see the registration steps, advantages and required information.
             .unitize(padding-bottom, 8);
         }
 
-        .js--fancy-select {
-            .unitize-width(290);
+        .select-field {
+            .unitize(max-width, 290);
         }
 
         .register--birthdate {
-            .js--fancy-select {
+            .select-field {
                 width: 32%;
                 margin-right: 2%;
             }
@@ -334,7 +335,7 @@ The user can see the registration steps, advantages and required information.
             .text {
                 .unitize-margin(0, 10, 0, 10);
                 display: inline-block;
-                font-weight: bold;
+                font-weight: @font-bold-weight;
             }
         }
     }

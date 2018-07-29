@@ -64,6 +64,7 @@ class Shopware_Controllers_Backend_UpdateWizard extends Shopware_Controllers_Bac
             $result = $licenceService->updateLicences($request);
         } catch (Exception $e) {
             $this->handleException($e);
+
             return;
         }
 
@@ -74,7 +75,7 @@ class Shopware_Controllers_Backend_UpdateWizard extends Shopware_Controllers_Bac
         });
 
         $notUpdatable = array_filter($plugins, function ($plugin) {
-            return ($plugin['inStore'] == false);
+            return $plugin['inStore'] == false;
         });
 
         $this->View()->assign([
@@ -82,7 +83,7 @@ class Shopware_Controllers_Backend_UpdateWizard extends Shopware_Controllers_Bac
             'result' => $result,
             'plugins' => array_values($plugins),
             'updatable' => array_values($updatable),
-            'notUpdatable' => array_values($notUpdatable)
+            'notUpdatable' => array_values($notUpdatable),
         ]);
     }
 
@@ -91,16 +92,15 @@ class Shopware_Controllers_Backend_UpdateWizard extends Shopware_Controllers_Bac
      */
     private function getLocale()
     {
-        return Shopware()->Container()->get('Auth')->getIdentity()->locale->getLocale();
+        return $this->container->get('Auth')->getIdentity()->locale->getLocale();
     }
-
 
     /**
      * @return string
      */
     private function getVersion()
     {
-        return Shopware::VERSION;
+        return $this->container->getParameter('shopware.release.version');
     }
 
     /**
@@ -112,17 +112,21 @@ class Shopware_Controllers_Backend_UpdateWizard extends Shopware_Controllers_Bac
             return null;
         }
 
-        /**@var $token AccessTokenStruct*/
+        /** @var $token AccessTokenStruct */
         $token = $this->get('BackendSession')->offsetGet('store_token');
         $token = unserialize($token);
 
         return $token;
     }
 
+    /**
+     * @param Exception $e
+     */
     private function handleException(Exception $e)
     {
         if (!($e instanceof StoreException)) {
             $this->View()->assign(['success' => false, 'message' => $e->getMessage()]);
+
             return;
         }
 
@@ -134,17 +138,18 @@ class Shopware_Controllers_Backend_UpdateWizard extends Shopware_Controllers_Bac
         $this->View()->assign([
             'success' => false,
             'message' => $message,
-            'authentication' => ($e instanceof AuthenticationException)
+            'authentication' => ($e instanceof AuthenticationException),
         ]);
     }
 
     /**
      * @param StoreException $exception
+     *
      * @return mixed|string
-     * @throws Exception
      */
     private function getExceptionMessage(StoreException $exception)
     {
+        /** @var \Enlight_Components_Snippet_Namespace $namespace */
         $namespace = $this->get('snippets')
             ->getNamespace('backend/plugin_manager/exceptions');
 

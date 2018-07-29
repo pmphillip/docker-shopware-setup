@@ -29,10 +29,14 @@ use League\Flysystem\Adapter\Local;
 class LocalAdapterFactory implements AdapterFactoryInterface
 {
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function create(array $config)
     {
+        if (!array_key_exists('permissions', $config)) {
+            $config['permissions'] = [];
+        }
+
         return new Local(
             $config['path'],
             LOCK_EX,
@@ -42,7 +46,7 @@ class LocalAdapterFactory implements AdapterFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getType()
     {

@@ -1,20 +1,22 @@
 {extends file='frontend/index/index.tpl'}
 
 {* Breadcrumb *}
-{block name='frontend_index_start' prepend}
-    {$sBreadcrumb = [['name'=>"{s name='NoteTitle'}{/s}", 'link'=>{url}]]}
+{block name='frontend_index_start'}
+    {$sBreadcrumb = [['name' => "{s name='NoteTitle'}{/s}", 'link' => {url}]]}
+    {$smarty.block.parent}
 {/block}
 
 {* Account Sidebar *}
-{block name="frontend_index_left_categories" prepend}
+{block name="frontend_index_left_categories"}
     {block name="frontend_account_sidebar"}
         {include file="frontend/account/sidebar.tpl"}
     {/block}
+    {$smarty.block.parent}
 {/block}
 
 {* Main content *}
 {block name="frontend_index_content"}
-    <div class="content{if $sUserLoggedIn} account--content{else} note--content{/if}" data-compare-ajax="true">
+    <div class="content{if $sUserLoggedIn && !$sOneTimeAccount} account--content{else} note--content{/if}" data-compare-ajax="true">
 
         {* Infotext *}
         {block name="frontend_note_index_welcome"}

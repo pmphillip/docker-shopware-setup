@@ -29,7 +29,7 @@ use GuzzleHttp\Exception\ClientException as GuzzleClientException;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\HttpClient
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class GuzzleHttpClient implements HttpClientInterface
@@ -41,10 +41,11 @@ class GuzzleHttpClient implements HttpClientInterface
 
     /**
      * @param GuzzleFactory $guzzleFactory
+     * @param array         $guzzleConfig
      */
-    public function __construct(GuzzleFactory $guzzleFactory)
+    public function __construct(GuzzleFactory $guzzleFactory, array $guzzleConfig = [])
     {
-        $this->guzzleClient = $guzzleFactory->createClient();
+        $this->guzzleClient = $guzzleFactory->createClient($guzzleConfig);
     }
 
     /**
@@ -119,10 +120,10 @@ class GuzzleHttpClient implements HttpClientInterface
     {
         try {
             // http://guzzle.readthedocs.org/en/latest/clients.html#request-options
-            $options = array(
+            $options = [
                 'headers' => $headers,
-                'body'    => $content,
-            );
+                'body' => $content,
+            ];
 
             $response = $this->guzzleClient->put($url, $options);
         } catch (\Exception $e) {
@@ -143,10 +144,10 @@ class GuzzleHttpClient implements HttpClientInterface
     {
         try {
             // http://guzzle.readthedocs.org/en/latest/clients.html#request-options
-            $options = array(
+            $options = [
                 'headers' => $headers,
-                'body'    => $content,
-            );
+                'body' => $content,
+            ];
 
             $response = $this->guzzleClient->patch($url, $options);
         } catch (\Exception $e) {
@@ -167,10 +168,10 @@ class GuzzleHttpClient implements HttpClientInterface
     {
         try {
             // http://guzzle.readthedocs.org/en/latest/clients.html#request-options
-            $options = array(
+            $options = [
                 'headers' => $headers,
                 'body' => $content,
-            );
+            ];
 
             $response = $this->guzzleClient->post($url, $options);
         } catch (\Exception $e) {

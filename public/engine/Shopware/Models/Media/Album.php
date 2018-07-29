@@ -24,8 +24,8 @@
 
 namespace   Shopware\Models\Media;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
 
 /**
  * The Shopware album model is used to structure the media data.
@@ -45,7 +45,7 @@ use Doctrine\ORM\Mapping as ORM;
  * </code>
  *
  * @category   Shopware
- * @package    Models_Media
+ *
  * @copyright  Copyright (c) 20, shopware AG (http://www.shopware.de)
  * @license    http://enlight.de/license     New BSD License
  *
@@ -70,8 +70,18 @@ class Album extends ModelEntity
     const ALBUM_GARBAGE = -13;
 
     /**
+     * Settings of the album.
+     *
+     * @var \Shopware\Models\Media\Settings
+     *
+     * @ORM\OneToOne(targetEntity="\Shopware\Models\Media\Settings", mappedBy="album", orphanRemoval=true, cascade={"persist"})
+     */
+    protected $settings;
+
+    /**
      * Unique identifier
-     * @var integer $id
+     *
+     * @var int
      * @ORM\Id
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\GeneratedValue(strategy="IDENTITY")
@@ -80,27 +90,39 @@ class Album extends ModelEntity
 
     /**
      * Name of the album, displayed in the tree, used to filter the tree.
-     * @var string $name
+     *
+     * @var string
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
      */
     private $name;
 
     /**
      * Id of the parent album
-     * @var integer $parentId
+     *
+     * @var int
      * @ORM\Column(name="parentID", type="integer", nullable=true)
      */
     private $parentId = null;
 
     /**
      * Position of the album to configure the display order
-     * @var integer $position
+     *
+     * @var int
      * @ORM\Column(name="position", type="integer", nullable=false)
      */
     private $position;
 
     /**
+     * Defines if this album is allowed to be garbage collected using the GarbageCollector
+     *
+     * @var bool
+     * @ORM\Column(name="garbage_collectable", type="boolean", nullable=false)
+     */
+    private $garbageCollectable;
+
+    /**
      * An album can have multiple sub-albums.
+     *
      * @var
      * @ORM\OneToMany(targetEntity="\Shopware\Models\Media\Album", mappedBy="parent")
      * @ORM\OrderBy({"position" = "ASC"})
@@ -109,7 +131,8 @@ class Album extends ModelEntity
 
     /**
      * An album can only be subordinated to another album.
-     * @var null|\Shopware\Models\Media\Album $parent
+     *
+     * @var null|\Shopware\Models\Media\Album
      * @ORM\ManyToOne(targetEntity="\Shopware\Models\Media\Album", inversedBy="children")
      * @ORM\JoinColumn(name="parentID", referencedColumnName="id")
      */
@@ -117,18 +140,11 @@ class Album extends ModelEntity
 
     /**
      * An album can be assigned to multiple media.
+     *
      * @var
      * @ORM\OneToMany(targetEntity="\Shopware\Models\Media\Media", mappedBy="album")
      */
     private $media;
-
-    /**
-     * Settings of the album.
-     * @var \Shopware\Models\Media\Settings
-     *
-     * @ORM\OneToOne(targetEntity="\Shopware\Models\Media\Settings", mappedBy="album", orphanRemoval=true, cascade={"persist"})
-     */
-    protected $settings;
 
     /**
      * Initials the children and media collection
@@ -136,12 +152,13 @@ class Album extends ModelEntity
     public function __construct()
     {
         $this->children = new \Doctrine\Common\Collections\ArrayCollection();
-        $this->media    = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->media = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     /**
      * Returns the identifier id
-     * @return integer
+     *
+     * @return int
      */
     public function getId()
     {
@@ -150,17 +167,21 @@ class Album extends ModelEntity
 
     /**
      * Sets the album name
+     *
      * @param string $name
+     *
      * @return Album
      */
     public function setName($name)
     {
         $this->name = $name;
+
         return $this;
     }
 
     /**
      * Returns the name of the album.
+     *
      * @return string
      */
     public function getName()
@@ -170,6 +191,7 @@ class Album extends ModelEntity
 
     /**
      * Returns the position of the album
+     *
      * @return int
      */
     public function getPosition()
@@ -179,18 +201,44 @@ class Album extends ModelEntity
 
     /**
      * Sets the position of the album.
+     *
      * @param int $position
+     *
      * @return \Shopware\Models\Media\Album
      */
     public function setPosition($position)
     {
         $this->position = $position;
+
+        return $this;
+    }
+
+    /**
+     * Sets if this album is to be garbage collected
+     *
+     * @return bool
+     */
+    public function getGarbageCollectable()
+    {
+        return $this->garbageCollectable;
+    }
+
+    /**
+     * @param bool $garbageCollectable
+     *
+     * @return \Shopware\Models\Media\Album
+     */
+    public function setGarbageCollectable($garbageCollectable)
+    {
+        $this->garbageCollectable = $garbageCollectable;
+
         return $this;
     }
 
     /**
      * Returns the child albums.
-     * @return array
+     *
+     * @return \Doctrine\Common\Collections\ArrayCollection
      */
     public function getChildren()
     {
@@ -199,17 +247,21 @@ class Album extends ModelEntity
 
     /**
      * Sets the child albums.
+     *
      * @param  $children
+     *
      * @return array|\Shopware\Models\Media\Album
      */
     public function setChildren($children)
     {
         $this->children = $children;
+
         return $this;
     }
 
     /**
      * Returns the parent album instance
+     *
      * @return null|\Shopware\Models\Media\Album
      */
     public function getParent()
@@ -219,17 +271,21 @@ class Album extends ModelEntity
 
     /**
      * Sets the parent album instance
+     *
      * @param  $parent
+     *
      * @return \Shopware\Models\Media\Album
      */
     public function setParent($parent)
     {
         $this->parent = $parent;
+
         return $this;
     }
 
     /**
      * Returns the associated media.
+     *
      * @return \Doctrine\Common\Collections\ArrayCollection
      */
     public function getMedia()
@@ -239,8 +295,8 @@ class Album extends ModelEntity
 
     /**
      * Sets the associated media
-     * @param $media
-     * @return void
+     *
+     * @param array|\Doctrine\Common\Collections\ArrayCollection $media
      */
     public function setMedia($media)
     {
@@ -249,6 +305,7 @@ class Album extends ModelEntity
 
     /**
      * Returns the album settings
+     *
      * @return \Shopware\Models\Media\Settings
      */
     public function getSettings()
@@ -258,24 +315,29 @@ class Album extends ModelEntity
 
     /**
      * Sets the album settings
-     * @param  $settings \Shopware\Models\Media\Settings
+     *
+     * @param $settings \Shopware\Models\Media\Settings
+     *
      * @return \Shopware\Models\Media\Album
      */
     public function setSettings(Settings $settings)
     {
         $this->settings = $settings;
+
         return $this;
     }
 
     /**
      * Model lifecycle callback function, fired when the model is removed from the database.
      * All assigned media set to the unsorted album.
+     *
      * @ORM\PreRemove
+     *
+     * @throws \Zend_Db_Adapter_Exception
      */
     public function onRemove()
     {
-        //change the associated media to the unsorted album.
-        $sql = "UPDATE s_media SET albumID = ? WHERE albumID = ?";
-        Shopware()->Db()->query($sql, array(-10, $this->id));
+        // Change the associated media to the unsorted album.
+        Shopware()->Db()->query('UPDATE s_media SET albumID = ? WHERE albumID = ?', [-10, $this->id]);
     }
 }

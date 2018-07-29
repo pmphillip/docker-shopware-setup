@@ -41,12 +41,7 @@
                             {* Name *}
                             {block name="frontend_account_order_item_name"}
                                 <p class="order--name is--strong">
-                                    {* Mode 10 = Bundle Product *}
-                                    {if $article.modus == 10}
-                                        {s name="OrderItemInfoBundle"}{/s}
-                                    {else}
-                                        {$article.name}
-                                    {/if}
+                                    {$article.name}
                                 </p>
                             {/block}
 
@@ -250,7 +245,10 @@
                     {if $offerPosition.trackingcode}
                         <p>
                             {if $offerPosition.dispatch.status_link}
-                                {eval var=$offerPosition.dispatch.status_link}
+                                <a href="{$offerPosition.dispatch.status_link}"
+                                   title="{$offerPosition.dispatch.name}"
+                                   onclick="return !window.open(this.href, 'popup', 'width=500,height=600,left=20,top=20');"
+                                   target="_blank">{$offerPosition.trackingcode}</a>
                             {else}
                                 {$offerPosition.trackingcode}
                             {/if}

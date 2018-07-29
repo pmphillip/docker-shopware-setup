@@ -28,15 +28,16 @@ use Shopware\Components\DependencyInjection\Container;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\DependencyInjection\Bridge
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Mail
 {
     /**
-     * @param Container                $container
-     * @param \Shopware_Components_Config   $config
-     * @param array                         $options
+     * @param Container                   $container
+     * @param \Shopware_Components_Config $config
+     * @param array                       $options
+     *
      * @return \Enlight_Components_Mail|null
      */
     public function factory(Container $container, \Shopware_Components_Config $config, array $options)
@@ -53,8 +54,6 @@ class Mail
             $defaultCharSet = null;
         }
 
-        $mail = new \Enlight_Components_Mail($defaultCharSet);
-
-        return $mail;
+        return new \Enlight_Components_Mail($defaultCharSet);
     }
 }

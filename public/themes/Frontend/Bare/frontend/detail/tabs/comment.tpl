@@ -18,14 +18,28 @@
     {if $sAction == "ratingAction"}
         {block name='frontend_detail_comment_error_messages'}
             {if $sErrorFlag}
-                {include file="frontend/_includes/messages.tpl" type="error" content="{s name='DetailCommentInfoFillOutFields'}{/s}"}
+                {if $sErrorFlag['sCaptcha']}
+                    {$file = 'frontend/_includes/messages.tpl'}
+                    {$type = 'error'}
+                    {$content = "{s name='DetailCommentInfoFillOutCaptcha'}{/s}"}
+                {else}
+                    {$file = 'frontend/_includes/messages.tpl'}
+                    {$type = 'error'}
+                    {$content = "{s name='DetailCommentInfoFillOutFields'}{/s}"}
+                {/if}
             {else}
                 {if {config name="OptinVote"} && !{$smarty.get.sConfirmation} && !{$userLoggedIn}}
-                    {include file="frontend/_includes/messages.tpl" type="success" content="{s name='DetailCommentInfoSuccessOptin'}{/s}"}
+                    {$file = 'frontend/_includes/messages.tpl'}
+                    {$type = 'success'}
+                    {$content = "{s name='DetailCommentInfoSuccessOptin'}{/s}"}
                 {else}
-                    {include file="frontend/_includes/messages.tpl" type="success" content="{s name='DetailCommentInfoSuccess'}{/s}"}
+                    {$file = 'frontend/_includes/messages.tpl'}
+                    {$type = 'success'}
+                    {$content = "{s name='DetailCommentInfoSuccess'}{/s}"}
                 {/if}
             {/if}
+
+            {include file=$file type=$type content=$content}
         {/block}
     {/if}
 

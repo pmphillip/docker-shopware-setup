@@ -29,15 +29,15 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
-class SalesCondition implements ConditionInterface
+class SalesCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * @var int
      */
-    private $minSales;
+    protected $minSales;
 
     /**
      * @param int $minSales
@@ -45,7 +45,7 @@ class SalesCondition implements ConditionInterface
     public function __construct($minSales)
     {
         Assertion::integerish($minSales);
-        $this->minSales = (int)$minSales;
+        $this->minSales = (int) $minSales;
     }
 
     /**
@@ -62,5 +62,13 @@ class SalesCondition implements ConditionInterface
     public function getMinSales()
     {
         return $this->minSales;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

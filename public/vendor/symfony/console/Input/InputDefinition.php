@@ -39,8 +39,6 @@ class InputDefinition
     private $shortcuts;
 
     /**
-     * Constructor.
-     *
      * @param array $definition An array of InputArgument and InputOption instance
      */
     public function __construct(array $definition = array())
@@ -50,8 +48,6 @@ class InputDefinition
 
     /**
      * Sets the definition of the input.
-     *
-     * @param array $definition The definition array
      */
     public function setDefinition(array $definition)
     {
@@ -98,10 +94,6 @@ class InputDefinition
     }
 
     /**
-     * Adds an InputArgument object.
-     *
-     * @param InputArgument $argument An InputArgument object
-     *
      * @throws LogicException When incorrect argument is given
      */
     public function addArgument(InputArgument $argument)
@@ -235,10 +227,6 @@ class InputDefinition
     }
 
     /**
-     * Adds an InputOption object.
-     *
-     * @param InputOption $option An InputOption object
-     *
      * @throws LogicException When option given already exist
      */
     public function addOption(InputOption $option)
@@ -284,6 +272,9 @@ class InputDefinition
     /**
      * Returns true if an InputOption object exists by name.
      *
+     * This method can't be used to check if the user included the option when
+     * executing the command (use getOption() instead).
+     *
      * @param string $name The InputOption name
      *
      * @return bool true if the InputOption object exists, false otherwise
@@ -318,7 +309,7 @@ class InputDefinition
     /**
      * Gets an InputOption by shortcut.
      *
-     * @param string $shortcut the Shortcut name
+     * @param string $shortcut The Shortcut name
      *
      * @return InputOption An InputOption object
      */
@@ -421,7 +412,7 @@ class InputDefinition
      */
     public function asText()
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.3 and will be removed in 3.0.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.3 and will be removed in 3.0.', E_USER_DEPRECATED);
 
         $descriptor = new TextDescriptor();
         $output = new BufferedOutput(BufferedOutput::VERBOSITY_NORMAL, true);
@@ -441,7 +432,7 @@ class InputDefinition
      */
     public function asXml($asDom = false)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.3 and will be removed in 3.0.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.3 and will be removed in 3.0.', E_USER_DEPRECATED);
 
         $descriptor = new XmlDescriptor();
 

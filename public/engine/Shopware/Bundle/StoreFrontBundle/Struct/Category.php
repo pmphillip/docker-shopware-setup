@@ -28,10 +28,10 @@ use Shopware\Models\Category\Category as CategoryEntity;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class Category extends Extendable implements \JsonSerializable
+class Category extends Extendable
 {
     /**
      * @var int
@@ -51,7 +51,7 @@ class Category extends Extendable implements \JsonSerializable
     /**
      * @var array
      */
-    protected $path;
+    protected $path = [];
 
     /**
      * @var string
@@ -89,17 +89,17 @@ class Category extends Extendable implements \JsonSerializable
     protected $template;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $blog;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $displayFacets;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $displayInNavigation;
 
@@ -107,6 +107,11 @@ class Category extends Extendable implements \JsonSerializable
      * @var string
      */
     protected $externalLink;
+
+    /**
+     * @var string
+     */
+    protected $externalTarget;
 
     /**
      * @var Media
@@ -129,7 +134,13 @@ class Category extends Extendable implements \JsonSerializable
     protected $productStream;
 
     /**
+     * @var bool
+     */
+    protected $hideSortings;
+
+    /**
      * @param CategoryEntity $category
+     *
      * @return Category
      */
     public static function createFromCategoryEntity(CategoryEntity $category)
@@ -315,7 +326,23 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @param boolean $displayFacets
+     * @param string $externalTarget
+     */
+    public function setExternalTarget($externalTarget)
+    {
+        $this->externalTarget = $externalTarget;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExternalTarget()
+    {
+        return $this->externalTarget;
+    }
+
+    /**
+     * @param bool $displayFacets
      */
     public function setDisplayFacets($displayFacets)
     {
@@ -323,7 +350,7 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @param boolean $displayInNavigation
+     * @param bool $displayInNavigation
      */
     public function setDisplayInNavigation($displayInNavigation)
     {
@@ -331,7 +358,7 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @param boolean $blog
+     * @param bool $blog
      */
     public function setBlog($blog)
     {
@@ -355,7 +382,7 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isBlog()
     {
@@ -363,7 +390,7 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function displayFacets()
     {
@@ -371,7 +398,7 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function displayInNavigation()
     {
@@ -379,7 +406,7 @@ class Category extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {
@@ -464,5 +491,21 @@ class Category extends Extendable implements \JsonSerializable
     public function setProductStream(ProductStream $productStream = null)
     {
         $this->productStream = $productStream;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hideSortings()
+    {
+        return $this->hideSortings;
+    }
+
+    /**
+     * @param bool $hideSortings
+     */
+    public function setHideSortings($hideSortings)
+    {
+        $this->hideSortings = $hideSortings;
     }
 }

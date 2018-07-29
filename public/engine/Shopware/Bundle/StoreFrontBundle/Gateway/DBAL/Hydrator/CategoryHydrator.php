@@ -28,7 +28,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Gateway\DBAL\Hydrator
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CategoryHydrator extends Hydrator
@@ -49,8 +49,8 @@ class CategoryHydrator extends Hydrator
     private $productStreamHydrator;
 
     /**
-     * @param AttributeHydrator $attributeHydrator
-     * @param MediaHydrator $mediaHydrator
+     * @param AttributeHydrator     $attributeHydrator
+     * @param MediaHydrator         $mediaHydrator
      * @param ProductStreamHydrator $productStreamHydrator
      */
     public function __construct(
@@ -65,6 +65,7 @@ class CategoryHydrator extends Hydrator
 
     /**
      * @param array $data
+     *
      * @return Struct\Category
      */
     public function hydrate(array $data)
@@ -94,7 +95,7 @@ class CategoryHydrator extends Hydrator
 
     /**
      * @param Struct\Category $category
-     * @param array $data
+     * @param array           $data
      */
     private function assignCategoryData(Struct\Category $category, array $data)
     {
@@ -153,6 +154,10 @@ class CategoryHydrator extends Hydrator
             $category->setExternalLink($data['__category_external']);
         }
 
+        if (isset($data['__category_external_target'])) {
+            $category->setExternalTarget($data['__category_external_target']);
+        }
+
         if (isset($data['__category_hidefilter'])) {
             $category->setDisplayFacets((bool) !$data['__category_hidefilter']);
         }
@@ -166,5 +171,7 @@ class CategoryHydrator extends Hydrator
                 explode(',', $data['__category_customer_groups'])
             );
         }
+
+        $category->setHideSortings((bool) $data['__category_hide_sortings']);
     }
 }

@@ -46,7 +46,6 @@ Ext.define('Shopware.apps.MediaManager.view.main.Selection', {
     autoShow: true,
     layout: 'border',
     height: 500,
-    width: 730,
 
     /**
      * Forces the window to be on front
@@ -90,7 +89,7 @@ Ext.define('Shopware.apps.MediaManager.view.main.Selection', {
             // We don't need toolbars here
             createToolbars: false,
 
-            // Deactive the drag and drop reordering of the albums
+            // Deactivate the drag and drop reordering of the albums
             viewConfig: {  },
 
             // Customize the column model

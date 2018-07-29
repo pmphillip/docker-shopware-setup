@@ -29,42 +29,30 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ProductAttributeCondition implements ConditionInterface
+class ProductAttributeCondition implements ConditionInterface, \JsonSerializable
 {
-    const OPERATOR_EQ = '=';
-    const OPERATOR_NEQ = '!=';
-    const OPERATOR_LT = '<';
-    const OPERATOR_LTE = '<=';
-    const OPERATOR_BETWEEN = 'BETWEEN';
-    const OPERATOR_GT = '>';
-    const OPERATOR_GTE = '>=';
-    const OPERATOR_IN = 'IN';
-    const OPERATOR_STARTS_WITH = 'STARTS_WITH';
-    const OPERATOR_ENDS_WITH = 'ENDS_WITH';
-    const OPERATOR_CONTAINS = 'CONTAINS';
-
     /**
      * @var string
      */
-    private $field;
+    protected $field;
 
     /**
      * @var string|array
      */
-    private $value;
+    protected $value;
 
     /**
      * @var string
      */
-    private $operator;
+    protected $operator;
 
     /**
-     * @param string $field
-     * @param string $operator
-     * @param string|array $value ['min' => 1, 'max' => 10] for between operator
+     * @param string       $field
+     * @param string       $operator
+     * @param string|array $value    ['min' => 1, 'max' => 10] for between operator
      */
     public function __construct($field, $operator, $value)
     {
@@ -99,7 +87,7 @@ class ProductAttributeCondition implements ConditionInterface
     }
 
     /**
-     * @return string
+     * @return string|array $value
      */
     public function getValue()
     {
@@ -128,5 +116,13 @@ class ProductAttributeCondition implements ConditionInterface
     public function setOperator($operator)
     {
         $this->operator = $operator;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

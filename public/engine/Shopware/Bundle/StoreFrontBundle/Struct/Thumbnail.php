@@ -26,10 +26,10 @@ namespace Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class Thumbnail extends Extendable implements \JsonSerializable
+class Thumbnail extends Extendable
 {
     /**
      * @var string
@@ -52,7 +52,7 @@ class Thumbnail extends Extendable implements \JsonSerializable
     protected $maxHeight;
 
     /**
-     * @param string $source
+     * @param string      $source
      * @param string|null $retinaSource
      * @param $maxWidth
      * @param $maxHeight
@@ -78,7 +78,7 @@ class Thumbnail extends Extendable implements \JsonSerializable
      */
     public function hasRetinaSource()
     {
-        return ($this->retinaSource != null);
+        return $this->retinaSource != null;
     }
 
     /**
@@ -90,18 +90,21 @@ class Thumbnail extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @deprecated deprecated since version 5.1, please build the sourceSet in a hydrator or view
+     * @deprecated Deprecated since version 5.1 and will be removed in 5.5. Please build the sourceSet in a hydrator or view.
      *
      * @param string $imageDir
+     *
      * @return string
      */
     public function getSourceSet($imageDir)
     {
+        trigger_error(sprintf('%s::%s() is deprecated since version 5.1 and will be removed in 5.5. Please build the sourceSet in a hydrator or view.', __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
         if ($this->retinaSource !== null) {
             return sprintf('%s%s, %s%s 2x', $imageDir, $this->source, $imageDir, $this->retinaSource);
-        } else {
-            return $imageDir . $this->source;
         }
+
+        return $imageDir . $this->source;
     }
 
     /**

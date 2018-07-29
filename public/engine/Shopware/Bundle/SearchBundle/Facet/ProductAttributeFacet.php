@@ -28,7 +28,7 @@ use Shopware\Bundle\SearchBundle\FacetInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Facet
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ProductAttributeFacet implements FacetInterface
@@ -41,47 +41,63 @@ class ProductAttributeFacet implements FacetInterface
     /**
      * @var string
      */
-    private $field;
+    protected $field;
 
     /**
      * @var string
      */
-    private $mode;
+    protected $mode;
 
     /**
      * @var string
      */
-    private $formFieldName;
+    protected $formFieldName;
 
     /**
      * @var string
      */
-    private $label;
+    protected $label;
 
     /**
      * @var string|null
      */
-    private $template = null;
+    protected $template;
+
+    /**
+     * @var string
+     */
+    protected $suffix;
+
+    /**
+     * @var int
+     */
+    protected $digits;
 
     /**
      * @param string $field
      * @param string $mode
-     * @param string string $formFieldName
-     * @param string $label
+     * @param $formFieldName
+     * @param string      $label
      * @param string|null $template
+     * @param string      $suffix
+     * @param int         $digits
      */
     public function __construct(
         $field,
-        $mode = self::MODE_VALUE_LIST_RESULT,
+        $mode,
         $formFieldName,
         $label,
-        $template = null
+        $template = null,
+        $suffix = '',
+        $digits = 2
     ) {
         $this->field = $field;
         $this->mode = $mode;
         $this->formFieldName = $formFieldName;
         $this->label = $label;
         $this->template = $template;
+        $this->suffix = $suffix;
+        $this->digits = $digits;
     }
 
     /**
@@ -130,5 +146,21 @@ class ProductAttributeFacet implements FacetInterface
     public function getTemplate()
     {
         return $this->template;
+    }
+
+    /**
+     * @return int
+     */
+    public function getDigits()
+    {
+        return $this->digits;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSuffix()
+    {
+        return $this->suffix;
     }
 }

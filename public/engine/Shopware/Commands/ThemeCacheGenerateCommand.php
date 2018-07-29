@@ -35,7 +35,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\Console\Command
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ThemeCacheGenerateCommand extends ShopwareCommand
@@ -48,6 +48,7 @@ class ThemeCacheGenerateCommand extends ShopwareCommand
         $this
             ->setName('sw:theme:cache:generate')
             ->addOption('shopId', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The Id of the shop')
+            ->addOption('current', 'c', InputOption::VALUE_NONE, 'Compile from current asset timestamp')
             ->setDescription('Generates theme caches.')
         ;
     }
@@ -61,7 +62,8 @@ class ThemeCacheGenerateCommand extends ShopwareCommand
         $repository = $this->container->get('models')->getRepository(Shop::class);
 
         $shopIds = $input->getOption('shopId');
-        
+        $current = (bool) $input->getOption('current');
+
         /** @var Shop[] $shopsWithThemes */
         $shopsWithThemes = $repository->getShopsWithThemes()->getResult(AbstractQuery::HYDRATE_OBJECT);
 
@@ -73,6 +75,7 @@ class ThemeCacheGenerateCommand extends ShopwareCommand
 
         if (empty($shopsWithThemes)) {
             $output->writeln('No theme shops found');
+
             return;
         }
 
@@ -80,13 +83,24 @@ class ThemeCacheGenerateCommand extends ShopwareCommand
         $compiler = $this->container->get('theme_compiler');
 
         foreach ($shopsWithThemes as $shop) {
-            $output->writeln(sprintf('Generating theme cache for shop "%s" ...', $shop->getName()));
-            $compiler->compile($shop);
+            if (!$current) {
+                $output->writeln(sprintf('Generating new theme cache for shop "%s" ...', $shop->getName()));
+                $compiler->compile($shop);
+                continue;
+            }
+
+            $timestamp = $this->container->get('theme_timestamp_persistor')->getCurrentTimestamp($shop->getId());
+            $output->writeln(sprintf('Generating theme cache for shop "%s" from current timestamp %s', $shop->getName(), $timestamp));
+            $compiler->recompile($shop);
         }
 
-        $output->writeln('Clearing HTTP cache ...');
+        if ($current) {
+            return;
+        }
+
         /** @var $cacheManager CacheManager */
         $cacheManager = $this->container->get('shopware.cache_manager');
+        $output->writeln('Clearing HTTP cache ...');
         $cacheManager->clearHttpCache();
     }
 }

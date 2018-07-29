@@ -11,7 +11,7 @@
 
 namespace Symfony\Component\Validator\Context;
 
-@trigger_error('The '.__NAMESPACE__.'\LegacyExecutionContext class is deprecated since version 2.5 and will be removed in 3.0.', E_USER_DEPRECATED);
+@trigger_error('The '.__NAMESPACE__.'\LegacyExecutionContext class is deprecated since Symfony 2.5 and will be removed in 3.0.', E_USER_DEPRECATED);
 
 use Symfony\Component\Translation\TranslatorInterface;
 use Symfony\Component\Validator\MetadataFactoryInterface;
@@ -20,19 +20,12 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 /**
  * An execution context that is compatible with the legacy API (< 2.5).
  *
- * @since  2.5
- *
  * @author Bernhard Schussek <bschussek@gmail.com>
  *
  * @deprecated since version 2.5, to be removed in 3.0.
  */
 class LegacyExecutionContext extends ExecutionContext
 {
-    /**
-     * @var MetadataFactoryInterface
-     */
-    private $metadataFactory;
-
     /**
      * Creates a new context.
      *
@@ -49,7 +42,5 @@ class LegacyExecutionContext extends ExecutionContext
             $translator,
             $translationDomain
         );
-
-        $this->metadataFactory = $metadataFactory;
     }
 }

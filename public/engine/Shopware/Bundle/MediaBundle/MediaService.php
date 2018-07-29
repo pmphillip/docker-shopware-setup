@@ -26,12 +26,11 @@ namespace Shopware\Bundle\MediaBundle;
 
 use League\Flysystem\FilesystemInterface;
 use Shopware\Bundle\MediaBundle\Strategy\StrategyInterface;
-use Shopware\Components\DependencyInjection\Container;
 use Shopware\Models\Shop\Shop;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class MediaService
- * @package Shopware\Bundle\MediaBundle
  */
 class MediaService implements MediaServiceInterface
 {
@@ -41,7 +40,7 @@ class MediaService implements MediaServiceInterface
     private $filesystem;
 
     /**
-     * @var Container
+     * @var ContainerInterface
      */
     private $container;
 
@@ -62,12 +61,13 @@ class MediaService implements MediaServiceInterface
 
     /**
      * @param FilesystemInterface $filesystem
-     * @param StrategyInterface $strategy
-     * @param Container $container
-     * @param array $config
+     * @param StrategyInterface   $strategy
+     * @param ContainerInterface  $container
+     * @param array               $config
+     *
      * @throws \Exception
      */
-    public function __construct(FilesystemInterface $filesystem, StrategyInterface $strategy, Container $container, array $config)
+    public function __construct(FilesystemInterface $filesystem, StrategyInterface $strategy, ContainerInterface $container, array $config)
     {
         $this->filesystem = $filesystem;
         $this->container = $container;
@@ -83,29 +83,29 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function read($path)
     {
-        $this->migrateFile($path);
+        $this->migrateFileLive($path);
         $path = $this->strategy->encode($path);
 
         return $this->filesystem->read($path);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function readStream($path)
     {
-        $this->migrateFile($path);
+        $this->migrateFileLive($path);
         $path = $this->strategy->encode($path);
 
         return $this->filesystem->readStream($path);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getUrl($path)
     {
@@ -117,14 +117,14 @@ class MediaService implements MediaServiceInterface
             return $this->mediaUrl . '/' . ltrim($path, '/');
         }
 
-        $this->migrateFile($path);
+        $this->migrateFileLive($path);
         $path = $this->strategy->encode($path);
 
         return $this->mediaUrl . '/' . ltrim($path, '/');
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function write($path, $contents, $append = false)
     {
@@ -138,7 +138,7 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function writeStream($path, $resource, $append = false)
     {
@@ -152,18 +152,18 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function has($path)
     {
-        $this->migrateFile($path);
+        $this->migrateFileLive($path);
         $path = $this->strategy->encode($path);
 
         return $this->filesystem->has($path);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function delete($path)
     {
@@ -173,22 +173,22 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getSize($path)
     {
-        $this->migrateFile($path);
+        $this->migrateFileLive($path);
         $path = $this->strategy->encode($path);
 
         return $this->filesystem->getSize($path);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function rename($path, $newPath)
     {
-        $this->migrateFile($path);
+        $this->migrateFileLive($path);
         $path = $this->strategy->encode($path);
         $newPath = $this->strategy->encode($newPath);
 
@@ -196,7 +196,7 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function normalize($path)
     {
@@ -204,40 +204,7 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * Generates a mediaUrl based on the request or router
-     *
-     * @return string
-     * @throws \Exception
-     */
-    private function createFallbackMediaUrl()
-    {
-        $request = $this->container->get('front')->Request();
-
-        if ($request && $request->getHttpHost()) {
-            return ($request->isSecure() ? 'https' : 'http') . '://' . $request->getHttpHost() . $request->getBasePath() . "/";
-        }
-
-        if ($this->container->has('Shop')) {
-            /** @var Shop $shop */
-            $shop = $this->container->get('Shop');
-        } else {
-            /** @var Shop $shop */
-            $shop = $this->container->get('models')->getRepository(Shop::class)->getActiveDefault();
-        }
-
-        if ($shop->getMain()) {
-            $shop = $shop->getMain();
-        }
-
-        if ($shop->getAlwaysSecure()) {
-            return 'https://' . $shop->getSecureHost() . $shop->getSecureBasePath() . '/';
-        }
-
-        return 'http://' . $shop->getHost() . $shop->getBasePath() . '/';
-    }
-
-    /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getAdapterType()
     {
@@ -245,7 +212,7 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function listFiles($directory = '')
     {
@@ -262,7 +229,7 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createDir($dirname)
     {
@@ -273,8 +240,8 @@ class MediaService implements MediaServiceInterface
      * Migrates a file to the new strategy if it's not present
      *
      * @internal
-     * @param $path
-     * @return void
+     *
+     * @param string $path
      */
     public function migrateFile($path)
     {
@@ -290,7 +257,7 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function encode($path)
     {
@@ -298,10 +265,66 @@ class MediaService implements MediaServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function isEncoded($path)
     {
         return $this->strategy->isEncoded($path);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getFilesystem()
+    {
+        return $this->filesystem;
+    }
+
+    /**
+     * Generates a mediaUrl based on the request or router
+     *
+     * @throws \Exception
+     *
+     * @return string
+     */
+    private function createFallbackMediaUrl()
+    {
+        $request = $this->container->get('front')->Request();
+
+        if ($request && $request->getHttpHost()) {
+            return ($request->isSecure() ? 'https' : 'http') . '://' . $request->getHttpHost() . $request->getBasePath() . '/';
+        }
+
+        if ($this->container->has('Shop')) {
+            /** @var Shop $shop */
+            $shop = $this->container->get('Shop');
+        } else {
+            /** @var Shop $shop */
+            $shop = $this->container->get('models')->getRepository(Shop::class)->getActiveDefault();
+        }
+
+        if ($shop->getMain()) {
+            $shop = $shop->getMain();
+        }
+
+        if ($shop->getSecure()) {
+            return 'https://' . $shop->getHost() . $shop->getBasePath() . '/';
+        }
+
+        return 'http://' . $shop->getHost() . $shop->getBasePath() . '/';
+    }
+
+    /**
+     * Used as internal check for the liveMigration config flag.
+     *
+     * @param string $path
+     */
+    private function migrateFileLive($path)
+    {
+        if (!$this->container->getParameter('shopware.cdn.liveMigration')) {
+            return;
+        }
+
+        $this->migrateFile($path);
     }
 }

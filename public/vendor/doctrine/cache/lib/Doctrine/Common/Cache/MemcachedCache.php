@@ -74,7 +74,7 @@ class MemcachedCache extends CacheProvider
      */
     protected function doFetchMultiple(array $keys)
     {
-        return $this->memcached->getMulti($keys);
+        return $this->memcached->getMulti($keys) ?: [];
     }
 
     /**
@@ -86,7 +86,7 @@ class MemcachedCache extends CacheProvider
             $lifetime = time() + $lifetime;
         }
 
-        return $this->memcached->setMulti($keysAndValues, null, $lifetime);
+        return $this->memcached->setMulti($keysAndValues, $lifetime);
     }
 
     /**
@@ -94,8 +94,9 @@ class MemcachedCache extends CacheProvider
      */
     protected function doContains($id)
     {
-        return false !== $this->memcached->get($id)
-            || $this->memcached->getResultCode() !== Memcached::RES_NOTFOUND;
+        $this->memcached->get($id);
+
+        return $this->memcached->getResultCode() === Memcached::RES_SUCCESS;
     }
 
     /**

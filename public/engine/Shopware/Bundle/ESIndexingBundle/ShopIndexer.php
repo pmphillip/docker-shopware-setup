@@ -73,14 +73,14 @@ class ShopIndexer implements ShopIndexerInterface
     private $configuration;
 
     /**
-     * @param Client $client
-     * @param BacklogReaderInterface $backlogReader
+     * @param Client                    $client
+     * @param BacklogReaderInterface    $backlogReader
      * @param BacklogProcessorInterface $backlogProcessor
-     * @param IndexFactoryInterface $indexFactory
-     * @param DataIndexerInterface[] $indexer
-     * @param MappingInterface[] $mappings
-     * @param SettingsInterface[] $settings
-     * @param array $configuration
+     * @param IndexFactoryInterface     $indexFactory
+     * @param DataIndexerInterface[]    $indexer
+     * @param MappingInterface[]        $mappings
+     * @param SettingsInterface[]       $settings
+     * @param array                     $configuration
      */
     public function __construct(
         Client $client,
@@ -104,146 +104,20 @@ class ShopIndexer implements ShopIndexerInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @throws \RuntimeException
      */
     public function index(Shop $shop, ProgressHelperInterface $helper)
     {
         $lastBacklogId = $this->backlogReader->getLastBacklogId();
         $configuration = $this->indexFactory->createIndexConfiguration($shop);
-        $shopIndex     = new ShopIndex($configuration->getName(), $shop);
+        $shopIndex = new ShopIndex($configuration->getName(), $shop);
 
-        $this->createIndex($configuration);
-        $this->updateSettings($shopIndex);
+        $this->createIndex($configuration, $shopIndex);
         $this->updateMapping($shopIndex);
         $this->populate($shopIndex, $helper);
         $this->applyBacklog($shopIndex, $lastBacklogId);
         $this->createAlias($configuration);
-    }
-
-    /**
-     * @param IndexConfiguration $configuration
-     */
-    private function createIndex(IndexConfiguration $configuration)
-    {
-        $exist = $this->client->indices()->exists(['index' => $configuration->getName()]);
-        if ($exist) {
-            throw new \RuntimeException("Elasticsearch index %s already exist.");
-        }
-
-        $this->client->indices()->create([
-            'index' => $configuration->getName(),
-            'body' => [
-                'settings' => [
-                    'number_of_shards' => $configuration->getNumberOfShards(),
-                    'number_of_replicas' => $configuration->getNumberOfReplicas()
-                ]
-            ]
-        ]);
-    }
-
-    /**
-     * @param ShopIndex $index
-     */
-    private function updateSettings(ShopIndex $index)
-    {
-        $this->client->cluster()->health(['index' => $index->getName(), 'wait_for_status' => $this->configuration['wait_for_status']]);
-        $this->client->indices()->close(['index' => $index->getName()]);
-
-        foreach ($this->settings as $setting) {
-            $settings = $setting->get($index->getShop());
-            if (!$settings) {
-                continue;
-            }
-
-            $this->client->indices()->putSettings([
-                'index' => $index->getName(),
-                'body'  => $settings
-            ]);
-        }
-
-        $this->client->indices()->open(['index' => $index->getName()]);
-        $this->client->indices()->refresh(['index' => $index->getName()]);
-        $this->client->cluster()->health(['index' => $index->getName(), 'wait_for_status' => $this->configuration['wait_for_status']]);
-    }
-
-    /**
-     * @param ShopIndex $index
-     */
-    private function updateMapping(ShopIndex $index)
-    {
-        foreach ($this->mappings as $mapping) {
-            $this->client->indices()->putMapping([
-                'index' => $index->getName(),
-                'type'  => $mapping->getType(),
-                'body'  => $mapping->get($index->getShop())
-            ]);
-        }
-    }
-
-    /**
-     * @param ShopIndex $index
-     * @param ProgressHelperInterface $progress
-     */
-    private function populate(ShopIndex $index, ProgressHelperInterface $progress)
-    {
-        foreach ($this->indexer as $indexer) {
-            $indexer->populate($index, $progress);
-        }
-        $this->client->indices()->refresh(['index' => $index->getName()]);
-    }
-
-    /**
-     * @param ShopIndex $shopIndex
-     * @param int $lastId
-     */
-    private function applyBacklog(ShopIndex $shopIndex, $lastId)
-    {
-        $backlogs = $this->backlogReader->read($lastId, 100);
-
-        if (empty($backlogs)) {
-            return;
-        }
-
-        while ($backlogs = $this->backlogReader->read($lastId, 100)) {
-            $this->backlogProcessor->process($shopIndex, $backlogs);
-            $last = array_pop($backlogs);
-            $lastId = $last->getId();
-        }
-    }
-
-    /**
-     * @param IndexConfiguration $configuration
-     */
-    private function createAlias(IndexConfiguration $configuration)
-    {
-        $exist = $this->client->indices()->existsAlias(['name' => $configuration->getAlias()]);
-
-        if ($exist) {
-            $this->switchAlias($configuration);
-            return;
-        }
-
-        $this->client->indices()->putAlias([
-            'index' => $configuration->getName(),
-            'name'  => $configuration->getAlias()
-        ]);
-    }
-
-    /**
-     * @param IndexConfiguration $configuration
-     */
-    private function switchAlias(IndexConfiguration $configuration)
-    {
-        $actions = [
-            ['add' => ['index' => $configuration->getName(), 'alias' => $configuration->getAlias()]]
-        ];
-
-        $current = $this->client->indices()->getAlias(['name' => $configuration->getAlias()]);
-        $current = array_keys($current);
-
-        foreach ($current as $value) {
-            $actions[] = ['remove' => ['index' => $value, 'alias' => $configuration->getAlias()]];
-        }
-        $this->client->indices()->updateAliases(['body' => ['actions' => $actions]]);
     }
 
     /**
@@ -262,5 +136,125 @@ class ShopIndexer implements ShopIndexerInterface
                 $this->client->indices()->delete(['index' => $index]);
             }
         }
+    }
+
+    /**
+     * @param IndexConfiguration $configuration
+     * @param ShopIndex          $index
+     *
+     * @throws \RuntimeException
+     */
+    private function createIndex(IndexConfiguration $configuration, ShopIndex $index)
+    {
+        $exist = $this->client->indices()->exists(['index' => $configuration->getName()]);
+        if ($exist) {
+            throw new \RuntimeException(sprintf('ElasticSearch index %s already exist.', $configuration->getName()));
+        }
+
+        $mergedSettings = [
+            'settings' => [
+                'number_of_shards' => $configuration->getNumberOfShards(),
+                'number_of_replicas' => $configuration->getNumberOfReplicas(),
+            ],
+        ];
+
+        // Merge default settings with those set by plugins
+        foreach ($this->settings as $setting) {
+            $settings = $setting->get($index->getShop());
+            if (!$settings) {
+                continue;
+            }
+
+            $mergedSettings = array_replace_recursive($mergedSettings, $settings);
+        }
+
+        $this->client->indices()->create([
+            'index' => $configuration->getName(),
+            'body' => $mergedSettings,
+        ]);
+    }
+
+    /**
+     * @param ShopIndex $index
+     */
+    private function updateMapping(ShopIndex $index)
+    {
+        foreach ($this->mappings as $mapping) {
+            $this->client->indices()->putMapping([
+                'index' => $index->getName(),
+                'type' => $mapping->getType(),
+                'body' => $mapping->get($index->getShop()),
+            ]);
+        }
+    }
+
+    /**
+     * @param ShopIndex               $index
+     * @param ProgressHelperInterface $progress
+     */
+    private function populate(ShopIndex $index, ProgressHelperInterface $progress)
+    {
+        foreach ($this->indexer as $indexer) {
+            $indexer->populate($index, $progress);
+        }
+        $this->client->indices()->refresh(['index' => $index->getName()]);
+    }
+
+    /**
+     * @param ShopIndex $shopIndex
+     * @param int       $lastId
+     */
+    private function applyBacklog(ShopIndex $shopIndex, $lastId)
+    {
+        $backlogs = $this->backlogReader->read($lastId, 100);
+
+        if (empty($backlogs)) {
+            return;
+        }
+
+        while ($backlogs = $this->backlogReader->read($lastId, 100)) {
+            $this->backlogProcessor->process($shopIndex, $backlogs);
+            $last = array_pop($backlogs);
+            $lastId = $last->getId();
+        }
+
+        $this->backlogReader->setLastBacklogId($lastId);
+    }
+
+    /**
+     * @param IndexConfiguration $configuration
+     */
+    private function createAlias(IndexConfiguration $configuration)
+    {
+        $exist = $this->client->indices()->existsAlias(['name' => $configuration->getAlias()]);
+
+        if ($exist) {
+            $this->switchAlias($configuration);
+
+            return;
+        }
+
+        $this->client->indices()->putAlias([
+            'index' => $configuration->getName(),
+            'name' => $configuration->getAlias(),
+        ]);
+    }
+
+    /**
+     * @param IndexConfiguration $configuration
+     */
+    private function switchAlias(IndexConfiguration $configuration)
+    {
+        $actions = [
+            ['add' => ['index' => $configuration->getName(), 'alias' => $configuration->getAlias()]],
+        ];
+
+        $current = $this->client->indices()->getAlias(['name' => $configuration->getAlias()]);
+        $current = array_keys($current);
+
+        foreach ($current as $value) {
+            $actions[] = ['remove' => ['index' => $value, 'alias' => $configuration->getAlias()]];
+        }
+        $this->client->indices()->updateAliases(['body' => ['actions' => $actions]]);
     }
 }

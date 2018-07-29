@@ -60,6 +60,7 @@ Ext.define('Shopware.apps.PluginManager', {
         'list.PremiumPluginsPage',
         'list.ExpiredPluginsPage',
         'list.ConnectIntroductionPage',
+        'list.ImportExportTeaserPage',
         'list.Window',
 
         'detail.Window',
@@ -131,7 +132,22 @@ Ext.define('Shopware.apps.PluginManager', {
         'open-login',
         'check-licence-plugin',
         'plugin-reloaded',
-        'refresh-account-data'
+        'display-plugin-by-name',
+        'load-store-listing',
+        'display-premium-plugins',
+        'display-expired-plugins',
+        'display-importexport-teaser',
+        'display-connect-introduction',
+        'enable-expired-plugins-mode',
+        'enable-connect-introduction-mode',
+        'enable-premium-plugins-mode',
+        'enable-importexport-teaser-mode',
+        'destroy-login',
+        'store-register',
+        'clear-all-cache',
+        'plugin-state-changed',
+        'refresh-account-data',
+        'execute-plugin-update'
     ],
 
     dynamicEvents: [

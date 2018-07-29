@@ -22,8 +22,6 @@ use Symfony\Component\HttpFoundation\Session\Storage\Handler\NativeSessionHandle
 class PhpBridgeSessionStorage extends NativeSessionStorage
 {
     /**
-     * Constructor.
-     *
      * @param AbstractProxy|NativeSessionHandler|\SessionHandlerInterface|null $handler
      * @param MetadataBag                                                      $metaBag MetadataBag
      */
@@ -43,6 +41,10 @@ class PhpBridgeSessionStorage extends NativeSessionStorage
         }
 
         $this->loadSession();
+        if (!$this->saveHandler->isWrapper() && !$this->saveHandler->isSessionHandlerInterface()) {
+            // This condition matches only PHP 5.3 + internal save handlers
+            $this->saveHandler->setActive(true);
+        }
 
         return true;
     }

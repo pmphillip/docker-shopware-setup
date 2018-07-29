@@ -8,10 +8,19 @@ is the preffered and recommended way to ask ONGR support questions.
 [![Build Status](https://travis-ci.org/ongr-io/ElasticsearchDSL.svg?branch=master)](https://travis-ci.org/ongr-io/ElasticsearchDSL)
 [![Coverage Status](https://coveralls.io/repos/ongr-io/ElasticsearchDSL/badge.svg?branch=master&service=github)](https://coveralls.io/github/ongr-io/ElasticsearchDSL?branch=master)
 [![Latest Stable Version](https://poser.pugx.org/ongr/elasticsearch-dsl/v/stable)](https://packagist.org/packages/ongr/elasticsearch-dsl)
+[![Total Downloads](https://poser.pugx.org/ongr/elasticsearch-dsl/downloads)](https://packagist.org/packages/ongr/elasticsearch-dsl)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/ongr-io/ElasticsearchDSL/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/ongr-io/ElasticsearchDSL/?branch=master)
 
-__This component requires Elasticsearch 2.0 or newer.__
-> Warning: If you are using Amazon Elasticsearch Service (currently supports only Elasticsearch 1.x) use Elasticsearch DSL 1.x version. 
+## Version matrix
+
+| Elasticsearch version | ElasticsearchDSL version    |
+| --------------------- | --------------------------- |
+| >= 5.0                | >=5.0                       |
+| >= 2.0, < 5.0         | >=2.0                       |
+| >= 1.0, < 2.0         | 1.x                         |
+| <= 0.90.x             | not supported               |
+
+> ElasticsearchDSL from version >=2.2 works with both Elasticsearch >=2.0 and >=5.0 versions. 
 
 ## Documentation
 
@@ -49,7 +58,7 @@ Create search:
   $matchAll = new ONGR\ElasticsearchDSL\Query\MatchAllQuery();
   
   $search = new ONGR\ElasticsearchDSL\Search();
-  $search->addQuery($matchAll)
+  $search->addQuery($matchAll);
   
   $params = [
     'index' => 'your_index',

@@ -21,7 +21,6 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
 use Shopware\Components\CSRFWhitelistAware;
 
 class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action implements CSRFWhitelistAware
@@ -55,23 +54,21 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
             $this->View()->assign('success', false);
         } elseif ($this->Request()->isXmlHttpRequest() || !Shopware()->Container()->initialized('Db')) {
             $this->View()->loadTemplate($templateModule . '/error/exception.tpl');
-        } elseif (isset($_ENV['SHELL']) || php_sapi_name() === 'cli') {
+        } elseif (isset($_ENV['SHELL']) || PHP_SAPI === 'cli') {
             $this->View()->loadTemplate($templateModule . '/error/cli.tpl');
         } elseif (empty($_SERVER['SERVER_NAME'])) {
             $this->View()->loadTemplate($templateModule . '/error/ajax.tpl');
         } else {
             $this->View()->loadTemplate($templateModule . '/error/index.tpl');
         }
-    }
 
-    public function cliAction()
-    {
-        $this->view->setTemplate();
-
-        $response = new Enlight_Controller_Response_ResponseCli();
-        $response->appendBody(strip_tags($this->View()->exception) . "\n");
-
-        $this->front->setResponse($response);
+        if ($this->isCsrfValidationException()) {
+            $backUrl = htmlspecialchars($_SERVER['HTTP_REFERER']);
+            if (!empty($backUrl)) {
+                $this->View()->assign('backUrl', $backUrl);
+            }
+            $this->View()->assign('isCsrfException', 'true');
+        }
     }
 
     /**
@@ -89,6 +86,7 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
         switch ($code) {
             case Enlight_Controller_Exception::Controller_Dispatcher_Controller_Not_Found:
             case Enlight_Controller_Exception::Controller_Dispatcher_Controller_No_Route:
+            case Enlight_Controller_Exception::PROPERTY_NOT_FOUND:
             case Enlight_Controller_Exception::ActionNotFound:
             case 404:
                 $this->forward('pageNotFoundError');
@@ -128,10 +126,25 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
                 );
                 break;
             case -1:
-                $this->forward('genericError', null, null, array('code' => $targetErrorCode));
+                $this->forward('genericError', null, null, ['code' => $targetErrorCode]);
                 break;
             default:
-                $this->forward('index', 'campaign', 'frontend', array('emotionId' => $targetEmotionId));
+
+                // Try to load the emotion landingpage, render default error in case it is unavailable
+                try {
+                    $result = $this->get('shopware.emotion.emotion_landingpage_loader')->load(
+                        $targetEmotionId,
+                        $this->get('shopware_storefront.context_service')->getShopContext()
+                    );
+
+                    $this->View()->loadTemplate('frontend/campaign/index.tpl');
+                    $this->View()->assign(json_decode(json_encode($result), true));
+                } catch (\Exception $ex) {
+                    $this->forward(
+                        Shopware()->Front()->Dispatcher()->getDefaultAction(),
+                        Shopware()->Front()->Dispatcher()->getDefaultControllerName()
+                    );
+                }
         }
     }
 
@@ -150,12 +163,12 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
 
         $error = $this->Request()->getParam('error_handler');
 
-        /**
+        /*
          * If the system is configured to display the exception data, we need
          * to pass it to the template
         */
         if ($this->Front()->getParam('showException') || $this->Request()->getModuleName() === 'backend') {
-            $path = Shopware()->Container()->getParameter('kernel.root_dir').'/';
+            $path = Shopware()->Container()->getParameter('kernel.root_dir') . '/';
 
             /** @var \Exception $exception */
             $exception = $error->exception;
@@ -169,7 +182,7 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
                 'error' => $exception->getMessage(),
                 'error_message' => $exception->getMessage(),
                 'error_file' => $errorFile,
-                'error_trace' => $errorTrace
+                'error_trace' => $errorTrace,
             ]);
         }
 
@@ -186,19 +199,6 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
     }
 
     /**
-     * Ensure the backend theme is enabled.
-     * This is important in cases when a backend request uses the storefront context eg. "$shop->registerResources($this)".
-     */
-    private function enableBackendTheme()
-    {
-        $directory = Shopware()->Container()->get('theme_path_resolver')->getExtJsThemeDirectory();
-        Shopware()->Container()->get('template')->setTemplateDir([
-            'backend' => $directory,
-            'include_dir' => '.'
-        ]);
-    }
-
-    /**
      * Returns a list with actions which should not be validated for CSRF protection
      *
      * @return string[]
@@ -207,10 +207,42 @@ class Shopware_Controllers_Frontend_Error extends Enlight_Controller_Action impl
     {
         return [
             'error',
-            'cli',
             'pageNotFoundError',
             'genericError',
-            'service'
+            'service',
         ];
+    }
+
+    /**
+     * Ensure the backend theme is enabled.
+     * This is important in cases when a backend request uses the storefront context eg. "$shop->registerResources($this)".
+     */
+    private function enableBackendTheme()
+    {
+        $directory = Shopware()->Container()->get('theme_path_resolver')->getExtJsThemeDirectory();
+        Shopware()->Container()->get('template')->setTemplateDir([
+            'backend' => $directory,
+            'include_dir' => '.',
+        ]);
+    }
+
+    /**
+     * Checks if the Response contains a CSRF Token validation exception
+     *
+     * @return bool
+     */
+    private function isCsrfValidationException()
+    {
+        $exceptions = $this->Response()->getException();
+        if (empty($exceptions)) {
+            return false;
+        }
+        foreach ($exceptions as $exception) {
+            if ($exception instanceof \Shopware\Components\CSRFTokenValidationException) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

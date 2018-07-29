@@ -1,5 +1,5 @@
 {
-    "Version": "2.1.12.94",
+    "Version": "2.1.32.59",
     "Names": {
         "ADP": [
             "ADP",
@@ -217,9 +217,13 @@
             "BYB",
             "Wit-Russische nieuwe roebel (1994–1999)"
         ],
+        "BYN": [
+            "BYN",
+            "Wit-Russische roebel"
+        ],
         "BYR": [
             "BYR",
-            "Wit-Russische roebel"
+            "Wit-Russische roebel (2000–2016)"
         ],
         "BZD": [
             "BZD",
@@ -263,7 +267,7 @@
         ],
         "CNY": [
             "CN¥",
-            "Chinese yuan renminbi"
+            "Chinese renminbi"
         ],
         "COP": [
             "COP",
@@ -415,7 +419,7 @@
         ],
         "GNF": [
             "GNF",
-            "Guinese franc"
+            "Guinese frank"
         ],
         "GNS": [
             "GNS",
@@ -563,7 +567,7 @@
         ],
         "KYD": [
             "KYD",
-            "Caymaneilandse dollar"
+            "Kaaimaneilandse dollar"
         ],
         "KZT": [
             "KZT",
@@ -775,11 +779,11 @@
         ],
         "PEN": [
             "PEN",
-            "Peruaanse nieuwe sol"
+            "Peruaanse sol"
         ],
         "PES": [
             "PES",
-            "Peruaanse sol"
+            "Peruaanse sol (1863–1965)"
         ],
         "PGK": [
             "PGK",
@@ -1035,7 +1039,7 @@
         ],
         "VNN": [
             "VNN",
-            "Oude Vietnamese dong (1978–1985)"
+            "Vietnamese dong (1978–1985)"
         ],
         "VUV": [
             "VUV",
@@ -1071,7 +1075,7 @@
         ],
         "XPF": [
             "XPF",
-            "CFP-franc"
+            "CFP-frank"
         ],
         "XRE": [
             "XRE",

@@ -50,7 +50,7 @@ use Symfony\Component\PropertyAccess\PropertyPath;
  * either as "Y-m-d" string or as timestamp. Internally we still want to
  * use a DateTime object for processing. To convert the data from string/integer
  * to DateTime you can set a normalization transformer by calling
- * addNormTransformer(). The normalized data is then converted to the displayed
+ * addModelTransformer(). The normalized data is then converted to the displayed
  * data as described before.
  *
  * The conversions (1) -> (2) -> (3) use the transform methods of the transformers.
@@ -161,8 +161,6 @@ class Form implements \IteratorAggregate, FormInterface
 
     /**
      * Creates a new form based on the given configuration.
-     *
-     * @param FormConfigInterface $config The form configuration.
      *
      * @throws LogicException if a data mapper is not provided for a compound form
      */
@@ -408,6 +406,10 @@ class Form implements \IteratorAggregate, FormInterface
         }
 
         if (!$this->defaultDataSet) {
+            if ($this->lockSetData) {
+                throw new RuntimeException('A cycle was detected. Listeners to the PRE_SET_DATA event must not call getData() if the form data has not already been set. You should call getData() on the FormEvent object instead.');
+            }
+
             $this->setData($this->config->getData());
         }
 
@@ -428,6 +430,10 @@ class Form implements \IteratorAggregate, FormInterface
         }
 
         if (!$this->defaultDataSet) {
+            if ($this->lockSetData) {
+                throw new RuntimeException('A cycle was detected. Listeners to the PRE_SET_DATA event must not call getNormData() if the form data has not already been set.');
+            }
+
             $this->setData($this->config->getData());
         }
 
@@ -448,6 +454,10 @@ class Form implements \IteratorAggregate, FormInterface
         }
 
         if (!$this->defaultDataSet) {
+            if ($this->lockSetData) {
+                throw new RuntimeException('A cycle was detected. Listeners to the PRE_SET_DATA event must not call getViewData() if the form data has not already been set.');
+            }
+
             $this->setData($this->config->getData());
         }
 
@@ -497,7 +507,7 @@ class Form implements \IteratorAggregate, FormInterface
     public function submit($submittedData, $clearMissing = true)
     {
         if ($submittedData instanceof Request) {
-            @trigger_error('Passing a Symfony\Component\HttpFoundation\Request object to the '.__CLASS__.'::bind and '.__METHOD__.' methods is deprecated since 2.3 and will be removed in 3.0. Use the '.__CLASS__.'::handleRequest method instead. If you want to test whether the form was submitted separately, you can use the '.__CLASS__.'::isSubmitted method.', E_USER_DEPRECATED);
+            @trigger_error('Passing a Symfony\Component\HttpFoundation\Request object to the '.__CLASS__.'::bind and '.__METHOD__.' methods is deprecated since Symfony 2.3 and will be removed in 3.0. Use the '.__CLASS__.'::handleRequest method instead. If you want to test whether the form was submitted separately, you can use the '.__CLASS__.'::isSubmitted method.', E_USER_DEPRECATED);
         }
 
         if ($this->submitted) {
@@ -674,7 +684,7 @@ class Form implements \IteratorAggregate, FormInterface
         // This method is deprecated for Request too, but the error is
         // triggered in Form::submit() method.
         if (!$submittedData instanceof Request) {
-            @trigger_error('The '.__METHOD__.' method is deprecated since version 2.3 and will be removed in 3.0. Use the '.__CLASS__.'::submit method instead.', E_USER_DEPRECATED);
+            @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.3 and will be removed in 3.0. Use the '.__CLASS__.'::submit method instead.', E_USER_DEPRECATED);
         }
 
         return $this->submit($submittedData);
@@ -714,7 +724,7 @@ class Form implements \IteratorAggregate, FormInterface
      */
     public function isBound()
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.3 and will be removed in 3.0. Use the '.__CLASS__.'::isSubmitted method instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.3 and will be removed in 3.0. Use the '.__CLASS__.'::isSubmitted method instead.', E_USER_DEPRECATED);
 
         return $this->submitted;
     }
@@ -748,7 +758,7 @@ class Form implements \IteratorAggregate, FormInterface
 
         return FormUtil::isEmpty($this->modelData) ||
             // arrays, countables
-            0 === count($this->modelData) ||
+            ((is_array($this->modelData) || $this->modelData instanceof \Countable) && 0 === count($this->modelData)) ||
             // traversables that are not countable
             ($this->modelData instanceof \Traversable && 0 === iterator_count($this->modelData));
     }
@@ -834,7 +844,7 @@ class Form implements \IteratorAggregate, FormInterface
      */
     public function getErrorsAsString($level = 0)
     {
-        @trigger_error('The '.__METHOD__.' method is deprecated since version 2.5 and will be removed in 3.0. Use (string) Form::getErrors(true, false) instead.', E_USER_DEPRECATED);
+        @trigger_error('The '.__METHOD__.' method is deprecated since Symfony 2.5 and will be removed in 3.0. Use (string) Form::getErrors(true, false) instead.', E_USER_DEPRECATED);
 
         return self::indent((string) $this->getErrors(true, false), $level);
     }
@@ -984,7 +994,7 @@ class Form implements \IteratorAggregate, FormInterface
      *
      * @return FormInterface The child form
      *
-     * @throws \OutOfBoundsException If the named child does not exist.
+     * @throws \OutOfBoundsException if the named child does not exist
      */
     public function offsetGet($name)
     {
@@ -994,11 +1004,11 @@ class Form implements \IteratorAggregate, FormInterface
     /**
      * Adds a child to the form (implements the \ArrayAccess interface).
      *
-     * @param string        $name  Ignored. The name of the child is used.
-     * @param FormInterface $child The child to be added.
+     * @param string        $name  Ignored. The name of the child is used
+     * @param FormInterface $child The child to be added
      *
-     * @throws AlreadySubmittedException If the form has already been submitted.
-     * @throws LogicException            When trying to add a child to a non-compound form.
+     * @throws AlreadySubmittedException if the form has already been submitted
+     * @throws LogicException            when trying to add a child to a non-compound form
      *
      * @see self::add()
      */
@@ -1012,7 +1022,7 @@ class Form implements \IteratorAggregate, FormInterface
      *
      * @param string $name The name of the child to remove
      *
-     * @throws AlreadySubmittedException If the form has already been submitted.
+     * @throws AlreadySubmittedException if the form has already been submitted
      */
     public function offsetUnset($name)
     {
@@ -1022,7 +1032,7 @@ class Form implements \IteratorAggregate, FormInterface
     /**
      * Returns the iterator for this group.
      *
-     * @return \Traversable
+     * @return \Traversable|FormInterface[]
      */
     public function getIterator()
     {
@@ -1072,9 +1082,9 @@ class Form implements \IteratorAggregate, FormInterface
      *
      * @param mixed $value The value to transform
      *
-     * @throws TransformationFailedException If the value cannot be transformed to "normalized" format
-     *
      * @return mixed
+     *
+     * @throws TransformationFailedException If the value cannot be transformed to "normalized" format
      */
     private function modelToNorm($value)
     {
@@ -1098,9 +1108,9 @@ class Form implements \IteratorAggregate, FormInterface
      *
      * @param string $value The value to reverse transform
      *
-     * @throws TransformationFailedException If the value cannot be transformed to "model" format
-     *
      * @return mixed
+     *
+     * @throws TransformationFailedException If the value cannot be transformed to "model" format
      */
     private function normToModel($value)
     {
@@ -1126,9 +1136,9 @@ class Form implements \IteratorAggregate, FormInterface
      *
      * @param mixed $value The value to transform
      *
-     * @throws TransformationFailedException If the value cannot be transformed to "view" format
-     *
      * @return mixed
+     *
+     * @throws TransformationFailedException If the value cannot be transformed to "view" format
      */
     private function normToView($value)
     {
@@ -1161,9 +1171,9 @@ class Form implements \IteratorAggregate, FormInterface
      *
      * @param string $value The value to reverse transform
      *
-     * @throws TransformationFailedException If the value cannot be transformed to "normalized" format
-     *
      * @return mixed
+     *
+     * @throws TransformationFailedException If the value cannot be transformed to "normalized" format
      */
     private function viewToNorm($value)
     {

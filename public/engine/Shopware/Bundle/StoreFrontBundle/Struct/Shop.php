@@ -29,10 +29,10 @@ use Shopware\Models\Shop\Shop as ShopEntity;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class Shop extends Extendable implements \JsonSerializable
+class Shop extends Extendable
 {
     /**
      * @var int
@@ -83,19 +83,9 @@ class Shop extends Extendable implements \JsonSerializable
     protected $url;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $secure;
-
-    /**
-     * @var string
-     */
-    protected $secureHost;
-
-    /**
-     * @var string
-     */
-    protected $securePath;
 
     /**
      * @var Category
@@ -128,12 +118,13 @@ class Shop extends Extendable implements \JsonSerializable
     protected $currency;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $customerScope;
 
     /**
      * @param ShopEntity $shop
+     *
      * @return Shop
      */
     public static function createFromShopEntity(ShopEntity $shop)
@@ -149,8 +140,6 @@ class Shop extends Extendable implements \JsonSerializable
         $struct->setPath($shop->getBasePath());
         $struct->setUrl($shop->getBaseUrl());
         $struct->setSecure($shop->getSecure());
-        $struct->setSecureHost($shop->getSecureHost());
-        $struct->setSecurePath($shop->getSecureBasePath());
         if ($shop->getCategory()) {
             $struct->setCategory(
                 Category::createFromCategoryEntity($shop->getCategory())
@@ -179,7 +168,7 @@ class Shop extends Extendable implements \JsonSerializable
      */
     public function setIsDefault($isDefault)
     {
-        $this->isDefault = (bool)$isDefault;
+        $this->isDefault = (bool) $isDefault;
     }
 
     /**
@@ -187,7 +176,7 @@ class Shop extends Extendable implements \JsonSerializable
      */
     public function isDefault()
     {
-        return (bool)$this->isDefault;
+        return (bool) $this->isDefault;
     }
 
     /**
@@ -247,7 +236,7 @@ class Shop extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @param boolean $secure
+     * @param bool $secure
      */
     public function setSecure($secure)
     {
@@ -255,43 +244,11 @@ class Shop extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function getSecure()
     {
         return $this->secure;
-    }
-
-    /**
-     * @param string $secureHost
-     */
-    public function setSecureHost($secureHost)
-    {
-        $this->secureHost = $secureHost;
-    }
-
-    /**
-     * @return string
-     */
-    public function getSecureHost()
-    {
-        return $this->secureHost;
-    }
-
-    /**
-     * @param string $securePath
-     */
-    public function setSecurePath($securePath)
-    {
-        $this->securePath = $securePath;
-    }
-
-    /**
-     * @return string
-     */
-    public function getSecurePath()
-    {
-        return $this->securePath;
     }
 
     /**
@@ -351,7 +308,7 @@ class Shop extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {
@@ -471,7 +428,7 @@ class Shop extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasCustomerScope()
     {
@@ -479,7 +436,7 @@ class Shop extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @param boolean $customerScope
+     * @param bool $customerScope
      */
     public function setCustomerScope($customerScope)
     {

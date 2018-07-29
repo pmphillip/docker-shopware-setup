@@ -27,13 +27,15 @@
  */
 class Shopware_Controllers_Frontend_Compare extends Enlight_Controller_Action
 {
+    /**
+     * @var sArticles
+     */
     protected $articles;
 
     public function preDispatch()
     {
         $this->View()->setScope(Enlight_Template_Manager::SCOPE_PARENT);
         $this->articles = Shopware()->Modules()->Articles();
-        $this->Front()->Plugins()->Json()->setPadding();
     }
 
     public function indexAction()

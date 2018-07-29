@@ -1,8 +1,9 @@
 {extends file="frontend/index/index.tpl"}
 
 {* Breadcrumb *}
-{block name='frontend_index_start' append}
-    {$sBreadcrumb = [['name'=>"{s name='NewsletterTitle'}{/s}", 'link'=>{url}]]}
+{block name='frontend_index_start'}
+    {$smarty.block.parent}
+    {$sBreadcrumb = [['name' => "{s name='NewsletterTitle'}{/s}", 'link' => {url}]]}
 {/block}
 
 {* Meta description *}
@@ -28,17 +29,30 @@
 
         {* Error messages *}
         {block name="frontend_newsletter_error_messages"}
+
             {if $sStatus.code != 0}
                 <div class="newsletter--error-messages">
-                    {if $sStatus.code==3}
-                        {include file="frontend/_includes/messages.tpl" type='success' content=$sStatus.message}
-                    {elseif $sStatus.code==5}
-                        {include file="frontend/_includes/messages.tpl" type='error' content=$sStatus.message}
-                    {elseif $sStatus.code==2}
-                        {include file="frontend/_includes/messages.tpl" type='warning' content=$sStatus.message}
+
+                    {$file = 'frontend/_includes/messages.tpl'}
+
+                    {if $sStatus.code === 7}
+                        {$type = 'error'}
+                        {$content = "{s namespace="widgets/captcha/custom_captcha" name="invalidCaptchaMessage"}{/s}"}
+                    {elseif $sStatus.code == 3}
+                        {$type = 'success'}
+                        {$content = $sStatus.message}
+                    {elseif $sStatus.code == 5}
+                        {$type = 'error'}
+                        {$content = $sStatus.message}
+                    {elseif $sStatus.code == 2}
+                        {$type = 'warning'}
+                        {$content = $sStatus.message}
                     {elseif $sStatus.code != 0}
-                        {include file="frontend/_includes/messages.tpl" type='error' content=$sStatus.message}
+                        {$type = 'error'}
+                        {$content = $sStatus.message}
                     {/if}
+
+                    {include file=$file type=$type content=$content}
                 </div>
             {/if}
         {/block}
@@ -73,7 +87,7 @@
 
                             {* Subscription option *}
                             {block name="frontend_newsletter_form_input_subscription"}
-                                <div class="newsletter--subscription">
+                                <div class="newsletter--subscription select-field">
                                     <select name="subscribeToNewsletter" required="required" class="field--select newsletter--checkmail">
                                         <option value="1">{s name="sNewsletterOptionSubscribe"}{/s}</option>
                                         <option value="-1"{if $_POST.subscribeToNewsletter eq -1 || (!$_POST.subscribeToNewsletter && $sUnsubscribe == true)} selected="selected"{/if}>{s name="sNewsletterOptionUnsubscribe"}{/s}</option>
@@ -97,8 +111,8 @@
 
                                         {* Salutation *}
                                         {block name="frontend_newsletter_form_input_salutation"}
-                                            <div class="newsletter--salutation">
-                                                <select name="salutation" class="field--select{if $sStatus.sErrorFlag.salutation} has--error{/if}">
+                                            <div class="newsletter--salutation select-field">
+                                                <select name="salutation" class="field--select">
                                                     <option value=""{if $_POST.salutation eq ""} selected="selected"{/if}>{s name='NewsletterRegisterPlaceholderSalutation'}{/s}</option>
                                                     {foreach $salutations as $key => $label}
                                                         <option value="{$key}"{if $_POST.salutation eq $key} selected="selected"{/if}>{$label}</option>
@@ -138,10 +152,6 @@
                                                     <input name="city" type="text" placeholder="{s name="NewsletterRegisterBillingPlaceholderCityname"}{/s}" value="{$_POST.city|escape}" size="25" class="input--field input--field-city input--spacer{if $sStatus.sErrorFlag.city} has--error{/if}"/>
                                                     <input name="zipcode" type="text" placeholder="{s name="NewsletterRegisterBillingPlaceholderZipcode"}{/s}" value="{$_POST.zipcode|escape}" class="input--field input--field-zipcode{if $sStatus.sErrorFlag.zipcode} has--error{/if}"/>
                                                 {/if}
-
-
-
-
                                             </div>
                                         {/block}
 
@@ -155,6 +165,49 @@
                                 <div class="newsletter--required-info">
                                     {s name='RegisterPersonalRequiredText' namespace="frontend/register/personal_fieldset"}{/s}
                                 </div>
+                            {/block}
+
+                            {* Captcha *}
+                            {block name="frontend_newsletter_form_captcha"}
+                                {if !({config name=noCaptchaAfterLogin} && $sUserLoggedIn)}
+                                    {$newsletterCaptchaName = {config name=newsletterCaptcha}}
+                                    <div class="newsletter--captcha-form">
+                                        {if $newsletterCaptchaName === 'legacy'}
+                                            <div class="newsletter--captcha">
+
+                                                {* Deferred loading of the captcha image *}
+                                                {block name='frontend_newsletter_form_captcha_placeholder'}
+                                                    <div class="captcha--placeholder" {if $sErrorFlag.sCaptcha}
+                                                         data-hasError="true"{/if}
+                                                         data-src="{url module=widgets controller=Captcha action=refreshCaptcha}"
+                                                         data-autoload="true">
+                                                    </div>
+                                                {/block}
+
+                                                {block name='frontend_newsletter_form_captcha_label'}
+                                                    <strong class="captcha--notice">{s name="SupportLabelCaptcha" namespace="frontend/forms/elements"}{/s}</strong>
+                                                {/block}
+
+                                                {block name='frontend_newsletter_form_captcha_code'}
+                                                    <div class="captcha--code">
+                                                        <input type="text" name="sCaptcha" class="newsletter--field{if $sErrorFlag.sCaptcha} has--error{/if}" required="required" aria-required="true" />
+                                                    </div>
+                                                {/block}
+                                            </div>
+                                        {elseif $newsletterCaptchaName !== 'nocaptcha'}
+                                            <div class="captcha--placeholder"
+                                                 data-src="{url module=widgets controller=Captcha action=getCaptchaByName captchaName=$newsletterCaptchaName}"{if isset($sErrorFlag) && count($sErrorFlag) > 0}
+                                                 data-hasError="true"{/if} data-autoload="true"></div>
+                                        {/if}
+                                    </div>
+                                {/if}
+                            {/block}
+
+                            {* Data protection information *}
+                            {block name="frontend_newsletter_form_privacy"}
+                                {if {config name=ACTDPRTEXT} || {config name=ACTDPRCHECK}}
+                                    {include file="frontend/_includes/privacy.tpl"}
+                                {/if}
                             {/block}
 
                             {* Submit button *}

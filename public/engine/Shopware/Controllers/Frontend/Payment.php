@@ -22,11 +22,15 @@
  * our trademarks remain entirely with us.
  */
 
+use Shopware\Components\BasketSignature\BasketPersister;
+use Shopware\Components\BasketSignature\BasketSignatureGeneratorInterface;
+use Shopware\Components\Random;
+
 /**
  * Shopware Payment Controller
  *
  * @category  Shopware
- * @package   Shopware\Controllers\Frontend
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_Action
@@ -41,9 +45,9 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
         if (($user = $this->getUser()) !== null
                 && !empty($user['additional']['payment']['name'])) {
             return $user['additional']['payment']['name'];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -53,7 +57,7 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
      */
     public function getCurrencyShortName()
     {
-        return Shopware()->Currency()->getShortName();
+        return Shopware()->Container()->get('currency')->getShortName();
     }
 
     /**
@@ -63,7 +67,7 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
      */
     public function createPaymentUniqueId()
     {
-        return md5(uniqid(mt_rand(), true));
+        return Random::getAlphanumericString(32);
     }
 
     /**
@@ -71,8 +75,9 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
      *
      * @param string $transactionId
      * @param string $paymentUniqueId
-     * @param int $paymentStatusId
-     * @param bool $sendStatusMail
+     * @param int    $paymentStatusId
+     * @param bool   $sendStatusMail
+     *
      * @return int
      */
     public function saveOrder($transactionId, $paymentUniqueId, $paymentStatusId = null, $sendStatusMail = false)
@@ -86,11 +91,11 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
             WHERE transactionID=? AND temporaryID=?
             AND status!=-1 AND userID=?
         ';
-        $orderNumber = Shopware()->Db()->fetchOne($sql, array(
+        $orderNumber = Shopware()->Db()->fetchOne($sql, [
                 $transactionId,
                 $paymentUniqueId,
-                Shopware()->Session()->sUserId
-            ));
+                Shopware()->Session()->sUserId,
+            ]);
 
         if (empty($orderNumber)) {
             $user = $this->getUser();
@@ -126,9 +131,8 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
      *
      * @param string $transactionId
      * @param string $paymentUniqueId
-     * @param int $paymentStatusId
-     * @param bool $sendStatusMail
-     * @return void
+     * @param int    $paymentStatusId
+     * @param bool   $sendStatusMail
      */
     public function savePaymentStatus($transactionId, $paymentUniqueId, $paymentStatusId, $sendStatusMail = false)
     {
@@ -137,10 +141,10 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
             WHERE transactionID=? AND temporaryID=?
             AND status!=-1
         ';
-        $orderId = Shopware()->Db()->fetchOne($sql, array(
+        $orderId = Shopware()->Db()->fetchOne($sql, [
                 $transactionId,
-                $paymentUniqueId
-            ));
+                $paymentUniqueId,
+            ]);
         $order = Shopware()->Modules()->Order();
         $order->setPaymentStatus($orderId, $paymentStatusId, $sendStatusMail);
     }
@@ -156,9 +160,9 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
         $basket = $this->getBasket();
         if (!empty($user['additional']['charge_vat'])) {
             return empty($basket['AmountWithTaxNumeric']) ? $basket['AmountNumeric'] : $basket['AmountWithTaxNumeric'];
-        } else {
-            return $basket['AmountNetNumeric'];
         }
+
+        return $basket['AmountNetNumeric'];
     }
 
     /**
@@ -172,9 +176,9 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
         $basket = $this->getBasket();
         if (!empty($user['additional']['charge_vat'])) {
             return $basket['sShippingcostsWithTax'];
-        } else {
-            return str_replace(',', '.', $basket['sShippingcosts']);
         }
+
+        return str_replace(',', '.', $basket['sShippingcosts']);
     }
 
     /**
@@ -186,9 +190,9 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
     {
         if (!empty(Shopware()->Session()->sOrderVariables['sUserData'])) {
             return Shopware()->Session()->sOrderVariables['sUserData'];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -200,9 +204,9 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
     {
         if (!empty(Shopware()->Session()->sOrderVariables['sBasket'])) {
             return Shopware()->Session()->sOrderVariables['sBasket'];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -212,8 +216,114 @@ abstract class Shopware_Controllers_Frontend_Payment extends Enlight_Controller_
     {
         if (!empty(Shopware()->Session()->sOrderVariables['sOrderNumber'])) {
             return Shopware()->Session()->sOrderVariables['sOrderNumber'];
-        } else {
-            return null;
         }
+
+        return null;
+    }
+
+    /**
+     * @return string
+     */
+    protected function persistBasket()
+    {
+        /** @var Enlight_Components_Session_Namespace $session */
+        $session = $this->get('session');
+        $basket = $session->offsetGet('sOrderVariables')->getArrayCopy();
+        $customerId = $session->offsetGet('sUserId');
+
+        /** @var BasketSignatureGeneratorInterface $signatureGenerator */
+        $signatureGenerator = $this->get('basket_signature_generator');
+        $signature = $signatureGenerator->generateSignature(
+            $basket['sBasket'],
+            $customerId
+        );
+
+        /** @var BasketPersister $persister */
+        $persister = $this->get('basket_persister');
+        $persister->persist($signature, $basket);
+
+        return $signature;
+    }
+
+    /**
+     * Loads the persisted basket identified by the given signature.
+     * Persisted basket will be removed from storage after loading.
+     * Converted ArrayObject for shopware session is already created and stored in session for following checkout processes.
+     *
+     * @param string $signature
+     *
+     * @return ArrayObject
+     */
+    protected function loadBasketFromSignature($signature)
+    {
+        /** @var BasketPersister $persister */
+        $persister = $this->get('basket_persister');
+        $data = $persister->load($signature);
+
+        if (!$data) {
+            throw new RuntimeException(sprintf('Basket for signature %s not found', $signature));
+        }
+
+        $persister->delete($signature);
+
+        $basket = new ArrayObject($data, ArrayObject::ARRAY_AS_PROPS);
+        $this->get('session')->offsetSet('sOrderVariables', $basket);
+
+        return $basket;
+    }
+
+    /**
+     * @param string      $signature
+     * @param ArrayObject $basket
+     *
+     * @throws RuntimeException if signature does not match with provided basket
+     */
+    protected function verifyBasketSignature($signature, ArrayObject $basket)
+    {
+        /** @var BasketSignatureGeneratorInterface $generator */
+        $generator = $this->get('basket_signature_generator');
+
+        $data = $basket->getArrayCopy();
+
+        $newSignature = $generator->generateSignature(
+            $data['sBasket'],
+            $this->get('session')->get('sUserId')
+        );
+
+        if ($newSignature !== $signature) {
+            throw new RuntimeException('The given signature is not equal to the generated signature of the saved basket');
+        }
+    }
+
+    /**
+     * @param string $paymentName
+     * @param string $orderNumber
+     * @param string $transactionNumber
+     */
+    protected function sendSignatureIsInvalidNotificationMail($paymentName, $orderNumber, $transactionNumber)
+    {
+        $content = <<<'EOD'
+An invalid basket signature occurred during a customers checkout. Please verify the order.
+Following information may help you to identify the problem:<br>
+Payment method: %s. <br>
+Order number: %s.<br>
+Payment transaction number: %s.
+EOD;
+
+        $content = sprintf($content, $paymentName, $orderNumber, $transactionNumber);
+
+        try {
+            /** @var Enlight_Components_Mail $mail */
+            $mail = $this->get('mail');
+            $mail->addTo($this->get('config')->get('mail'));
+            $mail->setSubject('An invalid basket signature occured');
+            $mail->setBodyHtml($content);
+            $mail->send();
+        } catch (Exception $e) {
+        }
+
+        /** @var \Shopware\Components\Logger $logger */
+        $logger = $this->get('corelogger');
+        $logger->log('error', $content);
     }
 }

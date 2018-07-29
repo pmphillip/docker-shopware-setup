@@ -28,7 +28,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Gateway\DBAL\Hydrator
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ConfiguratorHydrator extends Hydrator
@@ -39,26 +39,35 @@ class ConfiguratorHydrator extends Hydrator
     private $attributeHydrator;
 
     /**
+     * @var MediaHydrator
+     */
+    private $mediaHydrator;
+
+    /**
      * @param AttributeHydrator $attributeHydrator
      */
-    public function __construct(AttributeHydrator $attributeHydrator)
+    public function __construct(AttributeHydrator $attributeHydrator, MediaHydrator $mediaHydrator)
     {
         $this->attributeHydrator = $attributeHydrator;
+        $this->mediaHydrator = $mediaHydrator;
     }
 
     /**
      * @param array $data
+     *
      * @return Struct\Configurator\Set
      */
     public function hydrate(array $data)
     {
         $set = $this->createSet($data[0]);
         $set->setGroups($this->hydrateGroups($data));
+
         return $set;
     }
 
     /**
      * @param array $data
+     *
      * @return Struct\Configurator\Group[]
      */
     public function hydrateGroups(array $data)
@@ -85,6 +94,7 @@ class ConfiguratorHydrator extends Hydrator
 
     /**
      * @param $data
+     *
      * @return Struct\Configurator\Set
      */
     private function createSet($data)
@@ -99,6 +109,7 @@ class ConfiguratorHydrator extends Hydrator
 
     /**
      * @param array $data
+     *
      * @return Struct\Configurator\Group
      */
     private function createGroup($data)
@@ -120,6 +131,7 @@ class ConfiguratorHydrator extends Hydrator
 
     /**
      * @param array $data
+     *
      * @return Struct\Configurator\Option
      */
     private function createOption($data)
@@ -134,6 +146,11 @@ class ConfiguratorHydrator extends Hydrator
 
         if ($data['__configuratorOptionAttribute_id']) {
             $this->attributeHydrator->addAttribute($option, $data, 'configuratorOptionAttribute', null, 'configuratorOption');
+        }
+        if (isset($data['__media_id'])) {
+            $option->setMedia(
+                $this->mediaHydrator->hydrate($data)
+            );
         }
 
         return $option;

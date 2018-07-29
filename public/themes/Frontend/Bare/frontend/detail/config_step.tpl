@@ -22,8 +22,7 @@
         {$pregroupID=$groupID-1}
         {* Configurator drop down *}
         {block name='frontend_detail_group_selection'}
-            <div class="field--select{if $groupID gt 0 && empty($sArticle.sConfigurator[$pregroupID].user_selected)} is--disabled{/if}">
-                <span class="arrow"></span>
+            <div class="field--select select-field{if $groupID gt 0 && empty($sArticle.sConfigurator[$pregroupID].user_selected)} is--disabled{/if}">
                 <select{if $groupID gt 0 && empty($sArticle.sConfigurator[$pregroupID].user_selected)} disabled="disabled"{/if} name="group[{$sConfigurator.groupID}]"{if $theme.ajaxVariantSwitch} data-ajax-select-variants="true"{else} data-auto-submit="true"{/if}>
 
                     {* Please select... *}
@@ -32,7 +31,7 @@
                     {/if}
 
                     {foreach from=$sConfigurator.values item=configValue name=option key=optionID}
-                        <option {if !$configValue.selectable}disabled{/if} {if $configValue.selected && $sConfigurator.user_selected} selected="selected"{/if} value="{$configValue.optionID}">
+                        <option {if !$sArticle.notification && !$configValue.selectable}disabled{/if} {if $configValue.selected && $sConfigurator.user_selected} selected="selected"{/if} value="{$configValue.optionID}">
                             {$configValue.optionname}{if $configValue.upprice && !$configValue.reset} {if $configValue.upprice > 0}{/if}{/if}
                             {if !$configValue.selectable}{s name="DetailConfigValueNotAvailable"}{/s}{/if}
                         </option>

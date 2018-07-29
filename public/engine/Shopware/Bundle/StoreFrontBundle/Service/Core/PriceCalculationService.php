@@ -21,34 +21,34 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 namespace Shopware\Bundle\StoreFrontBundle\Service\Core;
 
-use Shopware\Bundle\StoreFrontBundle\Struct;
 use Shopware\Bundle\StoreFrontBundle\Service;
-use Shopware\Bundle\StoreFrontBundle\Gateway;
+use Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Service\Core
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class PriceCalculationService implements Service\PriceCalculationServiceInterface
 {
     /**
-     * @var Gateway\PriceGroupDiscountGatewayInterface
+     * @var Service\PriceCalculatorInterface
      */
-    private $priceGroupDiscountGateway;
+    private $priceCalculatorService;
 
     /**
-     * @param Gateway\PriceGroupDiscountGatewayInterface $priceGroupDiscountGateway
+     * @param Service\PriceCalculatorInterface $priceCalculatorService
      */
-    public function __construct(Gateway\PriceGroupDiscountGatewayInterface $priceGroupDiscountGateway)
+    public function __construct(Service\PriceCalculatorInterface $priceCalculatorService)
     {
-        $this->priceGroupDiscountGateway = $priceGroupDiscountGateway;
+        $this->priceCalculatorService = $priceCalculatorService;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function calculateProduct(
         Struct\ListProduct $product,
@@ -56,8 +56,10 @@ class PriceCalculationService implements Service\PriceCalculationServiceInterfac
     ) {
         $tax = $context->getTaxRule($product->getTax()->getId());
 
+        $rules = $product->getPriceRules();
+
         $prices = [];
-        foreach ($product->getPriceRules() as $rule) {
+        foreach ($rules as $rule) {
             $prices[] = $this->calculatePriceStruct($rule, $tax, $context);
         }
 
@@ -92,9 +94,11 @@ class PriceCalculationService implements Service\PriceCalculationServiceInterfac
 
     /**
      * Calculates the cheapest price considering the variant min purchase
-     * @param Struct\ListProduct $product
-     * @param Struct\Product\PriceRule $priceRule
+     *
+     * @param Struct\ListProduct             $product
+     * @param Struct\Product\PriceRule       $priceRule
      * @param Struct\ProductContextInterface $context
+     *
      * @return Struct\Product\Price
      */
     private function calculateCheapestAvailablePrice(
@@ -112,6 +116,7 @@ class PriceCalculationService implements Service\PriceCalculationServiceInterfac
             $priceRule->getUnit()->getMinPurchase() * $priceRule->getPseudoPrice()
         );
         $tax = $context->getTaxRule($product->getTax()->getId());
+
         return $this->calculatePriceStruct($priceRule, $tax, $context);
     }
 
@@ -121,9 +126,10 @@ class PriceCalculationService implements Service\PriceCalculationServiceInterfac
      * and the cheapest price struct.
      * All price structs will be calculated through this function.
      *
-     * @param Struct\Product\PriceRule $rule
-     * @param Struct\Tax $tax
+     * @param Struct\Product\PriceRule       $rule
+     * @param Struct\Tax                     $tax
      * @param Struct\ProductContextInterface $context
+     *
      * @return Struct\Product\Price
      */
     private function calculatePriceStruct(
@@ -135,12 +141,12 @@ class PriceCalculationService implements Service\PriceCalculationServiceInterfac
 
         //calculates the normal price of the struct.
         $price->setCalculatedPrice(
-            $this->calculatePrice($rule->getPrice(), $tax, $context)
+            $this->priceCalculatorService->calculatePrice($rule->getPrice(), $tax, $context)
         );
 
         //check if a pseudo price is defined and calculates it too.
         $price->setCalculatedPseudoPrice(
-            $this->calculatePrice($rule->getPseudoPrice(), $tax, $context)
+            $this->priceCalculatorService->calculatePrice($rule->getPseudoPrice(), $tax, $context)
         );
 
         //check if the product has unit definitions and calculate the reference price for the unit.
@@ -154,88 +160,17 @@ class PriceCalculationService implements Service\PriceCalculationServiceInterfac
     }
 
     /**
-     * Helper function which calculates a single price value.
-     * The function subtracts the percentage customer group discount if
-     * it should be considered and decides over the global state if the
-     * price should be calculated gross or net.
-     * The function is used for the original price value of a price struct
-     * and the pseudo price of a price struct.
-     *
-     * @param $price
-     * @param Struct\Tax $tax
-     * @param Struct\ProductContextInterface $context
-     * @return float
-     */
-    private function calculatePrice($price, Struct\Tax $tax, Struct\ProductContextInterface $context)
-    {
-        /**
-         * Important:
-         * We have to use the current customer group of the current user
-         * and not the customer group of the price.
-         *
-         * The price could be a price of the fallback customer group
-         * but the discounts and gross calculation should be used from
-         * the current customer group!
-         */
-        $customerGroup = $context->getCurrentCustomerGroup();
-
-        /**
-         * Basket discount calculation:
-         *
-         * Check if a global basket discount is configured and reduce the price
-         * by the percentage discount value of the current customer group.
-         */
-        if ($customerGroup->useDiscount() && $customerGroup->getPercentageDiscount()) {
-            $price = $price - ($price / 100 * $customerGroup->getPercentageDiscount());
-        }
-
-        /**
-         * Currency calculation:
-         * If the customer is currently in a sub shop with another currency, like dollar,
-         * we have to calculate the the price for the other currency.
-         */
-        $price = $price * $context->getCurrency()->getFactor();
-
-        /**
-         * check if the customer group should see gross prices.
-         */
-        if (!$customerGroup->displayGrossPrices()) {
-            return round($price, 3);
-        }
-
-        /**
-         * Gross calculation:
-         *
-         * This line contains the gross price calculation within the store front.
-         *
-         * The passed $context object contains a calculated Struct\Tax object which
-         * defines which tax rules should be used for the tax calculation.
-         *
-         * The tax rules can be defined individual for each customer group and
-         * individual for each area, country and state.
-         *
-         * For example:
-         *  - The EK customer group has different configured HIGH-TAX rules.
-         *  - In area Europe, in country Germany the global tax value are set to 19%
-         *  - But in area Europe, in country Germany, in state Bayern, the tax value are set to 20%
-         *  - But in area Europe, in country Germany, in state Berlin, the tax value are set to 18%
-         */
-        $price = $price * (100 + $tax->getTax()) / 100;
-
-        return round($price, 3);
-    }
-
-    /**
      * Calculates the product unit reference price for the passed
      * product price.
      *
      * @param Struct\Product\Price $price
+     *
      * @return float
      */
     private function calculateReferencePrice(Struct\Product\Price $price)
     {
         $value = $price->getCalculatedPrice() / $price->getUnit()->getPurchaseUnit() * $price->getUnit()->getReferenceUnit();
 
-        return round($value, 3);
+        return round($value, 2);
     }
 }

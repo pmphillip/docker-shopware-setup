@@ -11,6 +11,9 @@
 
 namespace Symfony\Component\Console\Input;
 
+use Symfony\Component\Console\Exception\InvalidArgumentException;
+use Symfony\Component\Console\Exception\RuntimeException;
+
 /**
  * InputInterface is the interface implemented by all input classes.
  *
@@ -21,7 +24,7 @@ interface InputInterface
     /**
      * Returns the first argument from the raw parameters (not parsed).
      *
-     * @return string The value of the first argument or null otherwise
+     * @return string|null The value of the first argument or null otherwise
      */
     public function getFirstArgument();
 
@@ -30,6 +33,8 @@ interface InputInterface
      *
      * This method is to be used to introspect the input parameters
      * before they have been validated. It must be used carefully.
+     * Does not necessarily return the correct result for short options
+     * when multiple flags are combined in the same option.
      *
      * @param string|array $values The values to look for in the raw parameters (can be an array)
      *
@@ -42,6 +47,8 @@ interface InputInterface
      *
      * This method is to be used to introspect the input parameters
      * before they have been validated. It must be used carefully.
+     * Does not necessarily return the correct result for short options
+     * when multiple flags are combined in the same option.
      *
      * @param string|array $values  The value(s) to look for in the raw parameters (can be an array)
      * @param mixed        $default The default value to return if no result is found
@@ -52,17 +59,13 @@ interface InputInterface
 
     /**
      * Binds the current Input instance with the given arguments and options.
-     *
-     * @param InputDefinition $definition A InputDefinition instance
      */
     public function bind(InputDefinition $definition);
 
     /**
-     * Validates if arguments given are correct.
+     * Validates the input.
      *
-     * Throws an exception when not enough arguments are given.
-     *
-     * @throws \RuntimeException
+     * @throws RuntimeException When not enough arguments are given
      */
     public function validate();
 
@@ -74,11 +77,13 @@ interface InputInterface
     public function getArguments();
 
     /**
-     * Gets argument by name.
+     * Returns the argument value for a given argument name.
      *
-     * @param string $name The name of the argument
+     * @param string $name The argument name
      *
-     * @return mixed
+     * @return mixed The argument value
+     *
+     * @throws InvalidArgumentException When argument given doesn't exist
      */
     public function getArgument($name);
 
@@ -109,11 +114,13 @@ interface InputInterface
     public function getOptions();
 
     /**
-     * Gets an option by name.
+     * Returns the option value for a given option name.
      *
-     * @param string $name The name of the option
+     * @param string $name The option name
      *
-     * @return mixed
+     * @return mixed The option value
+     *
+     * @throws InvalidArgumentException When option given doesn't exist
      */
     public function getOption($name);
 

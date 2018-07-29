@@ -28,7 +28,7 @@
  * the configuration automatically. It loads the different resources, for example classes, loader or the
  * managers for the different packages (Hook, Plugin, Event).
  *
- * @deprecated since 5.2, to be removed in 5.3
+ * @deprecated since 5.2, to be removed in 6.0
  * @category   Enlight
  * @package    Enlight_Application
  * @copyright  Copyright (c) 2011, shopware AG (http://www.shopware.de)
@@ -37,19 +37,19 @@
 class Enlight_Application
 {
     /**
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @var string
      */
     protected $path;
 
     /**
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @var string
      */
     protected $core_path;
 
     /**
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @var Enlight_Application Instance of the Enlight application.
      * Will be set in the class constructor.
      */
@@ -65,12 +65,12 @@ class Enlight_Application
 
     /**
      * Returns directory separator
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @return string
      */
     public static function DS()
     {
-        trigger_error('Enlight_Application::DS() is deprecated since version 5.2 and will be removed in 5.3.', E_USER_DEPRECATED);
+        trigger_error('Enlight_Application::DS() is deprecated since version 5.2 and will be removed in 6.0.', E_USER_DEPRECATED);
 
         return DIRECTORY_SEPARATOR;
     }
@@ -78,12 +78,12 @@ class Enlight_Application
     /**
      * Returns the instance of the application
      *
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @return Enlight_Application
      */
     public static function Instance()
     {
-        trigger_error('Enlight_Application::Instance() is deprecated since version 5.2 and will be removed in 5.3.', E_USER_DEPRECATED);
+        trigger_error('Enlight_Application::Instance() is deprecated since version 5.2 and will be removed in 6.0.', E_USER_DEPRECATED);
 
         return self::$instance;
     }
@@ -91,13 +91,13 @@ class Enlight_Application
     /**
      * Returns the enlight path: <projectroot>/engine/Library/Enlight/
      *
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @param string $path
      * @return string
      */
     public function CorePath($path = null)
     {
-        trigger_error('Enlight_Application::CorePath() is deprecated since version 5.2 and will be removed in 5.3.', E_USER_DEPRECATED);
+        trigger_error('Enlight_Application::CorePath() is deprecated since version 5.2 and will be removed in 6.0.', E_USER_DEPRECATED);
 
         return $this->normalizePath($this->core_path, $path);
     }
@@ -105,13 +105,13 @@ class Enlight_Application
     /**
      * Returns the enlight components path: <projectroot>/engine/Library/Enlight/Components/
      *
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @param string $path
      * @return string
      */
     public function ComponentsPath($path = null)
     {
-        trigger_error('Enlight_Application::ComponentsPath() is deprecated since version 5.2 and will be removed in 5.3.', E_USER_DEPRECATED);
+        trigger_error('Enlight_Application::ComponentsPath() is deprecated since version 5.2 and will be removed in 6.0.', E_USER_DEPRECATED);
 
         return $this->normalizePath($this->core_path . 'Components' . DIRECTORY_SEPARATOR, $path);
     }
@@ -120,13 +120,13 @@ class Enlight_Application
     /**
      * Returns the library path: <projectroot>/engine/Library/
      *
-     * @deprecated since 5.2, to be removed in 5.3
+     * @deprecated since 5.2, to be removed in 6.0
      * @param string $path
      * @return string
      */
     public function Path($path = null)
     {
-        trigger_error('Enlight_Application::Path() is deprecated since version 5.2 and will be removed in 5.3.', E_USER_DEPRECATED);
+        trigger_error('Enlight_Application::Path() is deprecated since version 5.2 and will be removed in 6.0.', E_USER_DEPRECATED);
 
         return $this->normalizePath($this->path, $path);
     }
@@ -151,13 +151,13 @@ class Enlight_Application
 /**
  * Proxy to Shopware()
  *
- * @deprecated since 5.2, to be removed in 5.3
+ * @deprecated since 5.2, to be removed in 6.0
  * @param   Enlight_Application $newInstance
  * @return  Enlight_Application
  */
 function Enlight($newInstance = null)
 {
-    trigger_error('Enlight() is deprecated since version 5.2 and will be removed in 5.3. Use Shopware() instead.', E_USER_DEPRECATED);
+    trigger_error('Enlight() is deprecated since version 5.2 and will be removed in 6.0. Use Shopware() instead.', E_USER_DEPRECATED);
 
     return Shopware($newInstance);
 }

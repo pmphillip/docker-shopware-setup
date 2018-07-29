@@ -28,7 +28,7 @@ use Shopware\Models\Customer\Customer;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\AttributeBundle\Repository\Reader
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
 class CustomerReader extends GenericReader
@@ -40,15 +40,16 @@ class CustomerReader extends GenericReader
             'entity.id',
             'entity.email',
             'entity.active',
-            'billing.firstName',
-            'billing.lastName',
+            'entity.firstname',
+            'entity.lastname',
             'billing.company',
             'entity.number',
-            'grp.name as customerGroup'
+            'grp.name as customerGroup',
         ]);
         $query->from(Customer::class, 'entity', $this->getIdentifierField());
-        $query->innerJoin('entity.billing', 'billing');
+        $query->innerJoin('entity.defaultBillingAddress', 'billing');
         $query->innerJoin('entity.group', 'grp');
+
         return $query;
     }
 }

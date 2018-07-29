@@ -23,16 +23,38 @@
  */
 
 /**
- *
  * Shopware Application
  */
 class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plugin_Bootstrap
 {
+    /**
+     * @var string
+     */
     protected static $baseFile;
+
+    /**
+     * @var string
+     */
     protected $basePathUrl = '';
+
+    /**
+     * @var string
+     */
     protected $basePath = '';
+
+    /**
+     * @var bool
+     */
     protected $useSecure = false;
-    protected $backLinkWhiteList = array();
+
+    /**
+     * @var string[]
+     */
+    protected $backLinkWhiteList = [];
+
+    /**
+     * @var string[]
+     */
     protected $urls;
 
     /**
@@ -46,6 +68,7 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
             'Enlight_Plugins_ViewRenderer_FilterRender',
             'onFilterRender'
         );
+
         return true;
     }
 
@@ -53,6 +76,7 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
      * Plugin event method
      *
      * @param Enlight_Event_EventArgs $args
+     *
      * @return mixed
      */
     public function onFilterRender(Enlight_Event_EventArgs $args)
@@ -66,21 +90,22 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
 
         $headers = $response->getHeaders();
         foreach ($headers as $header) {
-            if ($header['name'] == 'Content-Type' && strpos($header['value'], 'application/javascript') === 0) {
-                $source = str_replace(array("\r\n", "\r"), "\n", $source);
-                $expressions = array(
+            if ($header['name'] === 'Content-Type' && strpos($header['value'], 'application/javascript') === 0) {
+                $source = str_replace(["\r\n", "\r"], "\n", $source);
+                $expressions = [
                     // Remove comments
                     '#/\*.*?\*/#ms' => '',
                     '#^\s*//.*$#m' => '',
                     //'#\n\s+#ms' => '',
                     '#^\s+#ms' => '',
                     //'#\s+$#ms' => '',
-                );
+                ];
                 $source = preg_replace(array_keys($expressions), array_values($expressions), $source);
+
                 return $source;
             }
         }
-        if ($request->getModuleName() !== 'frontend' && $request->getModuleName() !== 'widgets') {
+        if (!in_array($request->getModuleName(), ['frontend', 'widgets'], true)) {
             return $args->getReturn();
         }
         $source = $this->filterUrls($source);
@@ -88,30 +113,10 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
         return $this->filterSource($source);
     }
 
-    protected function filterUrls($source)
-    {
-        /** @var $router \Shopware\Components\Routing\RouterInterface */
-        $router = $this->get('router');
-        $baseFile = preg_quote($router->getContext()->getBaseFile(), '#');
-        $regex = '#<(a|form|iframe|link|img)[^<>]*(href|src|action)="(' . $baseFile . '[^"]*)".*>#Umsi';
-        if (preg_match_all($regex, $source, $matches) > 0) {
-            $urls = array_map('htmlspecialchars_decode', $matches[3]);
-            $this->urls = array_combine($matches[3], $router->generateList($urls));
-        }
-        // Rewrite urls in rss and atom feeds
-        $regex = '#<(guid|link|id)>(' . $baseFile . '[^<]*)</(guid|link|id)>#Umsi';
-        if (preg_match_all($regex, $source, $matches) > 0) {
-            $urls = array_map('htmlspecialchars_decode', $matches[2]);
-            $urls = array_combine($matches[2], $router->generateList($urls));
-            $source = preg_replace_callback($regex, function ($found) use (&$urls) {
-                return '<' . $found[1] . '>' . $urls[$found[2]] . '</' . $found[3] . '>';
-            }, $source);
-        }
-        return $source;
-    }
-
     /**
      * Initializes plugin config
+     *
+     * @throws Exception
      */
     public function initConfig()
     {
@@ -138,11 +143,14 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
      * Filter html source
      *
      * @param string $source
-     * @return string
+     *
+     * @return string|null
      */
     public function &filterSource($source)
     {
-        $source = preg_replace_callback('#<(a|form|iframe|link|img)[^<>]*(href|src|action)="([^"]*)".*>#Umsi', array($this, 'rewriteSrc'), $source);
+        // To allow the return of a reference, we need to add an interim variable
+        $source = preg_replace_callback('#<(a|form|iframe|link|img)[^<>]*(href|src|action)="([^"]*)".*>#Umsi', [$this, 'rewriteSrc'], $source);
+
         return $source;
     }
 
@@ -150,7 +158,12 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
      * Rewrite source link
      *
      * @see \Shopware_Controllers_Backend_Newsletter::outputFilter
+     *
      * @param array $src
+     *
+     * @throws Exception
+     * @throws SmartyException
+     *
      * @return string
      */
     public function rewriteSrc($src)
@@ -164,7 +177,7 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
         }
 
         if (!empty($this->backLinkWhiteList)) {
-            if ($src[1] == 'a' && preg_match('#^https?://#', $src[3])) {
+            if ($src[1] === 'a' && preg_match('#^https?://#', $src[3])) {
                 $host = @parse_url($src[3], PHP_URL_HOST);
                 if (!strstr($src[0], 'rel=') && !in_array($host, $this->backLinkWhiteList)) {
                     $src[0] = rtrim($src[0], '>') . ' rel="nofollow">';
@@ -198,7 +211,7 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
                 break;
         }
 
-        if (strpos($link, "{media") === 0) {
+        if (strpos($link, '{media') === 0) {
             $link = $this->handleMediaPlugin($link);
         } else {
             if (strpos($link, 'www.') === 0) {
@@ -213,35 +226,20 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
             $link .= $anchorPart;
         }
 
-        //check canonical shopware configuration
-        $forceCanonicalHttp = Shopware()->Config()->get('forceCanonicalHttp');
-
-        //check if the current link is a canonical link
+        // Check if the current link is a canonical link
         $isCanonical = (
             strpos($src[0], 'rel="canonical"') !== false ||
             strpos($src[0], 'rel="prev"') !== false ||
             strpos($src[0], 'rel="next"') !== false
         );
 
-        $replaceCanonical = !($isCanonical && $forceCanonicalHttp);
-
-        if ($this->useSecure && $src[1] != 'a' && $replaceCanonical) {
+        if ($this->useSecure && !$isCanonical && $src[1] !== 'a') {
             $link = str_replace('http://' . $this->basePath, 'https://' . $this->basePath, $link);
         }
 
         $src[0] = str_replace($src[2] . '="' . $src[3] . '"', $src[2] . '="' . $link . '"', $src[0]);
-        return $src[0];
-    }
 
-    /**
-     * Rewrite a link
-     *
-     * @param string $link
-     * @return string
-     */
-    protected function rewriteLink($link = null)
-    {
-        return isset($this->urls[$link]) ? htmlspecialchars($this->urls[$link]) : $link;
+        return $src[0];
     }
 
     /**
@@ -251,16 +249,57 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
      */
     public function getCapabilities()
     {
-        return array(
+        return [
             'install' => false,
             'enable' => false,
-            'update' => true
-        );
+            'update' => true,
+        ];
     }
 
     /**
-     * @return array
+     * @param string $source
+     *
+     * @return null|string|string[]
+     */
+    protected function filterUrls($source)
+    {
+        /** @var $router \Shopware\Components\Routing\RouterInterface */
+        $router = $this->get('router');
+        $baseFile = preg_quote($router->getContext()->getBaseFile(), '#');
+        $regex = '#<(a|form|iframe|link|img)[^<>]*(href|src|action)="(' . $baseFile . '[^"]*)".*>#Umsi';
+        if (preg_match_all($regex, $source, $matches) > 0) {
+            $urls = array_map('htmlspecialchars_decode', $matches[3]);
+            $this->urls = array_combine($matches[3], $router->generateList($urls));
+        }
+        // Rewrite urls in rss and atom feeds
+        $regex = '#<(guid|link|id)>(' . $baseFile . '[^<]*)</(guid|link|id)>#Umsi';
+        if (preg_match_all($regex, $source, $matches) > 0) {
+            $urls = array_map('htmlspecialchars_decode', $matches[2]);
+            $urls = array_combine($matches[2], $router->generateList($urls));
+            $source = preg_replace_callback($regex, function ($found) use (&$urls) {
+                return '<' . $found[1] . '>' . $urls[$found[2]] . '</' . $found[3] . '>';
+            }, $source);
+        }
+
+        return $source;
+    }
+
+    /**
+     * Rewrite a link
+     *
+     * @param string $link
+     *
+     * @return string
+     */
+    protected function rewriteLink($link = null)
+    {
+        return isset($this->urls[$link]) ? htmlspecialchars($this->urls[$link]) : $link;
+    }
+
+    /**
      * @throws Exception
+     *
+     * @return array
      */
     private function getShopHosts()
     {
@@ -270,7 +309,7 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
         }
 
         $shopHosts = $this->get('dbal_connection')->fetchAssoc(
-            "SELECT host, hosts FROM s_core_shops WHERE id = :id",
+            'SELECT host, hosts FROM s_core_shops WHERE id = :id',
             [':id' => $shop->getId()]
         );
 
@@ -279,13 +318,16 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
             $hosts = array_merge($hosts, explode("\n", $shopHosts['hosts']));
         }
         $hosts = array_filter($hosts);
+
         return $hosts;
     }
 
     /**
-     * @param $link
-     * @return string
+     * @param string $link
+     *
      * @throws SmartyException
+     *
+     * @return string
      */
     private function handleMediaPlugin($link)
     {
@@ -294,9 +336,9 @@ class Shopware_Plugins_Core_PostFilter_Bootstrap extends Shopware_Components_Plu
         $link = substr($link, 0, -1);
 
         $attributes = [];
-        $parts = explode(" ", $link);
+        $parts = explode(' ', $link);
         foreach ($parts as $part) {
-            list($key, $value) = explode("=", $part);
+            list($key, $value) = explode('=', $part);
             $attributes[$key] = trim($value, '"\'');
         }
 

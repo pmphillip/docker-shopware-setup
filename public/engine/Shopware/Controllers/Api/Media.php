@@ -23,9 +23,8 @@
  */
 
 use Shopware\Components\Api\Exception as ApiException;
-use Shopware_Controllers_Backend_MediaManager as MediaManagerCtrl;
-use Symfony\Component\HttpFoundation\FileBag;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\FileBag;
 
 class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
 {
@@ -46,10 +45,10 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
      */
     public function indexAction()
     {
-        $limit  = $this->Request()->getParam('limit', 1000);
+        $limit = $this->Request()->getParam('limit', 1000);
         $offset = $this->Request()->getParam('start', 0);
-        $sort   = $this->Request()->getParam('sort', array());
-        $filter = $this->Request()->getParam('filter', array());
+        $sort = $this->Request()->getParam('sort', []);
+        $filter = $this->Request()->getParam('filter', []);
 
         $result = $this->resource->getList($offset, $limit, $filter, $sort);
 
@@ -86,12 +85,12 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
         $media = $this->resource->create($params);
 
         $location = $this->apiBaseUrl . 'media/' . $media->getId();
-        $data = array(
-            'id'       => $media->getId(),
-            'location' => $location
-        );
+        $data = [
+            'id' => $media->getId(),
+            'location' => $location,
+        ];
 
-        $this->View()->assign(array('success' => true, 'data' => $data));
+        $this->View()->assign(['success' => true, 'data' => $data]);
         $this->Response()->setHeader('Location', $location);
     }
 
@@ -108,12 +107,12 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
         $media = $this->resource->update($id, $params);
 
         $location = $this->apiBaseUrl . 'media/' . $media->getId();
-        $data = array(
-            'id'       => $media->getId(),
-            'location' => $location
-        );
+        $data = [
+            'id' => $media->getId(),
+            'location' => $location,
+        ];
 
-        $this->View()->assign(array('success' => true, 'data' => $data));
+        $this->View()->assign(['success' => true, 'data' => $data]);
     }
 
     /**
@@ -127,14 +126,16 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
 
         $this->resource->delete($id);
 
-        $this->View()->assign(array('success' => true));
+        $this->View()->assign(['success' => true]);
     }
 
     /**
      * @param array $params
-     * @return array
+     *
      * @throws ApiException\CustomValidationException
      * @throws Exception
+     *
+     * @return array
      */
     private function prepareUploadedFile(array $params)
     {
@@ -142,7 +143,6 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
 
         // Check for a POSTed file
         if ($fileBag->has('file')) {
-
             /** @var UploadedFile $file */
             $file = $fileBag->get('file');
             $fileExtension = $file->getClientOriginalExtension();
@@ -150,14 +150,6 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
 
             if ($file->getError() !== UPLOAD_ERR_OK) {
                 throw new \Exception(sprintf('Could not upload file "%s"', $file->getClientOriginalName()));
-            }
-
-            // validate extension
-            if (in_array(strtolower($fileExtension), MediaManagerCtrl::$fileUploadBlacklist)) {
-                unlink($file->getPathname());
-                throw new ApiException\CustomValidationException(
-                    sprintf('The type of the uploaded file "%s" is not supported', $file->getClientOriginalName())
-                );
             }
 
             // use custom name if provided
@@ -184,6 +176,7 @@ class Shopware_Controllers_Api_Media extends Shopware_Controllers_Api_Rest
      * Use the ID of the authenticated user as a fallback 'userId'
      *
      * @param array $params
+     *
      * @return array
      */
     private function prepareFallbackUser(array $params)

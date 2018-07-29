@@ -21,9 +21,10 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
+use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\ProductSearchResult;
 use Shopware\Bundle\SearchBundle\SearchTermPreProcessorInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ListProduct;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
@@ -33,32 +34,28 @@ class Shopware_Controllers_Frontend_AjaxSearch extends Enlight_Controller_Action
 {
     /**
      * Index action - get search term from request (sSearch) and start search
-     *
-     * @return void
      */
     public function indexAction()
     {
-        Shopware()->Plugins()->Controller()->Json()->setPadding();
-
         $this->View()->loadTemplate('frontend/search/ajax.tpl');
 
-        $term = $this->Request()->getParam('sSearch');
         /** @var SearchTermPreProcessorInterface $processor */
         $processor = $this->get('shopware_search.search_term_pre_processor');
-        $term = $processor->process($term);
+        $term = $processor->process($this->Request()->getParam('sSearch'));
 
         if (!$term || strlen($term) < Shopware()->Config()->get('MinSearchLenght')) {
             return;
         }
 
-        /**@var ShopContextInterface $context */
+        $this->setDefaultSorting();
+
+        /** @var ShopContextInterface $context */
         $context = $this->get('shopware_storefront.context_service')->getShopContext();
 
         $criteria = $this->get('shopware_search.store_front_criteria_factory')
             ->createAjaxSearchCriteria($this->Request(), $context);
 
-        /**@var ProductSearchResult $result */
-        $result = $this->get('shopware_search.product_search')->search($criteria, $context);
+        $result = $this->search($term, $criteria, $context);
 
         if ($result->getTotalCount() > 0) {
             $articles = $this->convertProducts($result);
@@ -66,13 +63,14 @@ class Shopware_Controllers_Frontend_AjaxSearch extends Enlight_Controller_Action
             $this->View()->assign('sSearchRequest', ['sSearch' => $term]);
             $this->View()->assign('sSearchResults', [
                 'sResults' => $articles,
-                'sArticlesCount' => $result->getTotalCount()
+                'sArticlesCount' => $result->getTotalCount(),
             ]);
         }
     }
 
     /**
      * @param ProductSearchResult $result
+     *
      * @return array
      */
     private function convertProducts(ProductSearchResult $result)
@@ -85,12 +83,55 @@ class Shopware_Controllers_Frontend_AjaxSearch extends Enlight_Controller_Action
                 'controller' => 'detail',
                 'sArticle' => $product->getId(),
                 'number' => $product->getNumber(),
-                'title' => $product->getName()
+                'title' => $product->getName(),
             ]);
             $article['name'] = $product->getName();
             $articles[] = $article;
         }
 
         return $articles;
+    }
+
+    private function setDefaultSorting()
+    {
+        if ($this->Request()->has('sSort')) {
+            return;
+        }
+
+        $sortings = $this->container->get('config')->get('searchSortings');
+        $sortings = array_filter(explode('|', $sortings));
+        $this->Request()->setParam('sSort', array_shift($sortings));
+    }
+
+    /**
+     * @param string               $term
+     * @param Criteria             $criteria
+     * @param ShopContextInterface $context
+     *
+     * @return ProductSearchResult
+     */
+    private function search($term, Criteria $criteria, ShopContextInterface $context)
+    {
+        $result = null;
+
+        // If the search for product numbers is active, do that first
+        if ((int) $this->get('config')->get('activateNumberSearch') === 1) {
+            // Check if search-term is a valid product-number
+            /** @var null|ListProduct $directHit */
+            $directHit = $this->get('shopware_storefront.list_product_service')
+                ->get($term, $context);
+
+            if ($directHit) {
+                /** @var ProductSearchResult $result */
+                $result = new ProductSearchResult([$directHit], 1, [], $criteria, $context);
+            }
+        }
+
+        // If number search is inactive or didn't find anything, do a regular search
+        if (!$result || $result->getTotalCount() === 0) {
+            $result = $this->get('shopware_search.product_search')->search($criteria, $context);
+        }
+
+        return $result;
     }
 }

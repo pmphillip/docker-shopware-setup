@@ -23,7 +23,7 @@
                                 {block name='frontend_checkout_premium_slider_item'}
                                     <div class="premium-product--product product-slider--item">
 
-                                        <div class="product--inner">
+                                        <div class="product--inner" data-ordernumber="{$premium.sArticle.ordernumber}">
                                             {if $premium.available}
                                                 {block name='frontend_checkout_premium_info_free'}
                                                     <p class="premium-product--free">{s name="PremiumInfoFreeProduct"}{/s}</p>
@@ -63,12 +63,14 @@
                                                         {block name='frontend_checkout_premium_select_article'}
                                                             {if $premium.sVariants && $premium.sVariants|@count > 1}
                                                                 <div class="premium--variant">
-                                                                    <select class="premium--selection" id="sAddPremium{$key}" name="sAddPremium" required>
-                                                                        <option value="">{s name="PremiumInfoSelect"}{/s}</option>
-                                                                        {foreach from=$premium.sVariants item=variant}
-                                                                            <option value="{$variant.ordernumber}">{$variant.additionaltext}</option>
-                                                                        {/foreach}
-                                                                    </select>
+                                                                    <div class="select-field">
+                                                                        <select class="premium--selection" id="sAddPremium{$key}" name="sAddPremium" required>
+                                                                            <option value="">{s name="PremiumInfoSelect"}{/s}</option>
+                                                                            {foreach from=$premium.sVariants item=variant}
+                                                                                <option value="{$variant.ordernumber}">{$variant.additionaltext}</option>
+                                                                            {/foreach}
+                                                                        </select>
+                                                                    </div>
                                                                     {block name='frontend_checkout_premium_info_button_small'}
                                                                         <button class="premium--button btn is--primary is--align-center" type="submit">
                                                                             <i class="icon--arrow-right is--large"></i>

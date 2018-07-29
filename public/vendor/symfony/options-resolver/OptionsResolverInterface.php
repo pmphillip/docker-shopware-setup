@@ -41,7 +41,7 @@ interface OptionsResolverInterface
      * The closures should return the lazily created option value.
      *
      * @param array $defaultValues A list of option names as keys and default
-     *                             values or closures as values.
+     *                             values or closures as values
      *
      * @return $this
      */
@@ -56,7 +56,7 @@ interface OptionsResolverInterface
      * closure.
      *
      * @param array $defaultValues A list of option names as keys and default
-     *                             values or closures as values.
+     *                             values or closures as values
      *
      * @return $this
      */
@@ -94,13 +94,13 @@ interface OptionsResolverInterface
      *
      * @param array $allowedValues A list of option names as keys and arrays
      *                             with values acceptable for that option as
-     *                             values.
+     *                             values
      *
      * @return $this
      *
-     * @throws InvalidOptionsException If an option has not been defined
+     * @throws InvalidOptionsException if an option has not been defined
      *                                 (see {@link isKnown()}) for which
-     *                                 an allowed value is set.
+     *                                 an allowed value is set
      */
     public function setAllowedValues($allowedValues);
 
@@ -111,13 +111,13 @@ interface OptionsResolverInterface
      *
      * @param array $allowedValues A list of option names as keys and arrays
      *                             with values acceptable for that option as
-     *                             values.
+     *                             values
      *
      * @return $this
      *
-     * @throws InvalidOptionsException If an option has not been defined
+     * @throws InvalidOptionsException if an option has not been defined
      *                                 (see {@link isKnown()}) for which
-     *                                 an allowed value is set.
+     *                                 an allowed value is set
      */
     public function addAllowedValues($allowedValues);
 
@@ -125,12 +125,12 @@ interface OptionsResolverInterface
      * Sets allowed types for a list of options.
      *
      * @param array $allowedTypes A list of option names as keys and type
-     *                            names passed as string or array as values.
+     *                            names passed as string or array as values
      *
      * @return $this
      *
-     * @throws InvalidOptionsException If an option has not been defined for
-     *                                 which an allowed type is set.
+     * @throws InvalidOptionsException if an option has not been defined for
+     *                                 which an allowed type is set
      */
     public function setAllowedTypes($allowedTypes);
 
@@ -140,12 +140,12 @@ interface OptionsResolverInterface
      * The types are merged with the allowed types defined previously.
      *
      * @param array $allowedTypes A list of option names as keys and type
-     *                            names passed as string or array as values.
+     *                            names passed as string or array as values
      *
      * @return $this
      *
-     * @throws InvalidOptionsException If an option has not been defined for
-     *                                 which an allowed type is set.
+     * @throws InvalidOptionsException if an option has not been defined for
+     *                                 which an allowed type is set
      */
     public function addAllowedTypes($allowedTypes);
 
@@ -201,12 +201,12 @@ interface OptionsResolverInterface
      *
      * @return array A list of options and their values
      *
-     * @throws InvalidOptionsException   If any of the passed options has not
+     * @throws InvalidOptionsException   if any of the passed options has not
      *                                   been defined or does not contain an
-     *                                   allowed value.
-     * @throws MissingOptionsException   If a required option is missing.
-     * @throws OptionDefinitionException If a cyclic dependency is detected
-     *                                   between two lazy options.
+     *                                   allowed value
+     * @throws MissingOptionsException   if a required option is missing
+     * @throws OptionDefinitionException if a cyclic dependency is detected
+     *                                   between two lazy options
      */
     public function resolve(array $options = array());
 }

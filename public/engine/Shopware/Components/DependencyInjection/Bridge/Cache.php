@@ -24,6 +24,7 @@
 
 namespace Shopware\Components\DependencyInjection\Bridge;
 
+use Shopware\Components\ShopwareReleaseStruct;
 use Zend_Cache_Core;
 use Zend_Locale_Data;
 
@@ -32,20 +33,26 @@ use Zend_Locale_Data;
  * + call of Zend_Locale_Data::setCache.
  *
  * @category  Shopware
- * @package   Shopware\Components\DependencyInjection\Bridge
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Cache
 {
     /**
-     * @param string $backend
-     * @param array  $frontendOptions
-     * @param array  $backendOptions
+     * @param string                $backend
+     * @param array                 $frontendOptions
+     * @param array                 $backendOptions
+     * @param ShopwareReleaseStruct $release
+     *
+     * @throws \Zend_Cache_Exception
+     *
      * @return Zend_Cache_Core
      */
-    public function factory($backend, $frontendOptions = [], $backendOptions = [])
+    public function factory($backend, $frontendOptions = [], $backendOptions = [], ShopwareReleaseStruct $release)
     {
-        $backend   = $this->createBackend($backend, $backendOptions);
+        $backendOptions['release'] = $release;
+
+        $backend = $this->createBackend($backend, $backendOptions);
         $cacheCore = $this->createCacheCore($frontendOptions);
 
         $cacheCore->setBackend($backend);
@@ -57,8 +64,9 @@ class Cache
     }
 
     /**
-     * @param $backend
-     * @param $backendOptions
+     * @param string $backend
+     * @param array  $backendOptions
+     *
      * @return \Zend_Cache_Backend
      */
     private function createBackend($backend, $backendOptions)
@@ -78,6 +86,7 @@ class Cache
 
     /**
      * @param array $backendOptions
+     *
      * @return \Zend_Cache_Backend
      */
     private function createAutomaticBackend($backendOptions = [])
@@ -100,17 +109,24 @@ class Cache
             return false;
         }
 
-        return extension_loaded('apcu');
+        if (!extension_loaded('apcu')) {
+            return false;
+        }
+
+        if (!ini_get('apc.enabled')) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
      * @param array $frontendOptions
+     *
      * @return Zend_Cache_Core
      */
     private function createCacheCore($frontendOptions = [])
     {
-        $frontend = new Zend_Cache_Core($frontendOptions);
-
-        return $frontend;
+        return new Zend_Cache_Core($frontendOptions);
     }
 }

@@ -24,16 +24,18 @@
 
 namespace Shopware\Components\Model;
 
+use Doctrine\Common\EventManager;
+use Doctrine\Common\Util\Inflector;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder as DBALQueryBuilder;
-use Shopware\Components\Model\Query\SqlWalker;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\ORMException;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\ORMException;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\Tools\Pagination\Paginator;
-use Doctrine\DBAL\Connection;
-use Doctrine\Common\Util\Inflector;
-use Doctrine\Common\EventManager;
+use Shopware\Bundle\AttributeBundle\Service\CrudService;
+use Shopware\Bundle\AttributeBundle\Service\TypeMapping;
+use Shopware\Components\Model\Query\SqlWalker;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -41,13 +43,14 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * Global Manager which is responsible for initializing the adapter classes.
  *
  * @category  Shopware
- * @package   Shopware\Components\Model
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ModelManager extends EntityManager
 {
     /**
      * Debug mode flag for the query builders.
+     *
      * @var bool
      */
     protected $debugMode = false;
@@ -63,10 +66,12 @@ class ModelManager extends EntityManager
     /**
      * Factory method to create EntityManager instances.
      *
-     * @param Connection $conn
+     * @param Connection    $conn
      * @param Configuration $config
-     * @param EventManager $eventManager
+     * @param EventManager  $eventManager
+     *
      * @throws \Doctrine\ORM\ORMException
+     *
      * @return ModelManager
      */
     public static function createInstance(Connection $conn, Configuration $config, EventManager $eventManager = null)
@@ -83,87 +88,11 @@ class ModelManager extends EntityManager
     }
 
     /**
-     * Magic method to build this liquid interface ...
-     *
-     * @deprecated since 5.2, to be removed in 5.3
-     * @param   string $name
-     * @param   array|null $args
-     * @return  ModelRepository
-     */
-    public function __call($name, $args)
-    {
-        $backTrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0];
-        $string = sprintf("Shopware()->Models()->__call() is deprecated since version 5.2 and will be removed in 5.3. File %s:%s", $backTrace['file'], $backTrace['line']);
-        trigger_error($string, E_USER_DEPRECATED);
-
-        if (strpos($name, '\\') === false) {
-            $name = $name .'\\' . $name;
-        }
-        $name = 'Shopware\\Models\\' . $name;
-
-        return $this->getRepository($name);
-    }
-
-    /**
-     * Serialize an entity to an array
-     *
-     * @author      Boris Guéry <guery.b@gmail.com>
-     * @license     http://sam.zoy.org/wtfpl/COPYING
-     * @link        http://borisguery.github.com/bgylibrary
-     * @see         https://gist.github.com/1034079#file_serializable_entity.php
-     * @param       $entity
-     * @return      array
-     */
-    protected function serializeEntity($entity)
-    {
-        if ($entity === null) {
-            return [];
-        }
-
-        if ($entity instanceof \Doctrine\ORM\Proxy\Proxy) {
-            /** @var $entity \Doctrine\ORM\Proxy\Proxy */
-            $entity->__load();
-            $className = get_parent_class($entity);
-        } else {
-            $className = get_class($entity);
-        }
-        $metadata = $this->getClassMetadata($className);
-        $data = array();
-
-        foreach ($metadata->fieldMappings as $field => $mapping) {
-            $data[$field] = $metadata->reflFields[$field]->getValue($entity);
-        }
-
-        foreach ($metadata->associationMappings as $field => $mapping) {
-            $key = Inflector::tableize($field);
-            if ($mapping['isCascadeDetach']) {
-                $data[$key] = $metadata->reflFields[$field]->getValue($entity);
-                if (null !== $data[$key]) {
-                    $data[$key] = $this->serializeEntity($data[$key]);
-                }
-            } elseif ($mapping['isOwningSide'] && $mapping['type'] & ClassMetadata::TO_ONE) {
-                if (null !== $metadata->reflFields[$field]->getValue($entity)) {
-                    $data[$key] = $this->getUnitOfWork()
-                        ->getEntityIdentifier(
-                            $metadata->reflFields[$field]
-                                ->getValue($entity)
-                            );
-                } else {
-                    // In some case the relationship may not exist, but we want
-                    // to know about it
-                    $data[$key] = null;
-                }
-            }
-        }
-
-        return $data;
-    }
-
-    /**
      * Serialize an entity or an array of entities to an array
      *
      * @param   $entity
-     * @return  array
+     *
+     * @return array
      */
     public function toArray($entity)
     {
@@ -172,7 +101,7 @@ class ModelManager extends EntityManager
         }
 
         if (is_array($entity)) {
-            return array_map(array($this, 'serializeEntity'), $entity);
+            return array_map([$this, 'serializeEntity'], $entity);
         }
 
         return $this->serializeEntity($entity);
@@ -182,6 +111,7 @@ class ModelManager extends EntityManager
      * Returns the total count of the passed query builder.
      *
      * @param Query $query
+     *
      * @return int|null
      */
     public function getQueryCount(Query $query)
@@ -200,7 +130,9 @@ class ModelManager extends EntityManager
      * As of SW 4.2 $paginator->setUseOutputWalkers(false) will be set here.
      *
      * @since 4.1.4
+     *
      * @param Query $query
+     *
      * @return Paginator
      */
     public function createPaginator(Query $query)
@@ -229,6 +161,7 @@ class ModelManager extends EntityManager
 
     /**
      * @param $object
+     *
      * @return ConstraintViolationListInterface
      */
     public function validate($object)
@@ -239,7 +172,7 @@ class ModelManager extends EntityManager
     /**
      * @param array $tableNames
      */
-    public function generateAttributeModels($tableNames = array())
+    public function generateAttributeModels($tableNames = [])
     {
         $generator = $this->createModelGenerator();
         $generator->generateAttributeModels($tableNames);
@@ -252,7 +185,7 @@ class ModelManager extends EntityManager
      *
      * @param array $tableNames
      */
-    public function regenerateAttributeProxies($tableNames = array())
+    public function regenerateAttributeProxies($tableNames = [])
     {
         $metaDataCache = $this->getConfiguration()->getMetadataCacheImpl();
 
@@ -263,8 +196,8 @@ class ModelManager extends EntityManager
         $allMetaData = $this->getMetadataFactory()->getAllMetadata();
         $proxyFactory = $this->getProxyFactory();
 
-        $attributeMetaData = array();
-        /**@var $metaData \Doctrine\ORM\Mapping\ClassMetadata*/
+        $attributeMetaData = [];
+        /** @var $metaData \Doctrine\ORM\Mapping\ClassMetadata */
         foreach ($allMetaData as $metaData) {
             $tableName = $metaData->getTableName();
             if (strpos($tableName, '_attributes') === false) {
@@ -289,134 +222,13 @@ class ModelManager extends EntityManager
     }
 
     /**
-     * Shopware helper function to extend an attribute table.
-     *
-     * @param string $table Full table name. Example: "s_user_attributes"
-     * @param string $prefix Column prefix. The prefix and column parameter will be the column name. Example: "swag".
-     * @param string $column The column name
-     * @param string $type Full type declaration. Example: "VARCHAR( 5 )" / "DECIMAL( 10, 2 )"
-     * @param bool $nullable Allow null property
-     * @param null $default Default value of the column
-     * @throws \InvalidArgumentException
-     * @deprecated since version 5.2.2, to be removed in 5.3 - Use \Shopware\Bundle\AttributeBundle\Service\CrudService::update instead
-     */
-    public function addAttribute($table, $prefix, $column, $type, $nullable = true, $default = null)
-    {
-        if (empty($table)) {
-            throw new \InvalidArgumentException('No table name passed');
-        }
-        if (strpos($table, '_attributes') === false) {
-            throw new \InvalidArgumentException('The passed table name is no attribute table');
-        }
-        if (empty($prefix)) {
-            throw new \InvalidArgumentException('No column prefix passed');
-        }
-        if (empty($column)) {
-            throw new \InvalidArgumentException('No column name passed');
-        }
-        if (empty($type)) {
-            throw new \InvalidArgumentException('No column type passed');
-        }
-
-        $name = $prefix . '_' . $column;
-
-        if (!$this->tableExist($table)) {
-            throw new \InvalidArgumentException("Table doesn't exist");
-        }
-
-        if ($this->columnExist($table, $name)) {
-            return;
-        }
-
-        $null = ($nullable) ? " NULL " : " NOT NULL ";
-
-        if (is_string($default)) {
-            $defaultValue = "'". $default ."'";
-        } elseif (is_bool($default)) {
-            $defaultValue = ($default) ? 1 : 0;
-        } elseif (is_null($default)) {
-            $defaultValue = " NULL ";
-        } else {
-            $defaultValue = $default;
-        }
-
-        $sql = 'ALTER TABLE ' . $table . ' ADD ' . $name . ' ' . $type . ' ' . $null . ' DEFAULT ' . $defaultValue;
-        Shopware()->Db()->query($sql, array($table, $prefix, $column, $type, $null, $defaultValue));
-    }
-
-    /**
-     * Shopware Helper function to remove an attribute column.
-     *
-     * @param $table
-     * @param $prefix
-     * @param $column
-     * @throws \InvalidArgumentException
-     * @deprecated since version 5.2.2, to be removed in 5.3 - Use \Shopware\Bundle\AttributeBundle\Service\CrudService::delete instead
-     */
-    public function removeAttribute($table, $prefix, $column)
-    {
-        if (empty($table)) {
-            throw new \InvalidArgumentException('No table name passed');
-        }
-        if (strpos($table, '_attributes') === false) {
-            throw new \InvalidArgumentException('The passed table name is no attribute table');
-        }
-        if (empty($prefix)) {
-            throw new \InvalidArgumentException('No column prefix passed');
-        }
-        if (empty($column)) {
-            throw new \InvalidArgumentException('No column name passed');
-        }
-
-        $name = $prefix . '_' . $column;
-
-        if (!$this->tableExist($table)) {
-            throw new \InvalidArgumentException("Table doesn't exist");
-        }
-
-        if (!$this->columnExist($table, $name)) {
-            return;
-        }
-
-        $sql = 'ALTER TABLE ' . $table . ' DROP ' . $name;
-        Shopware()->Db()->query($sql);
-    }
-
-    /**
-     * Helper function to check if the table is realy exist.
-     * @param $tableName
-     *
-     * @return bool
-     */
-    private function tableExist($tableName)
-    {
-        $sql = "SHOW TABLES LIKE '" . $tableName . "'";
-        $result = Shopware()->Db()->fetchRow($sql);
-        return !empty($result);
-    }
-
-    /**
-     * Internal helper function to check if a database table column exist.
-     *
-     * @param $tableName
-     * @param $columnName
-     *
-     * @return bool
-     */
-    private function columnExist($tableName, $columnName)
-    {
-        $sql= "SHOW COLUMNS FROM " . $tableName . " LIKE '" . $columnName . "'";
-        $result = Shopware()->Db()->fetchRow($sql);
-        return !empty($result);
-    }
-
-    /**
      * Helper function to add mysql specified command to increase the sql performance.
      *
      * @param Query $query
-     * @param null $index Name of the forced index
-     * @param bool $straightJoin true or false. Allow to add STRAIGHT_JOIN select condition
-     * @param bool $sqlNoCache
+     * @param null  $index        Name of the forced index
+     * @param bool  $straightJoin true or false. Allow to add STRAIGHT_JOIN select condition
+     * @param bool  $sqlNoCache
+     *
      * @return Query
      */
     public function addCustomHints(Query $query, $index = null, $straightJoin = false, $sqlNoCache = false)
@@ -441,6 +253,7 @@ class ModelManager extends EntityManager
 
     /**
      * Checks if the debug mode for doctrine orm queries is enabled.
+     *
      * @return bool
      */
     public function isDebugModeEnabled()
@@ -476,5 +289,178 @@ class ModelManager extends EntityManager
         );
 
         return $generator;
+    }
+
+    /**
+     * Shopware helper function to extend an attribute table.
+     *
+     * @param string $table    Full table name. Example: "s_user_attributes"
+     * @param string $prefix   Column prefix. The prefix and column parameter will be the column name. Example: "swag".
+     * @param string $column   The column name
+     * @param string $type     Full type declaration. Example: "VARCHAR( 5 )" / "DECIMAL( 10, 2 )"
+     * @param bool   $nullable Deprecated and unused
+     * @param null   $default  Default value of the column
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @deprecated since version 5.2.2, will be removed in 5.5. Use \Shopware\Bundle\AttributeBundle\Service\CrudService::update instead.
+     */
+    public function addAttribute($table, $prefix, $column, $type, $nullable = true, $default = null)
+    {
+        trigger_error(sprintf('%s::%s() is deprecated since version 5.2.2 and will be removed in 5.5. Use \Shopware\Bundle\AttributeBundle\Service\CrudService::update instead.', __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
+        if (empty($table)) {
+            throw new \InvalidArgumentException('No table name passed');
+        }
+        if (strpos($table, '_attributes') === false) {
+            throw new \InvalidArgumentException('The passed table name is no attribute table');
+        }
+        if (empty($prefix)) {
+            throw new \InvalidArgumentException('No column prefix passed');
+        }
+        if (empty($column)) {
+            throw new \InvalidArgumentException('No column name passed');
+        }
+        if (empty($type)) {
+            throw new \InvalidArgumentException('No column type passed');
+        }
+
+        $type = $this->convertColumnType($type);
+        $prefixedColumn = $prefix . '_' . $column;
+
+        /** @var CrudService $crudService */
+        $crudService = Shopware()->Container()->get('shopware_attribute.crud_service');
+        $crudService->update($table, $prefixedColumn, $type, [], null, false, $default);
+    }
+
+    /**
+     * Shopware Helper function to remove an attribute column.
+     *
+     * @param string $table
+     * @param string $prefix
+     * @param string $column
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @deprecated since version 5.2.2, will be removed in 5.5. Use \Shopware\Bundle\AttributeBundle\Service\CrudService::delete instead.
+     */
+    public function removeAttribute($table, $prefix, $column)
+    {
+        trigger_error(sprintf('%s::%s() is deprecated since version 5.2.2 and will be removed in 5.5. Use \Shopware\Bundle\AttributeBundle\Service\CrudService::update instead.', __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
+        if (empty($table)) {
+            throw new \InvalidArgumentException('No table name passed');
+        }
+        if (strpos($table, '_attributes') === false) {
+            throw new \InvalidArgumentException('The passed table name is no attribute table');
+        }
+        if (empty($prefix)) {
+            throw new \InvalidArgumentException('No column prefix passed');
+        }
+        if (empty($column)) {
+            throw new \InvalidArgumentException('No column name passed');
+        }
+
+        $prefixedColumn = $prefix . '_' . $column;
+
+        /** @var CrudService $crudService */
+        $crudService = Shopware()->Container()->get('shopware_attribute.crud_service');
+        $crudService->delete($table, $prefixedColumn, false);
+    }
+
+    /**
+     * Serialize an entity to an array
+     *
+     * @author      Boris Guéry <guery.b@gmail.com>
+     * @license     http://sam.zoy.org/wtfpl/COPYING
+     *
+     * @see        http://borisguery.github.com/bgylibrary
+     * @see         https://gist.github.com/1034079#file_serializable_entity.php
+     *
+     * @param   $entity
+     *
+     * @return array
+     */
+    protected function serializeEntity($entity)
+    {
+        if ($entity === null) {
+            return [];
+        }
+
+        if ($entity instanceof \Doctrine\ORM\Proxy\Proxy) {
+            /* @var $entity \Doctrine\ORM\Proxy\Proxy */
+            $entity->__load();
+            $className = get_parent_class($entity);
+        } else {
+            $className = get_class($entity);
+        }
+        $metadata = $this->getClassMetadata($className);
+        $data = [];
+
+        foreach ($metadata->fieldMappings as $field => $mapping) {
+            $data[$field] = $metadata->reflFields[$field]->getValue($entity);
+        }
+
+        foreach ($metadata->associationMappings as $field => $mapping) {
+            $key = Inflector::tableize($field);
+            if ($mapping['isCascadeDetach']) {
+                $data[$key] = $metadata->reflFields[$field]->getValue($entity);
+                if (null !== $data[$key]) {
+                    $data[$key] = $this->serializeEntity($data[$key]);
+                }
+            } elseif ($mapping['isOwningSide'] && $mapping['type'] & ClassMetadata::TO_ONE) {
+                if (null !== $metadata->reflFields[$field]->getValue($entity)) {
+                    $data[$key] = $this->getUnitOfWork()
+                        ->getEntityIdentifier(
+                            $metadata->reflFields[$field]
+                                ->getValue($entity)
+                            );
+                } else {
+                    // In some case the relationship may not exist, but we want
+                    // to know about it
+                    $data[$key] = null;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Convert SQL column types to attribute bundle type mapping
+     *
+     * @param string $type
+     *
+     * @return string
+     */
+    private function convertColumnType($type)
+    {
+        switch (true) {
+            case (bool) preg_match('#\b(char\b|varchar)\b#i', $type):
+                $type = TypeMapping::TYPE_STRING;
+                break;
+            case (bool) preg_match('#\b(text|blob|array|simple_array|json_array|object|binary|guid)\b#i', $type):
+                $type = TypeMapping::TYPE_TEXT;
+                break;
+            case (bool) preg_match('#\b(datetime|timestamp)\b#i', $type):
+                $type = TypeMapping::TYPE_DATETIME;
+                break;
+            case (bool) preg_match('#\b(date|datetimetz)\b#i', $type):
+                $type = TypeMapping::TYPE_DATE;
+                break;
+            case (bool) preg_match('#\b(int|integer|smallint|tinyint|mediumint|bigint)\b#i', $type):
+                $type = TypeMapping::TYPE_INTEGER;
+                break;
+            case (bool) preg_match('#\b(float|double|decimal|dec|fixed|numeric)\b#i', $type):
+                $type = TypeMapping::TYPE_FLOAT;
+                break;
+            case (bool) preg_match('#\b(bool|boolean)\b#i', $type):
+                $type = TypeMapping::TYPE_BOOLEAN;
+                break;
+            default:
+                throw new \InvalidArgumentException(sprintf('Column type "%s" cannot be converted.', $type));
+        }
+
+        return $type;
     }
 }

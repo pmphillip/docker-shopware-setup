@@ -29,15 +29,15 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ManufacturerCondition implements ConditionInterface
+class ManufacturerCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * @var int[]
      */
-    private $manufacturerIds;
+    protected $manufacturerIds;
 
     /**
      * @param int[] $manufacturerIds
@@ -46,6 +46,7 @@ class ManufacturerCondition implements ConditionInterface
     {
         Assertion::allIntegerish($manufacturerIds);
         $this->manufacturerIds = array_map('intval', $manufacturerIds);
+        sort($this->manufacturerIds, SORT_NUMERIC);
     }
 
     /**
@@ -62,5 +63,13 @@ class ManufacturerCondition implements ConditionInterface
     public function getManufacturerIds()
     {
         return $this->manufacturerIds;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

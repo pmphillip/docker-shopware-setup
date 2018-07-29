@@ -25,12 +25,12 @@
 namespace Shopware\Bundle\StoreFrontBundle\Gateway\DBAL;
 
 use Doctrine\DBAL\Connection;
-use Shopware\Bundle\StoreFrontBundle\Struct;
 use Shopware\Bundle\StoreFrontBundle\Gateway;
+use Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Gateway\DBAL
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CountryGateway implements Gateway\CountryGatewayInterface
@@ -61,8 +61,8 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     private $connection;
 
     /**
-     * @param Connection $connection
-     * @param FieldHelper $fieldHelper
+     * @param Connection               $connection
+     * @param FieldHelper              $fieldHelper
      * @param Hydrator\CountryHydrator $countryHydrator
      */
     public function __construct(
@@ -76,7 +76,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getArea($id, Struct\ShopContextInterface $context)
     {
@@ -86,7 +86,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getCountry($id, Struct\ShopContextInterface $context)
     {
@@ -96,7 +96,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getState($id, Struct\ShopContextInterface $context)
     {
@@ -106,10 +106,14 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getAreas(array $ids, Struct\ShopContextInterface $context)
     {
+        if (empty($ids)) {
+            return [];
+        }
+
         $query = $this->connection->createQueryBuilder();
 
         $query->select($this->fieldHelper->getAreaFields());
@@ -118,7 +122,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
             ->where('countryArea.id IN (:ids)')
             ->setParameter(':ids', $ids, Connection::PARAM_INT_ARRAY);
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $data = $statement->fetchAll(\PDO::FETCH_ASSOC);
@@ -133,10 +137,14 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getCountries(array $ids, Struct\ShopContextInterface $context)
     {
+        if (empty($ids)) {
+            return [];
+        }
+
         $query = $this->connection->createQueryBuilder();
 
         $query->select($this->fieldHelper->getCountryFields());
@@ -147,7 +155,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
 
         $this->fieldHelper->addCountryTranslation($query, $context);
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $data = $statement->fetchAll(\PDO::FETCH_ASSOC);
@@ -162,16 +170,20 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getStates(array $ids, Struct\ShopContextInterface $context)
     {
+        if (empty($ids)) {
+            return [];
+        }
+
         $query = $this->createStateQuery($context);
 
         $query->where('countryState.id IN (:ids)')
             ->setParameter(':ids', $ids, Connection::PARAM_INT_ARRAY);
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $data = $statement->fetchAll(\PDO::FETCH_ASSOC);
@@ -186,10 +198,14 @@ class CountryGateway implements Gateway\CountryGatewayInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getCountryStates($countryIds, Struct\ShopContextInterface $context)
     {
+        if (empty($countryIds)) {
+            return [];
+        }
+
         $query = $this->createStateQuery($context);
 
         $query->where('countryState.countryID IN (:ids)')
@@ -207,10 +223,10 @@ class CountryGateway implements Gateway\CountryGatewayInterface
         return $states;
     }
 
-
     /**
      * @param int[] $ids
      * @param array $data
+     *
      * @return array
      */
     private function sortByIds($ids, $data)
@@ -227,6 +243,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
 
     /**
      * @param Struct\ShopContextInterface $context
+     *
      * @return \Doctrine\DBAL\Query\QueryBuilder
      */
     private function createStateQuery(Struct\ShopContextInterface $context)
@@ -238,6 +255,7 @@ class CountryGateway implements Gateway\CountryGatewayInterface
             ->leftJoin('countryState', 's_core_countries_states_attributes', 'countryStateAttribute', 'countryStateAttribute.stateID = countryState.id');
 
         $this->fieldHelper->addCountryStateTranslation($query, $context);
+
         return $query;
     }
 }

@@ -27,13 +27,11 @@ class JsonResponse extends Response
     protected $data;
     protected $callback;
 
-    // Encode <, >, ', &, and " for RFC4627-compliant JSON, which may also be embedded into HTML.
+    // Encode <, >, ', &, and " characters in the JSON, making it also safe to be embedded into HTML.
     // 15 === JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
     protected $encodingOptions = 15;
 
     /**
-     * Constructor.
-     *
      * @param mixed $data    The response data
      * @param int   $status  The response status code
      * @param array $headers An array of response headers
@@ -50,7 +48,18 @@ class JsonResponse extends Response
     }
 
     /**
-     * {@inheritdoc}
+     * Factory method for chainability.
+     *
+     * Example:
+     *
+     *     return JsonResponse::create($data, 200)
+     *         ->setSharedMaxAge(300);
+     *
+     * @param mixed $data    The json response data
+     * @param int   $status  The response status code
+     * @param array $headers An array of response headers
+     *
+     * @return static
      */
     public static function create($data = null, $status = 200, $headers = array())
     {
@@ -62,18 +71,26 @@ class JsonResponse extends Response
      *
      * @param string|null $callback The JSONP callback or null to use none
      *
-     * @return JsonResponse
+     * @return $this
      *
      * @throws \InvalidArgumentException When the callback name is not valid
      */
     public function setCallback($callback = null)
     {
         if (null !== $callback) {
-            // taken from http://www.geekality.net/2011/08/03/valid-javascript-identifier/
-            $pattern = '/^[$_\p{L}][$_\p{L}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\x{200C}\x{200D}]*+$/u';
+            // partially token from http://www.geekality.net/2011/08/03/valid-javascript-identifier/
+            // partially token from https://github.com/willdurand/JsonpCallbackValidator
+            //      JsonpCallbackValidator is released under the MIT License. See https://github.com/willdurand/JsonpCallbackValidator/blob/v1.1.0/LICENSE for details.
+            //      (c) William Durand <william.durand1@gmail.com>
+            $pattern = '/^[$_\p{L}][$_\p{L}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\x{200C}\x{200D}]*(?:\[(?:"(?:\\\.|[^"\\\])*"|\'(?:\\\.|[^\'\\\])*\'|\d+)\])*?$/u';
+            $reserved = array(
+                'break', 'do', 'instanceof', 'typeof', 'case', 'else', 'new', 'var', 'catch', 'finally', 'return', 'void', 'continue', 'for', 'switch', 'while',
+                'debugger', 'function', 'this', 'with', 'default', 'if', 'throw', 'delete', 'in', 'try', 'class', 'enum', 'extends', 'super',  'const', 'export',
+                'import', 'implements', 'let', 'private', 'public', 'yield', 'interface', 'package', 'protected', 'static', 'null', 'true', 'false',
+            );
             $parts = explode('.', $callback);
             foreach ($parts as $part) {
-                if (!preg_match($pattern, $part)) {
+                if (!preg_match($pattern, $part) || in_array($part, $reserved, true)) {
                     throw new \InvalidArgumentException('The callback name is not valid.');
                 }
             }
@@ -89,7 +106,7 @@ class JsonResponse extends Response
      *
      * @param mixed $data
      *
-     * @return JsonResponse
+     * @return $this
      *
      * @throws \InvalidArgumentException
      */
@@ -102,12 +119,41 @@ class JsonResponse extends Response
             $data = json_encode($data, $this->encodingOptions);
         } else {
             try {
-                // PHP 5.4 and up wrap exceptions thrown by JsonSerializable
-                // objects in a new exception that needs to be removed.
-                // Fortunately, PHP 5.5 and up do not trigger any warning anymore.
-                $data = json_encode($data, $this->encodingOptions);
+                if (!interface_exists('JsonSerializable', false)) {
+                    // PHP 5.3 triggers annoying warnings for some
+                    // types that can't be serialized as JSON (INF, resources, etc.)
+                    // but doesn't provide the JsonSerializable interface.
+                    set_error_handler(function () { return false; });
+                    $data = @json_encode($data, $this->encodingOptions);
+                    restore_error_handler();
+                } elseif (\PHP_VERSION_ID < 50500) {
+                    // PHP 5.4 and up wrap exceptions thrown by JsonSerializable
+                    // objects in a new exception that needs to be removed.
+                    // Fortunately, PHP 5.5 and up do not trigger any warning anymore.
+                    // Clear json_last_error()
+                    json_encode(null);
+                    $errorHandler = set_error_handler('var_dump');
+                    restore_error_handler();
+                    set_error_handler(function () use ($errorHandler) {
+                        if (JSON_ERROR_NONE === json_last_error()) {
+                            return $errorHandler && false !== call_user_func_array($errorHandler, func_get_args());
+                        }
+                    });
+                    $data = json_encode($data, $this->encodingOptions);
+                    restore_error_handler();
+                } else {
+                    $data = json_encode($data, $this->encodingOptions);
+                }
+            } catch (\Error $e) {
+                if (\PHP_VERSION_ID < 50500 || !interface_exists('JsonSerializable', false)) {
+                    restore_error_handler();
+                }
+                throw $e;
             } catch (\Exception $e) {
-                if ('Exception' === get_class($e) && 0 === strpos($e->getMessage(), 'Failed calling ')) {
+                if (\PHP_VERSION_ID < 50500 || !interface_exists('JsonSerializable', false)) {
+                    restore_error_handler();
+                }
+                if (interface_exists('JsonSerializable', false) && 'Exception' === get_class($e) && 0 === strpos($e->getMessage(), 'Failed calling ')) {
                     throw $e->getPrevious() ?: $e;
                 }
                 throw $e;
@@ -138,7 +184,7 @@ class JsonResponse extends Response
      *
      * @param int $encodingOptions
      *
-     * @return JsonResponse
+     * @return $this
      */
     public function setEncodingOptions($encodingOptions)
     {
@@ -150,7 +196,7 @@ class JsonResponse extends Response
     /**
      * Updates the content and headers according to the JSON data and callback.
      *
-     * @return JsonResponse
+     * @return $this
      */
     protected function update()
     {

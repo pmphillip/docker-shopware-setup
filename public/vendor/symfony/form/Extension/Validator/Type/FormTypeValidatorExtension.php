@@ -24,14 +24,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class FormTypeValidatorExtension extends BaseValidatorExtension
 {
-    /**
-     * @var ValidatorInterface
-     */
     private $validator;
-
-    /**
-     * @var ViolationMapper
-     */
     private $violationMapper;
 
     /**
@@ -69,7 +62,7 @@ class FormTypeValidatorExtension extends BaseValidatorExtension
 
         $cascadeValidationNormalizer = function (Options $options, $cascadeValidation) {
             if (null !== $cascadeValidation) {
-                @trigger_error('The "cascade_validation" option is deprecated since version 2.8 and will be removed in 3.0. Use "constraints" with a Valid constraint instead.', E_USER_DEPRECATED);
+                @trigger_error('The "cascade_validation" option is deprecated since Symfony 2.8 and will be removed in 3.0. Use "constraints" with a Valid constraint instead.', E_USER_DEPRECATED);
             }
 
             return null === $cascadeValidation ? false : $cascadeValidation;

@@ -21,13 +21,14 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 use Shopware\Bundle\AttributeBundle\Service\ConfigurationStruct;
 use Shopware\Bundle\AttributeBundle\Service\CrudService;
 use Shopware\Bundle\AttributeBundle\Service\DataLoader;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\AttributeBundle\Controllers\Backend
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
 class Shopware_Controllers_Backend_AttributeData extends Shopware_Controllers_Backend_ExtJs
@@ -44,6 +45,7 @@ class Shopware_Controllers_Backend_AttributeData extends Shopware_Controllers_Ba
             );
         } catch (Exception $e) {
             $this->View()->assign(['success' => false, 'message' => $e->getMessage()]);
+
             return;
         }
 
@@ -79,6 +81,7 @@ class Shopware_Controllers_Backend_AttributeData extends Shopware_Controllers_Ba
             );
         } catch (Exception $e) {
             $this->View()->assign(['success' => false, 'message' => $e->getMessage()]);
+
             return;
         }
         $this->View()->assign('success', true);
@@ -96,10 +99,43 @@ class Shopware_Controllers_Backend_AttributeData extends Shopware_Controllers_Ba
             return $column->isIdentifier() == false;
         });
 
+        if ($this->Request()->has('columns')) {
+            $whitelist = json_decode($this->Request()->getParam('columns', []), true);
+            $columns = array_filter($columns, function (ConfigurationStruct $column) use ($whitelist) {
+                return in_array($column->getColumnName(), $whitelist);
+            });
+        }
+
+        if (!$this->Request()->getParam('raw')) {
+            $this->translateColumns($columns);
+        }
+
         $this->View()->assign([
             'success' => true,
             'data' => array_values($columns),
-            'total' => 1
+            'total' => 1,
         ]);
+    }
+
+    /**
+     * @param ConfigurationStruct[] $columns
+     */
+    private function translateColumns($columns)
+    {
+        $snippets = $this->container->get('snippets')->getNamespace('backend/attribute_columns');
+
+        foreach ($columns as $column) {
+            $key = $column->getTableName() . '_' . $column->getColumnName() . '_';
+
+            if ($snippet = $snippets->get($key . 'label')) {
+                $column->setLabel($snippet);
+            }
+            if ($snippet = $snippets->get($key . 'supportText')) {
+                $column->setSupportText($snippet);
+            }
+            if ($snippet = $snippets->get($key . 'helpText')) {
+                $column->setHelpText($snippet);
+            }
+        }
     }
 }

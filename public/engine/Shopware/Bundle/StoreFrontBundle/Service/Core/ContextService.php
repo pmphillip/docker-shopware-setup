@@ -24,31 +24,30 @@
 
 namespace Shopware\Bundle\StoreFrontBundle\Service\Core;
 
-use Shopware\Bundle\StoreFrontBundle\Service\ContextServiceInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
-use Shopware\Components\DependencyInjection\Container;
+use Enlight_Components_Session_Namespace as Session;
 use Shopware\Bundle\StoreFrontBundle\Gateway\CountryGatewayInterface;
 use Shopware\Bundle\StoreFrontBundle\Gateway\CurrencyGatewayInterface;
 use Shopware\Bundle\StoreFrontBundle\Gateway\CustomerGroupGatewayInterface;
 use Shopware\Bundle\StoreFrontBundle\Gateway\PriceGroupDiscountGatewayInterface;
 use Shopware\Bundle\StoreFrontBundle\Gateway\ShopGatewayInterface;
 use Shopware\Bundle\StoreFrontBundle\Gateway\TaxGatewayInterface;
-use Enlight_Components_Session_Namespace as Session;
+use Shopware\Bundle\StoreFrontBundle\Service\ContextServiceInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
 use Shopware\Models;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Service\Core
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ContextService implements ContextServiceInterface
 {
-    const FALLBACK_CUSTOMER_GROUP = "EK";
+    const FALLBACK_CUSTOMER_GROUP = 'EK';
 
     /**
-     * @var Container
+     * @var ContainerInterface
      */
     private $container;
 
@@ -88,16 +87,16 @@ class ContextService implements ContextServiceInterface
     private $countryGateway;
 
     /**
-     * @param Container $container
-     * @param CustomerGroupGatewayInterface $customerGroupGateway
-     * @param TaxGatewayInterface $taxGateway
-     * @param CountryGatewayInterface $countryGateway
+     * @param ContainerInterface                 $container
+     * @param CustomerGroupGatewayInterface      $customerGroupGateway
+     * @param TaxGatewayInterface                $taxGateway
+     * @param CountryGatewayInterface            $countryGateway
      * @param PriceGroupDiscountGatewayInterface $priceGroupDiscountGateway
-     * @param ShopGatewayInterface $shopGateway
-     * @param CurrencyGatewayInterface $currencyGateway
+     * @param ShopGatewayInterface               $shopGateway
+     * @param CurrencyGatewayInterface           $currencyGateway
      */
     public function __construct(
-        Container $container,
+        ContainerInterface $container,
         CustomerGroupGatewayInterface $customerGroupGateway,
         TaxGatewayInterface $taxGateway,
         CountryGatewayInterface $countryGateway,
@@ -122,6 +121,7 @@ class ContextService implements ContextServiceInterface
         if ($this->context === null) {
             $this->initializeShopContext();
         }
+
         return $this->context;
     }
 
@@ -137,7 +137,8 @@ class ContextService implements ContextServiceInterface
             $this->getStoreFrontCurrentCustomerGroupKey(),
             $this->getStoreFrontAreaId(),
             $this->getStoreFrontCountryId(),
-            $this->getStoreFrontStateId()
+            $this->getStoreFrontStateId(),
+            $this->getStoreFrontStreamIds()
         );
     }
 
@@ -242,8 +243,9 @@ class ContextService implements ContextServiceInterface
      */
     private function getStoreFrontShopId()
     {
-        /**@var $shop Models\Shop\Shop */
+        /** @var $shop Models\Shop\Shop */
         $shop = $this->container->get('shop');
+
         return $shop->getId();
     }
 
@@ -252,8 +254,9 @@ class ContextService implements ContextServiceInterface
      */
     private function getStoreFrontCurrencyId()
     {
-        /**@var $shop Models\Shop\Shop */
+        /** @var $shop Models\Shop\Shop */
         $shop = $this->container->get('shop');
+
         return $shop->getCurrency()->getId();
     }
 
@@ -268,8 +271,9 @@ class ContextService implements ContextServiceInterface
             return $session->offsetGet('sUserGroup');
         }
 
-        /**@var $shop Models\Shop\Shop */
+        /** @var $shop Models\Shop\Shop */
         $shop = $this->container->get('shop');
+
         return $shop->getCustomerGroup()->getKey();
     }
 
@@ -283,6 +287,7 @@ class ContextService implements ContextServiceInterface
         if ($session->offsetGet('sArea')) {
             return $session->offsetGet('sArea');
         }
+
         return null;
     }
 
@@ -296,6 +301,7 @@ class ContextService implements ContextServiceInterface
         if ($session->offsetGet('sCountry')) {
             return $session->offsetGet('sCountry');
         }
+
         return null;
     }
 
@@ -309,17 +315,19 @@ class ContextService implements ContextServiceInterface
         if ($session->offsetGet('sState')) {
             return $session->offsetGet('sState');
         }
+
         return null;
     }
 
     /**
-     * @param string $baseUrl
-     * @param int $shopId
-     * @param null|int $currencyId
+     * @param string      $baseUrl
+     * @param int         $shopId
+     * @param null|int    $currencyId
      * @param null|string $currentCustomerGroupKey
-     * @param null|int $areaId
-     * @param null|int $countryId
-     * @param null|int $stateId
+     * @param null|int    $areaId
+     * @param null|int    $countryId
+     * @param null|int    $stateId
+     *
      * @return ShopContext
      */
     private function create(
@@ -329,10 +337,11 @@ class ContextService implements ContextServiceInterface
         $currentCustomerGroupKey = null,
         $areaId = null,
         $countryId = null,
-        $stateId = null
+        $stateId = null,
+        $streamIds = []
     ) {
         $shop = $this->shopGateway->get($shopId);
-        $fallbackCustomerGroupKey = ContextService::FALLBACK_CUSTOMER_GROUP;
+        $fallbackCustomerGroupKey = self::FALLBACK_CUSTOMER_GROUP;
 
         if ($currentCustomerGroupKey == null) {
             $currentCustomerGroupKey = $fallbackCustomerGroupKey;
@@ -382,7 +391,54 @@ class ContextService implements ContextServiceInterface
             $priceGroups,
             $area,
             $country,
-            $state
+            $state,
+            $streamIds
         );
+    }
+
+    /**
+     * @param int $customerId
+     *
+     * @return array
+     */
+    private function getStreamsOfCustomerId($customerId)
+    {
+        $query = $this->container->get('dbal_connection')->createQueryBuilder();
+        $query->select('mapping.stream_id');
+        $query->from('s_customer_streams_mapping', 'mapping');
+        $query->where('mapping.customer_id = :customerId');
+        $query->setParameter(':customerId', $customerId);
+        $streams = $query->execute()->fetchAll(\PDO::FETCH_COLUMN);
+        sort($streams);
+
+        return $streams;
+    }
+
+    /**
+     * @return array
+     */
+    private function getStoreFrontStreamIds()
+    {
+        $customerId = $this->getStoreFrontCustomerId();
+
+        if (!$customerId) {
+            return [];
+        }
+
+        return $this->getStreamsOfCustomerId($customerId);
+    }
+
+    private function getStoreFrontCustomerId()
+    {
+        $session = $this->container->get('session');
+        if ($session->offsetGet('sUserId')) {
+            return (int) $session->offsetGet('sUserId');
+        }
+
+        if ($session->offsetGet('auto-user')) {
+            return (int) $session->offsetGet('auto-user');
+        }
+
+        return null;
     }
 }

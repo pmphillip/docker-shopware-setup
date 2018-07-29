@@ -191,7 +191,7 @@ abstract class AbstractNormalizer extends SerializerAwareNormalizer implements N
             return call_user_func($this->circularReferenceHandler, $object);
         }
 
-        throw new CircularReferenceException(sprintf('A circular reference has been detected (configured limit: %d).', $this->circularReferenceLimit));
+        throw new CircularReferenceException(sprintf('A circular reference has been detected when serializing the object of class "%s" (configured limit: %d)', get_class($object), $this->circularReferenceLimit));
     }
 
     /**
@@ -296,7 +296,7 @@ abstract class AbstractNormalizer extends SerializerAwareNormalizer implements N
             if (__CLASS__ !== get_class($this)) {
                 $r = new \ReflectionMethod($this, __FUNCTION__);
                 if (__CLASS__ !== $r->getDeclaringClass()->getName()) {
-                    @trigger_error(sprintf('Method %s() will have a 6th `$format = null` argument in version 4.0. Not defining it is deprecated since 3.2.', get_class($this), __FUNCTION__), E_USER_DEPRECATED);
+                    @trigger_error(sprintf('Method %s::%s() will have a 6th `$format = null` argument in version 4.0. Not defining it is deprecated since 3.2.', get_class($this), __FUNCTION__), E_USER_DEPRECATED);
                 }
             }
 

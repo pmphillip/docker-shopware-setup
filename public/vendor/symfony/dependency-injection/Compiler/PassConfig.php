@@ -153,20 +153,15 @@ class PassConfig
     }
 
     /**
-     * Gets all passes for the Merge pass.
+     * Gets the Merge pass.
      *
-     * @return array An array of passes
+     * @return CompilerPassInterface The merge pass
      */
     public function getMergePass()
     {
         return $this->mergePass;
     }
 
-    /**
-     * Sets the Merge Pass.
-     *
-     * @param CompilerPassInterface $pass The merge pass
-     */
     public function setMergePass(CompilerPassInterface $pass)
     {
         $this->mergePass = $pass;

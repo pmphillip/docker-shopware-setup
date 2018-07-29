@@ -21,6 +21,7 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 use Shopware\Components\CacheManager;
 
 /**
@@ -28,6 +29,18 @@ use Shopware\Components\CacheManager;
  */
 class Shopware_Controllers_Backend_Feedback extends Shopware_Controllers_Backend_ExtJs
 {
+    public function loadAction()
+    {
+        /** @var \Shopware\Components\ShopwareReleaseStruct $shopwareRelease */
+        $shopwareRelease = $this->container->get('shopware.release');
+
+        $this->View()->assign('SHOPWARE_VERSION', $shopwareRelease->getVersion());
+        $this->View()->assign('SHOPWARE_VERSION_TEXT', $shopwareRelease->getVersionText());
+        $this->View()->assign('SHOPWARE_REVISION', $shopwareRelease->getRevision());
+
+        parent::loadAction();
+    }
+
     public function disableInstallationSurveyAction()
     {
         $conn = $this->container->get('dbal_connection');
@@ -35,8 +48,8 @@ class Shopware_Controllers_Backend_Feedback extends Shopware_Controllers_Backend
         $valueId = $conn->fetchColumn('SELECT id FROM s_core_config_values WHERE element_id = :elementId', ['elementId' => $elementId]);
         $data = [
             'element_id' => $elementId,
-            'shop_id'    => 1,
-            'value'      => serialize(false),
+            'shop_id' => 1,
+            'value' => serialize(false),
         ];
         if ($valueId) {
             $conn->update(

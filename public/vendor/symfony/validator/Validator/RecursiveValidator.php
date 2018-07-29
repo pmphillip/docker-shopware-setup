@@ -24,30 +24,13 @@ use Symfony\Component\Validator\ValidatorInterface as LegacyValidatorInterface;
 /**
  * Recursive implementation of {@link ValidatorInterface}.
  *
- * @since  2.5
- *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
 class RecursiveValidator implements ValidatorInterface, LegacyValidatorInterface
 {
-    /**
-     * @var ExecutionContextFactoryInterface
-     */
     protected $contextFactory;
-
-    /**
-     * @var MetadataFactoryInterface
-     */
     protected $metadataFactory;
-
-    /**
-     * @var ConstraintValidatorFactoryInterface
-     */
     protected $validatorFactory;
-
-    /**
-     * @var ObjectInitializerInterface[]
-     */
     protected $objectInitializers;
 
     /**

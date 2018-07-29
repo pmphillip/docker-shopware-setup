@@ -25,30 +25,37 @@
 namespace Shopware\Components\DependencyInjection\Bridge;
 
 use Shopware\Components\Escaper\EscaperInterface;
+use Shopware\Components\Template\Security;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\DependencyInjection\Bridge
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Template
 {
     /**
-     * @param \Enlight_Event_EventManager $eventManager
+     * @param \Enlight_Event_EventManager          $eventManager
      * @param \Enlight_Components_Snippet_Resource $snippetResource
-     * @param EscaperInterface $escaper
+     * @param EscaperInterface                     $escaper
+     * @param array                                $templateConfig
+     * @param array                                $securityConfig
+     *
      * @return \Enlight_Template_Manager
-     * @param array $templateConfig
      */
     public function factory(
         \Enlight_Event_EventManager $eventManager,
         \Enlight_Components_Snippet_Resource $snippetResource,
         EscaperInterface $escaper,
-        array $templateConfig
+        array $templateConfig,
+        array $securityConfig
     ) {
-
         /** @var $template \Enlight_Template_Manager */
         $template = \Enlight_Class::Instance('Enlight_Template_Manager');
+
+        $template->enableSecurity(
+            new Security($template, $securityConfig)
+        );
 
         $template->setOptions($templateConfig);
         $template->setEventManager($eventManager);
@@ -56,11 +63,11 @@ class Template
         $template->registerResource('snippet', $snippetResource);
         $template->setDefaultResourceType('snippet');
 
-        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeHtml', array($escaper, 'escapeHtml'));
-        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeHtmlAttr', array($escaper, 'escapeHtmlAttr'));
-        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeJs', array($escaper, 'escapeJs'));
-        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeCss', array($escaper, 'escapeCss'));
-        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeUrl', array($escaper, 'escapeUrl'));
+        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeHtml', [$escaper, 'escapeHtml']);
+        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeHtmlAttr', [$escaper, 'escapeHtmlAttr']);
+        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeJs', [$escaper, 'escapeJs']);
+        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeCss', [$escaper, 'escapeCss']);
+        $template->registerPlugin(\Smarty::PLUGIN_MODIFIER, 'escapeUrl', [$escaper, 'escapeUrl']);
 
         return $template;
     }

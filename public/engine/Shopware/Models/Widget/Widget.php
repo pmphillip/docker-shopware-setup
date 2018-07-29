@@ -24,18 +24,17 @@
 
 namespace Shopware\Models\Widget;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
 
 /**
- *
  * @ORM\Table(name="s_core_widgets")
  * @ORM\Entity
  */
 class Widget extends ModelEntity
 {
     /**
-     * @var integer $id
+     * @var int
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
@@ -43,15 +42,16 @@ class Widget extends ModelEntity
     private $id;
 
     /**
-     * @var string $name
+     * @var string
      * @ORM\Column(name="name", type="string", nullable=false)
      */
     private $name;
 
     /**
-     * @var string $label
+     * @var string
      * @ORM\Column(name="label", type="string", nullable=false)
-     * @deprecated
+     *
+     * @deprecated Will be removed in 5.5.
      */
     private $label;
 
@@ -62,7 +62,7 @@ class Widget extends ModelEntity
     private $views;
 
     /**
-     * @var integer $pluginId
+     * @var int
      * @ORM\Column(name="plugin_id", type="integer", nullable=true)
      */
     private $pluginId;
@@ -99,20 +99,26 @@ class Widget extends ModelEntity
     }
 
     /**
-     * @deprecated Use 'label' snippet from 'backend/widget/<your-widget-name>' namespace instead
+     * @deprecated Will be removed in 5.5. Use 'label' snippet from 'backend/widget/<your-widget-name>' namespace instead.
+     *
      * @return string
      */
     public function getLabel()
     {
+        trigger_error(sprintf("%s::%s() is deprecated and will be removed in 5.5. Use 'label' snippet from 'backend/widget/<your-widget-name>' namespace instead.", __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
         return $this->label;
     }
 
     /**
-     * @deprecated Use 'label' snippet from 'backend/widget/<your-widget-name>' namespace instead
+     * @deprecated Will be removed in 5.5. Use 'label' snippet from 'backend/widget/<your-widget-name>' namespace instead.
+     *
      * @param string $label
      */
     public function setLabel($label)
     {
+        trigger_error(sprintf("%s::%s() is deprecated and will be removed in 5.5. Use 'label' snippet from 'backend/widget/<your-widget-name>' namespace instead.", __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
         $this->label = $label;
     }
 

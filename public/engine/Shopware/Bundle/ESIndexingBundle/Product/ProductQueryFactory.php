@@ -21,14 +21,15 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 namespace Shopware\Bundle\ESIndexingBundle\Product;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Bundle\ESIndexingBundle\LastIdQuery;
+use Shopware\Bundle\SearchBundleDBAL\VariantHelper;
 
 /**
  * Class ProductQueryFactory
- * @package Shopware\Bundle\ESIndexingBundle\Product
  */
 class ProductQueryFactory implements ProductQueryFactoryInterface
 {
@@ -36,59 +37,48 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
      * @var Connection
      */
     private $connection;
+    private $variantHelper;
 
     /**
-     * @param Connection $connection
+     * @param Connection    $connection
+     * @param VariantHelper $variantHelper
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, VariantHelper $variantHelper)
     {
         $this->connection = $connection;
+        $this->variantHelper = $variantHelper;
     }
 
     /**
-     * @param null|int $limit
-     * @return \Doctrine\DBAL\Query\QueryBuilder
-     */
-    private function createQuery($limit = null)
-    {
-        $query = $this->connection->createQueryBuilder()
-            ->select(['variant.id', 'variant.ordernumber'])
-            ->from('s_articles_details', 'variant')
-            ->innerJoin('variant', 's_articles', 'product', 'product.id = variant.articleID')
-            ->andWhere('variant.kind = :kind')
-            ->andWhere('variant.id > :lastId')
-            ->setParameter(':lastId', 0)
-            ->setParameter(':kind', 1)
-            ->orderBy('variant.id');
-
-        if ($limit !== null) {
-            $query->setMaxResults($limit);
-        }
-        return $query;
-    }
-
-    /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createCategoryQuery($categoryId, $limit = null)
     {
-        $query = $this->connection->createQueryBuilder()
-            ->select(['categories.articleID', 'categories.articleID'])
-            ->from('s_articles_categories_ro', 'categories')
-            ->andWhere('categories.articleID > :lastId')
-            ->andWhere('categories.categoryID = :categoryId')
-            ->setParameter(':categoryId', $categoryId, \PDO::PARAM_INT)
-            ->setParameter(':lastId', 0, \PDO::PARAM_INT)
-            ->orderBy('categories.articleID');
+        if (!$this->variantHelper->getVariantFacet()) {
+            $query = $this->connection->createQueryBuilder()
+                ->select(['categories.articleID', 'categories.articleID'])
+                ->from('s_articles_categories_ro', 'categories')
+                ->andWhere('categories.articleID > :lastId')
+                ->andWhere('categories.categoryID = :categoryId')
+                ->setParameter(':categoryId', $categoryId, \PDO::PARAM_INT)
+                ->setParameter(':lastId', 0, \PDO::PARAM_INT)
+                ->orderBy('categories.articleID');
 
-        if ($limit !== null) {
-            $query->setMaxResults($limit);
+            if ($limit !== null) {
+                $query->setMaxResults($limit);
+            }
+        } else {
+            $query = $this->createQuery($limit);
+            $query->innerJoin('variant', 's_articles_categories_ro', 'categories', 'variant.articleID = categories.articleID')
+                ->andWhere('categories.categoryID = :categoryId')
+                ->setParameter(':categoryId', $categoryId, \PDO::PARAM_INT);
         }
+
         return new LastIdQuery($query);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createPriceIdQuery($priceIds, $limit = null)
     {
@@ -102,7 +92,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createUnitIdQuery($unitIds, $limit = null)
     {
@@ -114,7 +104,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createVoteIdQuery($voteIds, $limit = null)
     {
@@ -127,7 +117,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createProductIdQuery($productIds, $limit = null)
     {
@@ -139,7 +129,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createVariantIdQuery($variantIds, $limit = null)
     {
@@ -152,7 +142,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createTaxQuery($taxIds, $limit = null)
     {
@@ -164,7 +154,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createManufacturerQuery($manufacturerIds, $limit = null)
     {
@@ -176,7 +166,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createProductCategoryQuery($categoryIds, $limit = null)
     {
@@ -189,7 +179,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createPropertyGroupQuery($groupIds, $limit = null)
     {
@@ -203,7 +193,7 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createPropertyOptionQuery($optionIds, $limit = null)
     {
@@ -213,5 +203,32 @@ class ProductQueryFactory implements ProductQueryFactoryInterface
             ->setParameter(':optionIds', $optionIds, Connection::PARAM_INT_ARRAY);
 
         return new LastIdQuery($dbal);
+    }
+
+    /**
+     * @param null|int $limit
+     *
+     * @return \Doctrine\DBAL\Query\QueryBuilder
+     */
+    private function createQuery($limit = null)
+    {
+        $query = $this->connection->createQueryBuilder()
+            ->select(['variant.id', 'variant.ordernumber'])
+            ->from('s_articles_details', 'variant')
+            ->innerJoin('variant', 's_articles', 'product', 'product.id = variant.articleID')
+            ->andWhere('variant.id > :lastId')
+            ->setParameter(':lastId', 0)
+            ->orderBy('variant.id');
+
+        if (!$this->variantHelper->getVariantFacet()) {
+            $query->andWhere('variant.kind = :kind')
+                ->setParameter(':kind', 1);
+        }
+
+        if ($limit !== null) {
+            $query->setMaxResults($limit);
+        }
+
+        return $query;
     }
 }

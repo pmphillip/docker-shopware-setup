@@ -21,12 +21,11 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
 use Shopware\Bundle\SearchBundleDBAL\SearchTerm\SearchIndexerInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Plugins\RebuildINdex
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_Plugin_Bootstrap
@@ -51,11 +50,11 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      */
     public function getCapabilities()
     {
-        return array(
+        return [
             'install' => false,
             'enable' => false,
-            'update' => true
-        );
+            'update' => true,
+        ];
     }
 
     /**
@@ -71,7 +70,7 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      */
     public function getVersion()
     {
-        return "1.0.0";
+        return '1.0.0';
     }
 
     /**
@@ -83,13 +82,12 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      */
     public function getInfo()
     {
-        return array(
+        return [
             'version' => $this->getVersion(),
             'label' => $this->getLabel(),
-            'link' => 'http://www.shopware.de/'
-        );
+            'link' => 'http://www.shopware.de/',
+        ];
     }
-
 
     /**
      * Helper function to get access on the sRewriteTable component.
@@ -126,38 +124,10 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
     }
 
     /**
-     * Registers all required events for the similar shown articles function.
-     */
-    protected function subscribeSearchIndexEvents()
-    {
-        $this->subscribeEvent(
-            'Enlight_Controller_Dispatcher_ControllerPath_Backend_SearchIndex',
-            'getSearchIndexBackendController'
-        );
-
-        $this->createCronJob('Refresh search index', 'RefreshSearchIndex', 86400, true);
-        $this->subscribeEvent('Shopware_CronJob_RefreshSearchIndex', 'refreshSearchIndex');
-    }
-
-
-    /**
-     * Registers all required events for the also bought articles function.
-     */
-    protected function subscribeSeoIndexEvents()
-    {
-        $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_Seo', 'getSeoBackendController');
-
-        $this->subscribeEvent('Enlight_Bootstrap_InitResource_SeoIndex', 'initSeoIndexResource');
-        $this->subscribeEvent('Enlight_Controller_Front_DispatchLoopShutdown', 'onAfterSendResponse');
-
-        $this->createCronJob('Refresh seo index', 'RefreshSeoIndex', 86400, true);
-        $this->subscribeEvent('Shopware_CronJob_RefreshSeoIndex', 'onRefreshSeoIndex');
-    }
-
-    /**
      * Event listener function of the search index rebuild cron job.
      *
      * @param Enlight_Event_EventArgs $arguments
+     *
      * @return bool
      */
     public function onRefreshSeoIndex(Enlight_Event_EventArgs $arguments)
@@ -209,6 +179,14 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
             $this->RewriteTable()->sCreateRewriteTableBlog();
             $this->RewriteTable()->sCreateRewriteTableSuppliers(null, null, $context);
             $this->RewriteTable()->sCreateRewriteTableStatic();
+
+            Shopware()->Events()->notify(
+                'Shopware_CronJob_RefreshSeoIndex_CreateRewriteTable',
+                [
+                    'shopContext' => $context,
+                    'cachedTime' => $currentTime,
+                ]
+            );
         }
 
         return true;
@@ -218,6 +196,7 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      * Event listener function of the search index rebuild cron job.
      *
      * @param Enlight_Event_EventArgs $arguments
+     *
      * @return bool
      */
     public function refreshSearchIndex(Enlight_Event_EventArgs $arguments)
@@ -271,6 +250,7 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      * event. This event is fired when shopware trying to access the plugin SEO controller.
      *
      * @param Enlight_Event_EventArgs $arguments
+     *
      * @return string
      */
     public function getSeoBackendController(Enlight_Event_EventArgs $arguments)
@@ -283,6 +263,7 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      * event. This event is fired when shopware trying to access the plugin SearchIndex controller.
      *
      * @param Enlight_Event_EventArgs $arguments
+     *
      * @return string
      */
     public function getSearchIndexBackendController(Enlight_Event_EventArgs $arguments)
@@ -295,6 +276,7 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
      * event. This event is fired when shopware trying to access the plugin AlsoBought controller.
      *
      * @param Enlight_Event_EventArgs $arguments
+     *
      * @return string
      */
     public function getAlsoBoughtBackendController(Enlight_Event_EventArgs $arguments)
@@ -315,8 +297,34 @@ class Shopware_Plugins_Core_RebuildIndex_Bootstrap extends Shopware_Components_P
             $this->Path() . 'Components/'
         );
 
-        $seoIndex = Enlight_Class::Instance('Shopware_Components_SeoIndex');
+        return Enlight_Class::Instance('Shopware_Components_SeoIndex');
+    }
 
-        return $seoIndex;
+    /**
+     * Registers all required events for the similar shown articles function.
+     */
+    protected function subscribeSearchIndexEvents()
+    {
+        $this->subscribeEvent(
+            'Enlight_Controller_Dispatcher_ControllerPath_Backend_SearchIndex',
+            'getSearchIndexBackendController'
+        );
+
+        $this->createCronJob('Refresh search index', 'RefreshSearchIndex', 86400, true);
+        $this->subscribeEvent('Shopware_CronJob_RefreshSearchIndex', 'refreshSearchIndex');
+    }
+
+    /**
+     * Registers all required events for the also bought articles function.
+     */
+    protected function subscribeSeoIndexEvents()
+    {
+        $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_Seo', 'getSeoBackendController');
+
+        $this->subscribeEvent('Enlight_Bootstrap_InitResource_SeoIndex', 'initSeoIndexResource');
+        $this->subscribeEvent('Enlight_Controller_Front_DispatchLoopShutdown', 'onAfterSendResponse');
+
+        $this->createCronJob('Refresh seo index', 'RefreshSeoIndex', 86400, true);
+        $this->subscribeEvent('Shopware_CronJob_RefreshSeoIndex', 'onRefreshSeoIndex');
     }
 }

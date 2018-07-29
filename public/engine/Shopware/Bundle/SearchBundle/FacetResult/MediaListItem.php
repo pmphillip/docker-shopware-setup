@@ -25,74 +25,31 @@
 namespace Shopware\Bundle\SearchBundle\FacetResult;
 
 use Shopware\Bundle\StoreFrontBundle\Struct\Attribute;
-use Shopware\Bundle\StoreFrontBundle\Struct\Extendable;
 use Shopware\Bundle\StoreFrontBundle\Struct\Media;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\FacetResult
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class MediaListItem extends Extendable
+class MediaListItem extends ValueListItem
 {
-    /**
-     * @var int|string
-     */
-    private $id;
-
-    /**
-     * @var string
-     */
-    private $label;
-
-    /**
-     * @var bool
-     */
-    private $active;
-
     /**
      * @var Media
      */
-    private $media;
+    protected $media;
 
     /**
-     * @param int|string $id
-     * @param string $label
-     * @param boolean $active
-     * @param Media $media
+     * @param int|string  $id
+     * @param string      $label
+     * @param bool        $active
+     * @param Media       $media
      * @param Attribute[] $attributes
      */
     public function __construct($id, $label, $active, Media $media = null, $attributes = [])
     {
-        $this->id = $id;
-        $this->label = $label;
-        $this->active = $active;
+        parent::__construct($id, $label, $active, $attributes);
         $this->media = $media;
-        $this->attributes = $attributes;
-    }
-
-    /**
-     * @return int|string
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function isActive()
-    {
-        return $this->active;
-    }
-
-    /**
-     * @return string
-     */
-    public function getLabel()
-    {
-        return $this->label;
     }
 
     /**

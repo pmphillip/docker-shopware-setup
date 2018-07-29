@@ -24,8 +24,8 @@
 
 namespace Shopware\Models\CommentConfirm;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
 
 /**
  * CommentConfirm Model Entity
@@ -36,7 +36,7 @@ use Doctrine\ORM\Mapping as ORM;
 class CommentConfirm extends ModelEntity
 {
     /**
-     * @var integer $id
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
@@ -45,33 +45,37 @@ class CommentConfirm extends ModelEntity
     private $id;
 
     /**
-     * @var \DateTime $creationDate
+     * @var \DateTime
      *
      * @ORM\Column(name="datum", type="datetime", nullable=false)
      */
     private $creationDate;
 
     /**
-     * @var string $type
+     * @var string
      *
      * @ORM\Column(name="type", type="string", length=255, nullable=true)
      */
-    private $type = null;
+    private $type;
 
     /**
-     * @var string $hash
+     * @var string
      *
      * @ORM\Column(name="hash", type="string", length=255, nullable=false)
      */
     private $hash;
 
     /**
-     * @var string $data
+     * @var string
      *
      * @ORM\Column(name="data", type="string", nullable=false)
      */
     private $data;
 
+    public function __construct()
+    {
+        $this->type = 'swComment';
+    }
 
     /**
      * Get id

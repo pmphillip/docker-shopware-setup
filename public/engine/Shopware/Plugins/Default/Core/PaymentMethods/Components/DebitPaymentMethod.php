@@ -31,26 +31,24 @@ use Doctrine\ORM\AbstractQuery;
  *
  * Class DebitPaymentMethod
  * Used to handle debit payment
- *
- * @package ShopwarePlugin\PaymentMethods\Components
  */
 class DebitPaymentMethod extends GenericPaymentMethod
 {
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function validate($paymentData)
     {
-        $sErrorFlag = array();
-        $fields = array(
+        $sErrorFlag = [];
+        $fields = [
             'sDebitAccount',
             'sDebitBankcode',
             'sDebitBankName',
-            'sDebitBankHolder'
-        );
+            'sDebitBankHolder',
+        ];
 
         foreach ($fields as $field) {
-            $value = $paymentData[$field] ? : '';
+            $value = $paymentData[$field] ?: '';
             $value = trim($value);
 
             if (empty($value)) {
@@ -62,50 +60,50 @@ class DebitPaymentMethod extends GenericPaymentMethod
             $sErrorMessages[] = Shopware()->Snippets()->getNamespace('frontend/account/internalMessages')
                 ->get('ErrorFillIn', 'Please fill in all red fields');
 
-            return array(
-                "sErrorFlag" => $sErrorFlag,
-                "sErrorMessages" => $sErrorMessages
-            );
-        } else {
-            return array();
+            return [
+                'sErrorFlag' => $sErrorFlag,
+                'sErrorMessages' => $sErrorMessages,
+            ];
         }
+
+        return [];
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function savePaymentData($userId, \Enlight_Controller_Request_Request $request)
     {
         $lastPayment = $this->getCurrentPaymentDataAsArray($userId);
 
         $paymentMean = Shopware()->Models()->getRepository('\Shopware\Models\Payment\Payment')->
-            getPaymentsQuery(array('name' => 'debit'))->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY);
+            getPaymentsQuery(['name' => 'debit'])->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY);
 
-        $data = array(
-            'account_number' => $request->getParam("sDebitAccount"),
-            'bank_code' => $request->getParam("sDebitBankcode"),
-            'bankname' => $request->getParam("sDebitBankName"),
-            'account_holder' => $request->getParam("sDebitBankHolder")
-        );
+        $data = [
+            'account_number' => $request->getParam('sDebitAccount'),
+            'bank_code' => $request->getParam('sDebitBankcode'),
+            'bankname' => $request->getParam('sDebitBankName'),
+            'account_holder' => $request->getParam('sDebitBankHolder'),
+        ];
 
         if (!$lastPayment) {
             $date = new \DateTime();
             $data['created_at'] = $date->format('Y-m-d');
             $data['payment_mean_id'] = $paymentMean['id'];
             $data['user_id'] = $userId;
-            Shopware()->Db()->insert("s_core_payment_data", $data);
+            Shopware()->Db()->insert('s_core_payment_data', $data);
         } else {
-            $where = array(
+            $where = [
                 'payment_mean_id = ?' => $paymentMean['id'],
-                'user_id = ?'  => $userId
-            );
+                'user_id = ?' => $userId,
+            ];
 
-            Shopware()->Db()->update("s_core_payment_data", $data, $where);
+            Shopware()->Db()->update('s_core_payment_data', $data, $where);
         }
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getCurrentPaymentDataAsArray($userId)
     {
@@ -113,19 +111,19 @@ class DebitPaymentMethod extends GenericPaymentMethod
             ->getCurrentPaymentDataQueryBuilder($userId, 'debit')->getQuery()->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY);
 
         if (isset($paymentData)) {
-            $arrayData = array(
-                "sDebitAccount" => $paymentData['accountNumber'],
-                "sDebitBankcode" => $paymentData['bankCode'],
-                "sDebitBankName" => $paymentData['bankName'],
-                "sDebitBankHolder" =>  $paymentData['accountHolder']
-            );
+            $arrayData = [
+                'sDebitAccount' => $paymentData['accountNumber'],
+                'sDebitBankcode' => $paymentData['bankCode'],
+                'sDebitBankName' => $paymentData['bankName'],
+                'sDebitBankHolder' => $paymentData['accountHolder'],
+            ];
 
             return $arrayData;
         }
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createPaymentInstance($orderId, $userId, $paymentId)
     {
@@ -137,31 +135,30 @@ class DebitPaymentMethod extends GenericPaymentMethod
             ->getQuery()
             ->getSingleScalarResult();
 
-        $addressData = Shopware()->Models()->getRepository('Shopware\Models\Customer\Billing')->
-            getUserBillingQuery($userId)->getOneOrNullResult(AbstractQuery::HYDRATE_ARRAY);
+        $addressData = Shopware()->Models()->getRepository('Shopware\Models\Customer\Customer')
+            ->find($userId)->getDefaultBillingAddress();
 
         $debitData = $this->getCurrentPaymentDataAsArray($userId);
 
         $date = new \DateTime();
-        $data = array(
+        $data = [
             'payment_mean_id' => $paymentId,
             'order_id' => $orderId,
             'user_id' => $userId,
-            'firstname' => $addressData['firstName'],
-            'lastname' => $addressData['lastName'],
-            'address' => $addressData['street'],
-            'zipcode' => $addressData['zipCode'],
-            'city' => $addressData['city'],
+            'firstname' => $addressData->getFirstname(),
+            'lastname' => $addressData->getLastname(),
+            'address' => $addressData->getStreet(),
+            'zipcode' => $addressData->getZipcode(),
+            'city' => $addressData->getCity(),
             'account_number' => $debitData['sDebitAccount'],
             'bank_code' => $debitData['sDebitBankcode'],
             'bank_name' => $debitData['sDebitBankName'],
             'account_holder' => $debitData['sDebitBankHolder'],
             'amount' => $orderAmount,
-            'created_at' => $date->format('Y-m-d')
-        );
+            'created_at' => $date->format('Y-m-d'),
+        ];
 
-
-        Shopware()->Db()->insert("s_core_payment_instance", $data);
+        Shopware()->Db()->insert('s_core_payment_instance', $data);
 
         return true;
     }

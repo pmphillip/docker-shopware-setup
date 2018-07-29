@@ -65,24 +65,41 @@ Ext.define('Shopware.apps.MediaManager', {
      * Required controllers for module (subapplication)
      * @array
      */
-    controllers: [ 'Main', 'Album', 'Media', 'Thumbnail' ],
+    controllers: ['Main', 'Album', 'Media', 'Thumbnail'],
 
     /**
      * Requires models for sub-application
      * @array
      */
-    models:['Album', 'Media'],
+    models: ['Album', 'Media', 'Setting'],
 
     /**
      * Required views for this sub-application
      * @array
      */
-    views: [ 'album.Add', 'album.Setting', 'album.Tree', 'main.Selection', 'main.Window', 'media.View', 'media.Grid', 'thumbnail.Main', 'batchMove.BatchMove' ],
+    views: [
+        'album.Add',
+        'album.Setting',
+        'album.Tree',
+        'main.Selection',
+        'main.Window',
+        'media.View',
+        'media.Grid',
+        'thumbnail.Main',
+        'batchMove.BatchMove',
+        'replace.Window',
+        'replace.Grid',
+        'replace.Row',
+        'replace.Upload',
+        'replace.FileSelect'
+    ],
+
     /**
      * Required stores for sub-application
      * @array
      */
-    stores:['Album', 'Media' ],
+    stores:['Album', 'Media'],
+
     /**
      * Returns the main application window for this is expected
      * by the Enlight.app.SubApplication class.

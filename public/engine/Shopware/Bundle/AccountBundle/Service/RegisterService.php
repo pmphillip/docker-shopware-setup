@@ -31,10 +31,11 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Shop;
 use Shopware\Components\Model\ModelManager;
 use Shopware\Components\NumberRangeIncrementerInterface;
 use Shopware\Components\Password\Manager;
+use Shopware\Components\Random;
+use Shopware\Components\Routing\Context;
 use Shopware\Models\Customer\Address;
 use Shopware\Models\Customer\Customer;
 use Shopware_Components_Config;
-use Symfony\Component\Validator\Constraints\Collection;
 
 class RegisterService implements RegisterServiceInterface
 {
@@ -75,13 +76,14 @@ class RegisterService implements RegisterServiceInterface
 
     /**
      * RegisterService constructor.
-     * @param ModelManager $modelManager
-     * @param CustomerValidatorInterface $validator
-     * @param Shopware_Components_Config $config
-     * @param Manager $passwordManager
+     *
+     * @param ModelManager                    $modelManager
+     * @param CustomerValidatorInterface      $validator
+     * @param Shopware_Components_Config      $config
+     * @param Manager                         $passwordManager
      * @param NumberRangeIncrementerInterface $numberIncrementer
-     * @param Connection $connection
-     * @param AddressServiceInterface $addressService
+     * @param Connection                      $connection
+     * @param AddressServiceInterface         $addressService
      */
     public function __construct(
         ModelManager $modelManager,
@@ -102,22 +104,34 @@ class RegisterService implements RegisterServiceInterface
     }
 
     /**
-     * @param Shop $shop
-     * @param Customer $customer
-     * @param Address $billing
+     * @param Shop         $shop
+     * @param Customer     $customer
+     * @param Address      $billing
      * @param Address|null $shipping
+     * @param bool         $sendOptinMail
+     *
      * @throws \Exception
      */
     public function register(
         Shop $shop,
         Customer $customer,
         Address $billing,
-        Address $shipping = null
+        Address $shipping = null,
+        $sendOptinMail = false
     ) {
         $this->modelManager->beginTransaction();
-
         try {
             $this->saveCustomer($shop, $customer);
+            if (
+                $sendOptinMail &&
+                $customer->getDoubleOptinRegister() &&
+                $customer->getDoubleOptinConfirmDate() === null
+            ) {
+                $hash = Random::getAlphanumericString(32);
+
+                $this->doubleOptInSaveHash($customer, $hash);
+                $this->doubleOptInVerificationMail($shop, $customer, $hash);
+            }
 
             $this->addressService->create($billing, $customer);
             $this->addressService->setDefaultBillingAddress($billing);
@@ -150,12 +164,12 @@ class RegisterService implements RegisterServiceInterface
         $this->connection->insert('s_emarketing_referer', [
             'userID' => $customer->getId(),
             'referer' => $customer->getReferer(),
-            'date' => date('Y-m-d H:i:s')
+            'date' => date('Y-m-d H:i:s'),
         ]);
     }
 
     /**
-     * @param Shop $shop
+     * @param Shop     $shop
      * @param Customer $customer
      */
     private function saveCustomer(Shop $shop, Customer $customer)
@@ -164,7 +178,15 @@ class RegisterService implements RegisterServiceInterface
             $customer->setCustomerType(Customer::CUSTOMER_TYPE_BUSINESS);
         }
 
-        $customer->setActive(true);
+        $customerConfirmed = !$customer->getDoubleOptinRegister() || $customer->getDoubleOptinConfirmDate() !== null;
+        $customer->setActive($customerConfirmed);
+
+        if (!$customerConfirmed) {
+            // Reset login information if Double-Opt-In is active
+            $customer->setFirstLogin('0000-00-00');
+            $customer->setLastLogin('0000-00-00');
+            $customer->setDoubleOptinEmailSentDate(new \DateTime());
+        }
 
         //password validation
         if ($customer->getPassword()) {
@@ -196,7 +218,7 @@ class RegisterService implements RegisterServiceInterface
         $customer->setLanguageSubShop(
             $this->modelManager->find('Shopware\Models\Shop\Shop', $shop->getId())
         );
-        
+
         if (is_null($customer->getGroup())) {
             $customer->setGroup(
                 $this->modelManager->find('Shopware\Models\Customer\Group', $shop->getCustomerGroup()->getId())
@@ -221,10 +243,85 @@ class RegisterService implements RegisterServiceInterface
 
     /**
      * @param Customer $customer
+     *
      * @return int
      */
     private function getPartnerId(Customer $customer)
     {
         return (int) $this->connection->fetchColumn('SELECT id FROM s_emarketing_partner WHERE idcode = ?', [$customer->getAffiliate()]);
+    }
+
+    /**
+     * @param Shop     $shop
+     * @param Customer $customer
+     * @param string   $hash
+     *
+     * @throws \Doctrine\ORM\ORMException
+     */
+    private function doubleOptInVerificationMail(Shop $shop, Customer $customer, $hash)
+    {
+        $container = Shopware()->Container();
+        $router = Shopware()->Front()->Router();
+
+        $router->setContext(
+            Context::createFromShop(
+                $this->modelManager->getRepository(\Shopware\Models\Shop\Shop::class)->getById($shop->getId()),
+                $this->config
+            )
+        );
+        $link = $router->assemble([
+            'sViewport' => 'register',
+            'action' => 'confirmValidation',
+            'sConfirmation' => $hash,
+        ]);
+
+        $context = [
+            'sConfirmLink' => $link,
+            'firstname' => $customer->getFirstname(),
+            'lastname' => $customer->getLastname(),
+            'salutation' => $customer->getSalutation(),
+        ];
+
+        $context = $container->get('events')->filter(
+            'Shopware_Controllers_Frontend_RegisterService_DoubleOptIn_ConfirmationMail',
+            $context,
+            [
+                'customer' => $customer,
+            ]
+        );
+
+        if (((int) $customer->getAccountMode()) === 1) {
+            $mail = $container->get('templatemail')->createMail('sOPTINREGISTERACCOUNTLESS', $context);
+        } else {
+            $mail = $container->get('templatemail')->createMail('sOPTINREGISTER', $context);
+        }
+        $mail->addTo($customer->getEmail());
+        $mail->send();
+    }
+
+    /**
+     * @param Customer $customer
+     * @param string   $hash
+     *
+     * @throws \Doctrine\DBAL\DBALException
+     */
+    private function doubleOptInSaveHash(Customer $customer, $hash)
+    {
+        $sql = "INSERT INTO `s_core_optin` (`type`, `datum`, `hash`, `data`)
+                VALUES ('swRegister', ?, ?, ?)";
+
+        // Minimal billing data for Mailtemplates
+        $storedData = [
+            'customerId' => $customer->getId(),
+            'register' => [
+                    'billing' => [
+                            'firstname' => $customer->getFirstname(),
+                            'lastname' => $customer->getLastname(),
+                            'salutation' => $customer->getSalutation(),
+                        ],
+                ],
+        ];
+
+        $this->connection->executeQuery($sql, [$customer->getDoubleOptinEmailSentDate()->format('Y-m-d H:i:s'), $hash, serialize($storedData)]);
     }
 }

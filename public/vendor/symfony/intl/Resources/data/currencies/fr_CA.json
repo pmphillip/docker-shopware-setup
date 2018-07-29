@@ -1,5 +1,5 @@
 {
-    "Version": "2.1.13.23",
+    "Version": "2.1.31.33",
     "Names": {
         "ARS": [
             "ARS",
@@ -101,9 +101,13 @@
             "$ SG",
             "dollar de Singapour"
         ],
-        "THB": [
-            "THB",
-            "baht thaïlandais"
+        "SRD": [
+            "SRD",
+            "dollar surinamais"
+        ],
+        "TOP": [
+            "TOP",
+            "pa’anga"
         ],
         "TTD": [
             "TTD",

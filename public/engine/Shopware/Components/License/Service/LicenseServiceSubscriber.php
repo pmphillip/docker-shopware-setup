@@ -21,50 +21,51 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 namespace Shopware\Components\License\Service;
 
-use Enlight_View_Default;
-use Enlight_Event_EventArgs;
 use Enlight\Event\SubscriberInterface;
-use Shopware\Components\DependencyInjection\Container;
+use Enlight_Event_EventArgs;
+use Enlight_View_Default;
 use Shopware\Components\License\Struct\LicenseInformation;
 use Shopware\Components\License\Struct\LicenseUnpackRequest;
 use Shopware\Components\License\Struct\ShopwareEdition;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\License\Service
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class LicenseServiceSubscriber implements SubscriberInterface
 {
     /**
-     * @var Container $container
+     * @var ContainerInterface
      */
     private $container;
 
     /**
      * LicenseServiceSubscriber constructor.
-     * @param Container $container
+     *
+     * @param ContainerInterface $container
      */
-    public function __construct(Container $container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function getSubscribedEvents()
     {
         return [
-            'Enlight_Controller_Action_PostDispatchSecure_Backend_Index' => 'onPostDispatchBackendIndex'
+            'Enlight_Controller_Action_PostDispatchSecure_Backend_Index' => 'onPostDispatchBackendIndex',
         ];
     }
 
     /**
      * @param Enlight_Event_EventArgs $args
-     * @return void
      */
     public function onPostDispatchBackendIndex(Enlight_Event_EventArgs $args)
     {

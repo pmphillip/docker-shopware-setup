@@ -252,8 +252,8 @@ class NumberFormatter
     );
 
     private static $enTextAttributes = array(
-        self::DECIMAL => array('', '', '-', '', '*', '', ''),
-        self::CURRENCY => array('¤', '', '-¤', '', '*', ''),
+        self::DECIMAL => array('', '', '-', '', ' ', '', ''),
+        self::CURRENCY => array('¤', '', '-¤', '', ' ', ''),
     );
 
     /**
@@ -304,7 +304,7 @@ class NumberFormatter
      *                        NumberFormat::PATTERN_RULEBASED. It must conform to  the syntax
      *                        described in the ICU DecimalFormat or ICU RuleBasedNumberFormat documentation
      *
-     * @return NumberFormatter
+     * @return self
      *
      * @see http://www.php.net/manual/en/numberformatter.create.php
      * @see http://www.icu-project.org/apiref/icu4c/classDecimalFormat.html#_details
@@ -688,7 +688,7 @@ class NumberFormatter
      * @param float  $value    The numeric currency value
      * @param string $currency The 3-letter ISO 4217 currency code indicating the currency to use
      *
-     * @return string The rounded numeric currency value
+     * @return float The rounded numeric currency value
      *
      * @see http://en.wikipedia.org/wiki/Swedish_rounding
      * @see http://www.docjar.com/html/api/com/ibm/icu/util/Currency.java.html#1007

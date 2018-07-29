@@ -30,42 +30,24 @@
 class Shopware_Controllers_Backend_Notification extends Shopware_Controllers_Backend_ExtJs
 {
     /**
-     * Registers the different acl permission for the different controller actions.
-     *
-     * @return void
-     */
-    protected function initAcl()
-    {
-        /**
-         * permission to list all notifications
-         */
-        $this->addAclPermission('getArticleList', 'read', 'Insufficient Permissions');
-        $this->addAclPermission('getCustomerList', 'read', 'Insufficient Permissions');
-    }
-
-
-    /**
      * returns a JSON string to with all found articles for the backend listing
-     *
-     * @return void
      */
     public function getArticleListAction()
     {
         try {
-            $limit = intval($this->Request()->limit);
-            $offset = intval($this->Request()->start);
+            $limit = (int) $this->Request()->limit;
+            $offset = (int) $this->Request()->start;
 
             /** @var $filter array */
-            $filter = $this->Request()->getParam('filter', array());
+            $filter = $this->Request()->getParam('filter', []);
 
             //order data
-            $order = (array) $this->Request()->getParam('sort', array());
+            $order = (array) $this->Request()->getParam('sort', []);
 
             /** @var $repository \Shopware\Models\Article\Repository */
             $repository = Shopware()->Models()->getRepository(\Shopware\Models\Article\Article::class);
             $dataQuery = $repository->getArticlesWithRegisteredNotificationsQuery($filter, $offset, $limit, $order);
             $data = $dataQuery->getArrayResult();
-
 
             // manually calc the totalAmount cause the paginate(Shopware()->Models()->getQueryCount) doesn't work with this query
             $dataQuery->setFirstResult(null)->setMaxResults(null);
@@ -74,39 +56,35 @@ class Shopware_Controllers_Backend_Notification extends Shopware_Controllers_Bac
             $summaryQuery = $repository->getArticlesWithRegisteredNotificationsQuery($filter, $offset, $limit, $order, true);
             $summaryData = $summaryQuery->getOneOrNullResult(\Doctrine\ORM\AbstractQuery::HYDRATE_ARRAY);
 
-
-
             $this->View()->assign(
-                array(
+                [
                     'success' => true,
                     'data' => $data,
                     'totalCount' => $totalCount,
-                    'totalRegistered' => $summaryData["registered"],
-                    'totalNotNotified' => $summaryData["notNotified"]
-                )
+                    'totalRegistered' => $summaryData['registered'],
+                    'totalNotNotified' => $summaryData['notNotified'],
+                ]
             );
         } catch (Exception $e) {
-            $this->View()->assign(array('success' => false, 'errorMsg' => $e->getMessage()));
+            $this->View()->assign(['success' => false, 'errorMsg' => $e->getMessage()]);
         }
     }
 
     /**
      * returns a JSON string to with all found customers for the backend listing
-     *
-     * @return void
      */
     public function getCustomerListAction()
     {
         try {
-            $limit = intval($this->Request()->limit);
-            $offset = intval($this->Request()->start);
+            $limit = (int) $this->Request()->limit;
+            $offset = (int) $this->Request()->start;
             $articleOrderNumber = $this->Request()->orderNumber;
 
             /** @var $filter array */
-            $filter = $this->Request()->getParam('filter', array());
+            $filter = $this->Request()->getParam('filter', []);
 
             //order data
-            $order = (array) $this->Request()->getParam('sort', array());
+            $order = (array) $this->Request()->getParam('sort', []);
 
             /** @var $repository \Shopware\Models\Article\Repository */
             $repository = Shopware()->Models()->getRepository(\Shopware\Models\Article\Article::class);
@@ -114,10 +92,21 @@ class Shopware_Controllers_Backend_Notification extends Shopware_Controllers_Bac
             $totalCount = Shopware()->Models()->getQueryCount($dataQuery);
             $data = $dataQuery->getArrayResult();
 
-
-            $this->View()->assign(array('success' => true, 'data' => $data, 'totalCount' => $totalCount));
+            $this->View()->assign(['success' => true, 'data' => $data, 'totalCount' => $totalCount]);
         } catch (Exception $e) {
-            $this->View()->assign(array('success' => false, 'errorMsg' => $e->getMessage()));
+            $this->View()->assign(['success' => false, 'errorMsg' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Registers the different acl permission for the different controller actions.
+     */
+    protected function initAcl()
+    {
+        /*
+         * permission to list all notifications
+         */
+        $this->addAclPermission('getArticleList', 'read', 'Insufficient Permissions');
+        $this->addAclPermission('getCustomerList', 'read', 'Insufficient Permissions');
     }
 }

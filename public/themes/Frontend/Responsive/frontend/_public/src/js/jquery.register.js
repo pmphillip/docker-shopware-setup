@@ -355,8 +355,7 @@
                 $select = $(event.currentTarget),
                 countryId = $select.val(),
                 addressType = $select.attr('data-address-type'),
-                $stateContainers,
-                plugin;
+                $stateContainers;
 
             $.publish('plugin/swRegister/onCountryChangedBefore', [ me, event, countryId, addressType ]);
 
@@ -375,12 +374,6 @@
                 $stateContainers.removeClass(me.opts.hiddenClass);
                 $select = $stateContainers.find('select');
                 $select.removeAttr('disabled');
-
-                if ((plugin = $select.data('plugin_swSelectboxReplacement'))) {
-                    plugin.$el.removeClass(me.opts.hiddenClass);
-                    plugin.$wrapEl.removeClass(me.opts.hiddenClass);
-                    plugin.setEnabled();
-                }
             }
 
             $.publish('plugin/swRegister/onCountryChanged', [ me, event, countryId, addressType ]);
@@ -397,7 +390,6 @@
          */
         resetStateSelections: function (addressType) {
             var me = this,
-                plugin,
                 $select,
                 $stateContainers,
                 $stateContainer;
@@ -410,13 +402,7 @@
             $.each($stateContainers, function(index, stateContainer) {
                 $stateContainer = $(stateContainer);
                 $select = $stateContainer.find('select');
-
-                if ($select.data('plugin_swSelectboxReplacement')) {
-                    plugin = $select.data('plugin_swSelectboxReplacement');
-                    plugin.setDisabled();
-                } else {
-                    $select.attr('disabled', 'disabled');
-                }
+                $select.attr('disabled', 'disabled');
 
                 $stateContainer.addClass(me.opts.hiddenClass);
             });
@@ -496,13 +482,18 @@
                 $el = $(event.target),
                 id = $el.attr('id'),
                 action,
-                relatedTarget = event.relatedTarget || document.activeElement;
+                relatedTarget = event.relatedTarget || document.activeElement,
+                hasEmailConfirmation = me.$personalEmailConfirmation.length > 0,
+                hasPasswordConfirmation = me.$personalPasswordConfirmation.length > 0;
 
             me.$targetElement = $(relatedTarget);
 
             switch (id) {
             case 'register_personal_email':
             case 'register_personal_emailConfirmation':
+                if (hasEmailConfirmation && (me.$personalEmail.val().length <= 0 || me.$personalEmailConfirmation.val().length <= 0)) {
+                    break;
+                }
                 action = 'ajax_validate_email';
                 break;
             case 'register_billing_ustid':
@@ -510,6 +501,9 @@
                 break;
             case 'register_personal_password':
             case 'register_personal_passwordConfirmation':
+                if (hasPasswordConfirmation && (me.$personalPassword.val().length <= 0 || me.$personalPasswordConfirmation.val().length <= 0)) {
+                    break;
+                }
                 action = 'ajax_validate_password';
                 break;
             default:
@@ -560,45 +554,31 @@
         },
 
         /**
-         * Adds the defined error class to the given field or calls the
-         * setError() method of the selectboxReplacement plugin if its
-         * registered on the element.
+         * Adds the defined error class to the given field.
          *
          * @public
          * @method setFieldAsError
          * @param {jQuery} $el
          */
         setFieldAsError: function ($el) {
-            var me = this,
-                plugin;
+            var me = this;
 
-            if ((plugin = $el.data('plugin_swSelectboxReplacement'))) {
-                plugin.setError();
-            } else {
-                $el.addClass(me.opts.errorClass);
-            }
+            $el.addClass(me.opts.errorClass);
 
             $.publish('plugin/swRegister/onSetFieldAsError', [ me, $el ]);
         },
 
         /**
-         * Removes the defined error class to the given field or calls the
-         * removeError() method of the selectboxReplacement plugin if its
-         * registered on the element.
+         * Removes the defined error class from the given field.
          *
          * @public
          * @method setFieldAsSuccess
          * @param {jQuery} $el
          */
         setFieldAsSuccess: function ($el) {
-            var me = this,
-                plugin;
+            var me = this;
 
-            if ((plugin = $el.data('plugin_swSelectboxReplacement'))) {
-                plugin.removeError();
-            } else {
-                $el.removeClass(me.opts.errorClass);
-            }
+            $el.removeClass(me.opts.errorClass);
 
             $.publish('plugin/swRegister/onSetFieldAsSuccess', [ me, $el ]);
         },

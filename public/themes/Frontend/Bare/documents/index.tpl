@@ -322,16 +322,16 @@ td.head  {
             {/block}
             {block name="document_index_info_dispatch"}
                 {if $Order._dispatch.name}
-                    <div style="font-size:11px;color:#333;">
+                    <p>
                         {s name="DocumentIndexSelectedDispatch"}{/s}
                         {$Order._dispatch.name}
-                    </div>
+                    </p>
                 {/if}
             {/block}
 
                 {$Containers.Content_Info.value}
             {block name="document_index_info_currency"}
-                {if $Order._currency.factor > 1}{s name="DocumentIndexCurrency"}
+                {if $Order._currency.factor != 1}{s name="DocumentIndexCurrency"}
                     <br>Euro Umrechnungsfaktor: {$Order._currency.factor|replace:".":","}
                     {/s}
                 {/if}

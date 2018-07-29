@@ -28,7 +28,7 @@ use Shopware\Bundle\StoreFrontBundle;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ProductSearch implements ProductSearchInterface
@@ -45,7 +45,7 @@ class ProductSearch implements ProductSearchInterface
 
     /**
      * @param StoreFrontBundle\Service\ListProductServiceInterface $productService
-     * @param ProductNumberSearchInterface $searchGateway
+     * @param ProductNumberSearchInterface                         $searchGateway
      */
     public function __construct(
         StoreFrontBundle\Service\ListProductServiceInterface $productService,
@@ -56,7 +56,7 @@ class ProductSearch implements ProductSearchInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function search(
         Criteria $criteria,
@@ -71,16 +71,20 @@ class ProductSearch implements ProductSearchInterface
         $result = new ProductSearchResult(
             $products,
             $numberResult->getTotalCount(),
-            $numberResult->getFacets()
+            $numberResult->getFacets(),
+            $criteria,
+            $context
         );
 
         $result->addAttributes($numberResult->getAttributes());
+
         return $result;
     }
 
     /**
      * @param StoreFrontBundle\Struct\ListProduct[] $products
      * @param StoreFrontBundle\Struct\BaseProduct[] $searchProducts
+     *
      * @return StoreFrontBundle\Struct\ListProduct[]
      */
     private function assignAttributes($products, $searchProducts)
@@ -88,14 +92,12 @@ class ProductSearch implements ProductSearchInterface
         foreach ($searchProducts as $searchProduct) {
             $number = $searchProduct->getNumber();
 
-            $product = $products[$number];
-
-            if (!$product) {
+            if(!isset($products[$number])) {
                 continue;
             }
 
             foreach ($searchProduct->getAttributes() as $key => $attribute) {
-                $product->addAttribute($key, $attribute);
+                $products[$number]->addAttribute($key, $attribute);
             }
         }
 

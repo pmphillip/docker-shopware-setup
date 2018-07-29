@@ -22,8 +22,6 @@
  * our trademarks remain entirely with us.
  */
 
-/**
- */
 class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_Plugin_Bootstrap
 {
     public function install()
@@ -32,6 +30,7 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
             'Shopware_CronJob_Birthday',
             'onRun'
         );
+
         return true;
     }
 
@@ -39,9 +38,9 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
     {
         $birthdayVoucher = Shopware()->Config()->get('birthdayVoucher', 'birthday');
 
-        $sql = '
+        $sql = "
             SELECT
-                userID,
+                user_id as 'userID',
                 company,
                 department,
                 u.salutation,
@@ -52,7 +51,7 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
                 zipcode,
                 city,
                 phone,
-                countryID,
+                country_id AS 'countryID',
                 ustid,
                 at.text1,
                 at.text2,
@@ -69,17 +68,20 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
                 customergroup,
                 language,
                 subshopID
-            FROM s_user u, s_user_billingaddress ub
-            LEFT JOIN s_user_billingaddress_attributes at
-            ON at.billingID = ub.id
+            FROM s_user u
+            LEFT JOIN s_user_addresses ub
+            ON u.default_billing_address_id = ub.id
+            AND u.id = ub.user_id
+            LEFT JOIN s_user_addresses_attributes at
+            ON at.address_id = ub.id
             WHERE accountmode = 0
             AND active = 1
-            AND userID = u.id
+            AND user_id = u.id
             AND birthday LIKE ?
-        ';
-        $users = Shopware()->Db()->fetchAll($sql, array(
-            '%-' . date('m-d')
-        ));
+        ";
+        $users = Shopware()->Db()->fetchAll($sql, [
+            '%-' . date('m-d'),
+        ]);
         if (empty($users)) {
             return 'No birthday users found.';
         }
@@ -92,7 +94,7 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
             AND evc.cashed = 0
             AND ev.ordercode= ?
         ';
-        $voucherId = Shopware()->Db()->fetchOne($sql, array($birthdayVoucher));
+        $voucherId = Shopware()->Db()->fetchOne($sql, [$birthdayVoucher]);
         if (empty($voucherId)) {
             return 'No birthday voucher found.';
         }
@@ -106,7 +108,7 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
                 AND evc.userID IS NULL
                 AND evc.cashed = 0
             ';
-            $voucher = Shopware()->Db()->fetchRow($sql, array($voucherId));
+            $voucher = Shopware()->Db()->fetchRow($sql, [$voucherId]);
             if (empty($voucher)) {
                 return 'No new voucher code found.';
             }
@@ -116,9 +118,9 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
                 WHERE id=?
                 AND userID IS NULL
             ';
-            $result = Shopware()->Db()->query($sql, array(
-                $user['userID'], $voucher['vouchercodeID']
-            ));
+            $result = Shopware()->Db()->query($sql, [
+                $user['userID'], $voucher['vouchercodeID'],
+            ]);
             if (empty($result)) {
                 continue;
             }
@@ -127,18 +129,18 @@ class Shopware_Plugins_Core_CronBirthday_Bootstrap extends Shopware_Components_P
                 continue;
             }
 
-            /** @var Shopware\Models\Shop\Repository $repository  */
+            /** @var Shopware\Models\Shop\Repository $repository */
             $repository = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
             $shopId = is_numeric($user['language']) ? $user['language'] : $user['subshopID'];
             $shop = $repository->getActiveById($shopId);
             $shop->registerResources();
 
             //language subshopID
-            $context = array(
+            $context = [
                 'sUser' => $user,
                 'sVoucher' => $voucher,
-                'sData' => $job['data']
-            );
+                'sData' => $job['data'],
+            ];
 
             $mail = Shopware()->TemplateMail()->createMail('sBIRTHDAY', $context);
             $mail->addTo($user['email']);

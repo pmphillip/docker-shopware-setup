@@ -26,38 +26,49 @@ namespace Shopware\Bundle\SearchBundleES\ConditionHandler;
 
 use ONGR\ElasticsearchDSL\Query\TermsQuery;
 use ONGR\ElasticsearchDSL\Search;
+use Shopware\Bundle\SearchBundle\Condition\CategoryCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
-use Shopware\Bundle\SearchBundle\Condition\CategoryCondition;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
-class CategoryConditionHandler implements HandlerInterface
+class CategoryConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * {@inheritdoc}
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof CategoryCondition);
+        return $criteriaPart instanceof CategoryCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
         ShopContextInterface $context
     ) {
-        /** @var CategoryCondition $criteriaPart */
-        $filter = new TermsQuery('categoryIds', $criteriaPart->getCategoryIds());
+        /* @var CategoryCondition $criteriaPart */
+        $search->addFilter(
+            new TermsQuery('categoryIds', $criteriaPart->getCategoryIds())
+        );
+    }
 
-        if ($criteria->hasBaseCondition($criteriaPart->getName())) {
-            $search->addFilter($filter);
-        } else {
-            $search->addPostFilter($filter);
-        }
+    /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        /* @var CategoryCondition $criteriaPart */
+        $search->addPostFilter(
+            new TermsQuery('categoryIds', $criteriaPart->getCategoryIds())
+        );
     }
 }

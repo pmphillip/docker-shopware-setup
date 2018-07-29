@@ -22,8 +22,6 @@
  * our trademarks remain entirely with us.
  */
 
-/**
- */
 class Shopware_Controllers_Frontend_Note extends Enlight_Controller_Action
 {
     /**
@@ -32,6 +30,7 @@ class Shopware_Controllers_Frontend_Note extends Enlight_Controller_Action
     public function preDispatch()
     {
         $this->View()->setScope(Enlight_Template_Manager::SCOPE_PARENT);
+        $this->View()->assign('userInfo', $this->get('shopware_account.store_front_greeting_service')->fetch());
     }
 
     public function postDispatch()
@@ -44,6 +43,7 @@ class Shopware_Controllers_Frontend_Note extends Enlight_Controller_Action
         $view = $this->View();
         $view->sNotes = Shopware()->Modules()->Basket()->sGetNotes();
         $view->sUserLoggedIn = Shopware()->Modules()->Admin()->sCheckUser();
+        $view->sOneTimeAccount = Shopware()->Session()->offsetGet('sOneTimeAccount');
     }
 
     public function deleteAction()
@@ -52,6 +52,30 @@ class Shopware_Controllers_Frontend_Note extends Enlight_Controller_Action
             Shopware()->Modules()->Basket()->sDeleteNote($this->Request()->sDelete);
         }
         $this->forward('index');
+    }
+
+    public function addAction()
+    {
+        $orderNumber = $this->Request()->getParam('ordernumber');
+
+        if ($this->addNote($orderNumber)) {
+            $this->View()->sArticleName = Shopware()->Modules()->Articles()->sGetArticleNameByOrderNumber($orderNumber);
+        }
+
+        $this->forward('index');
+    }
+
+    public function ajaxAddAction()
+    {
+        $this->Request()->setHeader('Content-Type', 'application/json');
+        $this->Front()->Plugins()->ViewRenderer()->setNoRender();
+
+        $this->Response()->setBody(json_encode(
+            [
+                'success' => $this->addNote($this->Request()->getParam('ordernumber')),
+                'notesCount' => (int) Shopware()->Modules()->Basket()->sCountNotes(),
+            ]
+        ));
     }
 
     private function addNote($orderNumber)
@@ -70,30 +94,5 @@ class Shopware_Controllers_Frontend_Note extends Enlight_Controller_Action
         Shopware()->Modules()->Basket()->sAddNote($articleID, $articleName, $orderNumber);
 
         return true;
-    }
-
-    public function addAction()
-    {
-        $orderNumber = $this->Request()->getParam('ordernumber');
-
-        if ($this->addNote($orderNumber)) {
-            $this->View()->sArticleName = Shopware()->Modules()->Articles()->sGetArticleNameByOrderNumber($orderNumber);
-        }
-
-        $this->forward('index');
-    }
-
-    public function ajaxAddAction()
-    {
-        Shopware()->Plugins()->Controller()->Json()->setPadding();
-
-        $this->Front()->Plugins()->ViewRenderer()->setNoRender();
-
-        $this->Response()->setBody(json_encode(
-            [
-                'success' => $this->addNote($this->Request()->getParam('ordernumber')),
-                'notesCount' => (int) Shopware()->Modules()->Basket()->sCountNotes()
-            ]
-        ));
     }
 }

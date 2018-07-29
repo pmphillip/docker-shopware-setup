@@ -27,19 +27,19 @@ namespace Shopware\Bundle\ESIndexingBundle\Subscriber;
 use Enlight\Event\SubscriberInterface;
 use Enlight_Event_EventArgs as EventArgs;
 use Shopware\Bundle\ESIndexingBundle\Struct\Backlog;
-use Shopware\Components\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class DomainBacklogSubscriber implements SubscriberInterface
 {
     /**
-     * @var Container
+     * @var ContainerInterface
      */
     private $container;
 
     /**
-     * @param Container $container
+     * @param ContainerInterface $container
      */
-    public function __construct(Container $container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
@@ -50,7 +50,7 @@ class DomainBacklogSubscriber implements SubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            'product_stock_was_changed' => 'onProductStockWasChanged'
+            'product_stock_was_changed' => 'onProductStockWasChanged',
         ];
     }
 

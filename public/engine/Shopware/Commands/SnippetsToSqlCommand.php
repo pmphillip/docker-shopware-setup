@@ -33,7 +33,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Command
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class SnippetsToSqlCommand extends ShopwareCommand
@@ -84,7 +84,7 @@ class SnippetsToSqlCommand extends ShopwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (file_exists($input->getArgument('file')) && !$input->getOption('force')) {
-            $output->writeln('<error>Output file '.$input->getArgument('file').' already exists, aborting</error>');
+            $output->writeln('<error>Output file ' . $input->getArgument('file') . ' already exists, aborting</error>');
 
             return 1;
         }
@@ -112,31 +112,18 @@ class SnippetsToSqlCommand extends ShopwareCommand
      * @param OutputInterface $output
      * @param QueryHandler    $queryLoader
      */
-    private function exportCoreSnippets(InputInterface $input, OutputInterface $output, QueryHandler $queryLoader)
-    {
-        $queries = $queryLoader->loadToQuery(null, $input->getOption('update') !== 'false');
-        file_put_contents($input->getArgument('file'), implode(PHP_EOL, $queries));
-        $output->writeln('<info>Core snippets processed correctly</info>');
-    }
-
-    /**
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     * @param QueryHandler    $queryLoader
-     */
     protected function exportDefaultPlugins(InputInterface $input, OutputInterface $output, QueryHandler $queryLoader)
     {
         $pluginDirectories = $this->container->getParameter('shopware.plugin_directories');
         $pluginBasePath = $pluginDirectories['Default'];
 
-        foreach (array('Backend', 'Core', 'Frontend') as $namespace) {
-            /** @var $pluginDir \SplFileInfo */
+        foreach (['Backend', 'Core', 'Frontend'] as $namespace) {
             foreach (new \DirectoryIterator($pluginBasePath . $namespace) as $pluginDir) {
                 if ($pluginDir->isDot() || !$pluginDir->isDir()) {
                     continue;
                 }
 
-                $output->writeln('<info>Importing snippets for ' .$pluginDir->getBasename().' plugin</info>');
+                $output->writeln('<info>Importing snippets for ' . $pluginDir->getBasename() . ' plugin</info>');
                 $this->exportPluginSnippets($queryLoader, $pluginDir->getPathname(), $input->getArgument('file'));
             }
         }
@@ -151,9 +138,7 @@ class SnippetsToSqlCommand extends ShopwareCommand
      */
     protected function exportPlugins(InputInterface $input, OutputInterface $output, QueryHandler $queryLoader)
     {
-        $pluginRepository = $this->container->get('shopware.model_manager')->getRepository(
-            'Shopware\Models\Plugin\Plugin'
-        );
+        $pluginRepository = $this->container->get('shopware.model_manager')->getRepository(Plugin::class);
 
         /** @var Plugin[] $plugins */
         $plugins = $pluginRepository->findBy(['active' => true]);
@@ -161,12 +146,29 @@ class SnippetsToSqlCommand extends ShopwareCommand
         $pluginDirectories = $this->container->getParameter('shopware.plugin_directories');
 
         foreach ($plugins as $plugin) {
-            $pluginPath = $pluginDirectories[$plugin->getSource()] . $plugin->getNamespace() . DIRECTORY_SEPARATOR . $plugin->getName();
+            if ($plugin->getSource()) {
+                $directory = $pluginDirectories[$plugin->getSource()] . $plugin->getNamespace();
+            } else {
+                $directory = $pluginDirectories[$plugin->getNamespace()];
+            }
+            $pluginPath = $directory . DIRECTORY_SEPARATOR . $plugin->getName();
 
-            $output->writeln('<info>Importing snippets for '.$plugin->getName().' plugin</info>');
+            $output->writeln('<info>Importing snippets for ' . $plugin->getName() . ' plugin</info>');
             $this->exportPluginSnippets($queryLoader, $pluginPath, $input->getArgument('file'));
         }
         $output->writeln('<info>Plugin snippets processed correctly</info>');
+    }
+
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     * @param QueryHandler    $queryLoader
+     */
+    private function exportCoreSnippets(InputInterface $input, OutputInterface $output, QueryHandler $queryLoader)
+    {
+        $queries = $queryLoader->loadToQuery(null, $input->getOption('update') !== 'false');
+        file_put_contents($input->getArgument('file'), implode(PHP_EOL, $queries));
+        $output->writeln('<info>Core snippets processed correctly</info>');
     }
 
     /**
@@ -177,9 +179,10 @@ class SnippetsToSqlCommand extends ShopwareCommand
     private function exportPluginSnippets(QueryHandler $queryLoader, $path, $file)
     {
         $queries = array_merge(
-            $queryLoader->loadToQuery($path.'/Snippets/'),
-            $queryLoader->loadToQuery($path.'/snippets/'),
-            $queryLoader->loadToQuery($path.'/Resources/snippet/')
+            $queryLoader->loadToQuery($path . '/Snippets/'),
+            $queryLoader->loadToQuery($path . '/snippets/'),
+            $queryLoader->loadToQuery($path . '/Resources/snippet/'),
+            $queryLoader->loadToQuery($path . '/Resources/snippets/')
         );
 
         file_put_contents($file, implode(PHP_EOL, $queries), FILE_APPEND);

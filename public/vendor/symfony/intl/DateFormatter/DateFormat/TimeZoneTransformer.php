@@ -35,10 +35,29 @@ class TimeZoneTransformer extends Transformer
             throw new NotImplementedException('Time zone different than GMT or UTC is not supported as a formatting output.');
         }
 
-        // From ICU >= 4.8, the zero offset is not more used, example: GMT instead of GMT+00:00
-        $format = (0 !== (int) $dateTime->format('O')) ? '\G\M\TP' : '\G\M\T';
+        if ('Etc' === $timeZone) {
+            // i.e. Etc/GMT+1, Etc/UTC, Etc/Zulu
+            $timeZone = substr($dateTime->getTimezone()->getName(), 4);
+        }
 
-        return $dateTime->format($format);
+        // From ICU >= 59.1 GMT and UTC are no longer unified
+        if (in_array($timeZone, array('UTC', 'UCT', 'Universal', 'Zulu'))) {
+            // offset is not supported with UTC
+            return $length > 3 ? 'Coordinated Universal Time' : 'UTC';
+        }
+
+        $offset = (int) $dateTime->format('O');
+
+        // From ICU >= 4.8, the zero offset is no more used, example: GMT instead of GMT+00:00
+        if (0 === $offset) {
+            return $length > 3 ? 'Greenwich Mean Time' : 'GMT';
+        }
+
+        if ($length > 3) {
+            return $dateTime->format('\G\M\TP');
+        }
+
+        return sprintf('GMT%s%d', ($offset >= 0 ? '+' : ''), $offset / 100);
     }
 
     /**
@@ -96,6 +115,6 @@ class TimeZoneTransformer extends Transformer
             return 'Etc/GMT'.($hours !== 0 ? $signal.$hours : '');
         }
 
-        throw new \InvalidArgumentException('The GMT time zone \'%s\' does not match with the supported formats GMT[+-]HH:MM or GMT[+-]HHMM.');
+        throw new \InvalidArgumentException(sprintf('The GMT time zone "%s" does not match with the supported formats GMT[+-]HH:MM or GMT[+-]HHMM.', $formattedTimeZone));
     }
 }

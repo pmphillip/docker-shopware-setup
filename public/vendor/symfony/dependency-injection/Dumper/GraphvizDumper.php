@@ -54,8 +54,6 @@ class GraphvizDumper extends Dumper
      *  * node.definition: The default options for services that are defined via service definition instances
      *  * node.missing: The default options for missing services
      *
-     * @param array $options An array of options
-     *
      * @return string The dot representation of the service container
      */
     public function dump(array $options = array())
@@ -130,7 +128,7 @@ class GraphvizDumper extends Dumper
      *
      * @return array An array of edges
      */
-    private function findEdges($id, $arguments, $required, $name)
+    private function findEdges($id, array $arguments, $required, $name)
     {
         $edges = array();
         foreach ($arguments as $argument) {
@@ -246,7 +244,7 @@ class GraphvizDumper extends Dumper
      *
      * @return string A comma separated list of attributes
      */
-    private function addAttributes($attributes)
+    private function addAttributes(array $attributes)
     {
         $code = array();
         foreach ($attributes as $k => $v) {
@@ -263,7 +261,7 @@ class GraphvizDumper extends Dumper
      *
      * @return string A space separated list of options
      */
-    private function addOptions($options)
+    private function addOptions(array $options)
     {
         $code = array();
         foreach ($options as $k => $v) {

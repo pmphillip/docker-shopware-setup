@@ -32,10 +32,10 @@ use Shopware\Bundle\PluginInstallerBundle\StoreClient;
 use Shopware\Bundle\PluginInstallerBundle\Struct\PluginInformationResultStruct;
 use Shopware\Bundle\PluginInstallerBundle\Struct\PluginInformationStruct;
 use Shopware\Components\Model\ModelManager;
+use Shopware\Components\ShopwareReleaseStruct;
 
 /**
  * Class SubscriptionService
- * @package Shopware\Bundle\PluginInstallerBundle\Service
  */
 class SubscriptionService
 {
@@ -60,21 +60,28 @@ class SubscriptionService
     private $pluginLicenceService;
 
     /**
-     * @param Connection $connection
-     * @param StoreClient $storeClient
-     * @param ModelManager $models
-     * @param PluginLicenceService $pluginLicenceService
+     * @var ShopwareReleaseStruct
      */
-    public function __construct(Connection $connection, StoreClient $storeClient, ModelManager $models, PluginLicenceService $pluginLicenceService)
+    private $release;
+
+    /**
+     * @param Connection            $connection
+     * @param StoreClient           $storeClient
+     * @param ModelManager          $models
+     * @param PluginLicenceService  $pluginLicenceService
+     * @param ShopwareReleaseStruct $release
+     */
+    public function __construct(Connection $connection, StoreClient $storeClient, ModelManager $models, PluginLicenceService $pluginLicenceService, ShopwareReleaseStruct $release)
     {
         $this->connection = $connection;
         $this->storeClient = $storeClient;
         $this->models = $models;
         $this->pluginLicenceService = $pluginLicenceService;
+        $this->release = $release;
     }
 
     /**
-     * reset the Secret in the database
+     * Reset the Secret in the database
      */
     public function resetShopSecret()
     {
@@ -86,7 +93,8 @@ class SubscriptionService
     }
 
     /**
-     * get current secret from the database
+     * Get current secret from the database
+     *
      * @return string
      */
     public function getShopSecret()
@@ -107,7 +115,7 @@ class SubscriptionService
     }
 
     /**
-     * set new secret to the database
+     * Set new secret to the database
      */
     public function setShopSecret()
     {
@@ -124,7 +132,8 @@ class SubscriptionService
      * Returns information about shop upgrade state and installed plugins.
      *
      * @param Response $response
-     * @param Request $request
+     * @param Request  $request
+     *
      * @return PluginInformationResultStruct|bool
      */
     public function getPluginInformation(Response $response, Request $request)
@@ -135,16 +144,13 @@ class SubscriptionService
 
         try {
             $secret = $this->getShopSecret();
-            if (empty($secret)) {
-                return false;
-            }
 
-            $pluginInformation = $this->getPluginInformationFromApi($secret);
             $response->setCookie('lastCheckSubscriptionDate', date('dmY'), time() + 60 * 60 * 24);
 
-            return $pluginInformation;
+            return $this->getPluginInformationFromApi($secret);
         } catch (ShopSecretException $e) {
             $this->resetShopSecret();
+
             return false;
         } catch (\Exception $e) {
             return false;
@@ -152,27 +158,30 @@ class SubscriptionService
     }
 
     /**
-     * @param $secret
-     * @return PluginInformationResultStruct
+     * @param string $secret
+     *
+     * @return PluginInformationResultStruct|false
      */
     private function getPluginInformationFromApi($secret)
     {
         $domain = $this->getDomain();
         $params = [
-            'domain'            => $domain,
-            'shopwareVersion'   => \Shopware::VERSION,
-            'plugins'           => $this->getPluginsNameAndVersion()
+            'domain' => $domain,
+            'shopwareVersion' => $this->release->getVersion(),
+            'plugins' => $this->getPluginsNameAndVersion(),
         ];
 
-        $header = [
-            'X-Shopware-Shop-Secret' => $secret
-        ];
+        $header = $secret ? ['X-Shopware-Shop-Secret' => $secret] : [];
 
         $data = $this->storeClient->doPostRequest(
             '/pluginStore/environmentInformation',
             $params,
             $header
         );
+
+        if (empty($secret)) {
+            return false;
+        }
 
         $isShopUpgraded = $data['general']['isUpgraded'];
         $pluginInformationStructs = array_map(
@@ -181,29 +190,27 @@ class SubscriptionService
             },
             $data['plugins']
         );
-        
-        $this->pluginLicenceService->updateLocalLicenseInformation($pluginInformationStructs, $domain);
-        
-        $informationResult = new PluginInformationResultStruct($pluginInformationStructs, $isShopUpgraded);
 
-        return $informationResult;
+        $this->pluginLicenceService->updateLocalLicenseInformation($pluginInformationStructs, $domain);
+
+        return new PluginInformationResultStruct($pluginInformationStructs, $isShopUpgraded);
     }
 
     /**
-     * generate new Secret by API Call
+     * Generate new secret by API call
+     *
      * @return string
      */
     private function generateApiShopSecret()
     {
-        $token = Shopware()->BackendSession()->offsetGet('store_token');
-        $token = unserialize($token);
+        $token = unserialize(Shopware()->BackendSession()->offsetGet('store_token'));
 
-        if ($token == null) {
+        if ($token === null) {
             $token = Shopware()->BackendSession()->accessToken;
         }
 
         $params = [
-            'domain'    => $this->getDomain()
+            'domain' => $this->getDomain(),
         ];
 
         $data = $this->storeClient->doAuthGetRequest(
@@ -211,16 +218,18 @@ class SubscriptionService
             '/shopsecret',
             $params
         );
+
         return $data['secret'];
     }
 
     /**
-     * returns the domain of the shop
+     * Returns the domain of the shop
+     *
      * @return string
      */
     private function getDomain()
     {
-        $repo = $this->models->getRepository('Shopware\Models\Shop\Shop');
+        $repo = $this->models->getRepository(\Shopware\Models\Shop\Shop::class);
 
         $default = $repo->getActiveDefault();
 
@@ -229,18 +238,21 @@ class SubscriptionService
 
     /**
      * Check the date of the last subscription-check var
+     *
      * @param Request $request
+     *
      * @return bool
      */
     private function isPluginsSubscriptionCookieValid(Request $request)
     {
         $lastCheck = $request->getCookie('lastCheckSubscriptionDate');
 
-        return $lastCheck != date('dmY');
+        return $lastCheck !== date('dmY');
     }
 
     /**
      * Get all plugins with name and version
+     *
      * @return array
      */
     private function getPluginsNameAndVersion()
@@ -252,8 +264,7 @@ class SubscriptionService
             ->where('plugin.active = 1');
 
         $builderExecute = $queryBuilder->execute();
-        $plugins = $builderExecute->fetchAll();
 
-        return $plugins;
+        return $builderExecute->fetchAll();
     }
 }

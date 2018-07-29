@@ -50,15 +50,16 @@ class Shopware_Plugins_Frontend_CronRefresh_Bootstrap extends Shopware_Component
      * To change this time - modify sql-queries
      *
      * @static
+     *
      * @param Shopware_Components_Cron_CronJob $job
-     * @return Array
+     *
+     * @return array
      */
     public function onCronJobClearing(Shopware_Components_Cron_CronJob $job)
     {
         // Delete all entries from lastarticles older than 30 days
-        $sql = '
-            DELETE FROM s_emarketing_lastarticles WHERE `time` < date_add(current_date, INTERVAL -30 DAY)
-        ';
+        $lastArticleTime = $this->get('config')->get('lastarticles_time', 30);
+        $sql = "DELETE FROM s_emarketing_lastarticles WHERE `time` < date_add(current_date, INTERVAL -{$lastArticleTime} DAY)";
         $result = Shopware()->Db()->query($sql);
         $data['lastarticles']['rows'] = $result->rowCount();
 
@@ -86,7 +87,6 @@ class Shopware_Plugins_Frontend_CronRefresh_Bootstrap extends Shopware_Component
      * Recreate shopware search index
      *
      * @param Shopware_Components_Cron_CronJob $job
-     * @return void
      */
     public function onCronJobSearch(Shopware_Components_Cron_CronJob $job)
     {
@@ -100,11 +100,12 @@ class Shopware_Plugins_Frontend_CronRefresh_Bootstrap extends Shopware_Component
      * by default older than 90 days
      *
      * @param $maximumReferrerAge
+     *
      * @return int
      */
     private function deleteOldReferrerData($maximumReferrerAge)
     {
-        $maximumReferrerAge = intval($maximumReferrerAge);
+        $maximumReferrerAge = (int) $maximumReferrerAge;
         if ($maximumReferrerAge === 0) {
             $maximumReferrerAge = 90;
         }
@@ -123,11 +124,12 @@ class Shopware_Plugins_Frontend_CronRefresh_Bootstrap extends Shopware_Component
      * by default older than 90 days
      *
      * @param $maximumAge
+     *
      * @return int
      */
     private function deleteOldArticleImpressionData($maximumAge)
     {
-        $maximumAge = intval($maximumAge);
+        $maximumAge = (int) $maximumAge;
         if ($maximumAge === 0) {
             $maximumAge = 90;
         }

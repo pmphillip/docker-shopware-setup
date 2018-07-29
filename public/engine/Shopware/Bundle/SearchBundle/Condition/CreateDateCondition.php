@@ -29,15 +29,15 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class CreateDateCondition implements ConditionInterface
+class CreateDateCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * @var int
      */
-    private $days;
+    protected $days;
 
     /**
      * @param int $days
@@ -45,7 +45,7 @@ class CreateDateCondition implements ConditionInterface
     public function __construct($days)
     {
         Assertion::integerish($days);
-        $this->days = (int)$days;
+        $this->days = (int) $days;
     }
 
     /**
@@ -62,5 +62,13 @@ class CreateDateCondition implements ConditionInterface
     public function getDays()
     {
         return $this->days;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

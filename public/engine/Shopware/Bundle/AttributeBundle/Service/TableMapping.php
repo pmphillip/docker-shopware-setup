@@ -29,7 +29,7 @@ use Doctrine\DBAL\Schema\Column;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\AttributeBundle\Service
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
 class TableMapping
@@ -46,50 +46,59 @@ class TableMapping
 
     /**
      * TableMapping constructor.
+     *
      * @param Connection $connection
+     * @param array      $tableMapping
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, array $tableMapping)
     {
         $this->connection = $connection;
-        $this->tables = include __DIR__ . '/../DependencyInjection/Resources/table_entity_mapping.php';
+        $this->tables = $tableMapping;
     }
 
     /**
      * @param string $table
      * @param string $name
-     * @return bool
+     *
      * @throws \Exception
+     *
+     * @return bool
      */
     public function isIdentifierColumn($table, $name)
     {
         if (!array_key_exists($table, $this->tables)) {
-            throw new \Exception(sprintf("Table %s is no attribute table", $table));
+            throw new \Exception(sprintf('Table %s is no attribute table', $table));
         }
         $config = $this->tables[$table];
         $identifiers = isset($config['identifiers']) ? $config['identifiers'] : [];
         $columns = array_map('strtolower', $identifiers);
+
         return in_array(strtolower($name), $columns);
     }
 
     /**
      * @param string $table
      * @param string $name
-     * @return bool
+     *
      * @throws \Exception
+     *
+     * @return bool
      */
     public function isCoreColumn($table, $name)
     {
         if (!array_key_exists($table, $this->tables)) {
-            throw new \Exception(sprintf("Table %s is no attribute table", $table));
+            throw new \Exception(sprintf('Table %s is no attribute table', $table));
         }
         $config = $this->tables[$table];
         $coreAttributes = isset($config['coreAttributes']) ? $config['coreAttributes'] : [];
         $columns = array_map('strtolower', $coreAttributes);
+
         return in_array(strtolower($name), $columns);
     }
 
     /**
      * @param $table
+     *
      * @return null|string
      */
     public function getTableModel($table)
@@ -113,6 +122,7 @@ class TableMapping
 
     /**
      * @param $table
+     *
      * @return string
      */
     public function getTableForeignKey($table)
@@ -122,6 +132,7 @@ class TableMapping
 
     /**
      * @param string $table
+     *
      * @return bool
      */
     public function isAttributeTable($table)
@@ -132,6 +143,7 @@ class TableMapping
     /**
      * @param string $table
      * @param string $column
+     *
      * @return bool
      */
     public function isTableColumn($table, $column)
@@ -140,24 +152,29 @@ class TableMapping
         $names = array_map(function (Column $schemaColumn) {
             return strtolower($schemaColumn->getName());
         }, $columns);
+
         return in_array(strtolower($column), $names);
     }
 
     /**
      * @param string $table
-     * @return array
+     *
      * @throws \Exception
+     *
+     * @return array
      */
     public function getDependingTables($table)
     {
         if (!$this->isAttributeTable($table)) {
-            throw new \Exception(sprintf("Table %s is no supported attribute table"));
+            throw new \Exception(sprintf('Table %s is no supported attribute table'));
         }
+
         return $this->tables[$table]['dependingTables'];
     }
 
     /**
      * @param string $table
+     *
      * @return \Doctrine\DBAL\Schema\Column[]
      */
     public function getTableColumns($table)

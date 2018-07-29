@@ -21,7 +21,10 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 namespace Shopware\Components\Theme;
+
+use Shopware\Components\Theme;
 
 /**
  * Class LessDefinition.
@@ -58,7 +61,7 @@ namespace Shopware\Components\Theme;
  * </code>
  *
  * @category  Shopware
- * @package   Shopware\Components\Theme
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class LessDefinition
@@ -67,20 +70,28 @@ class LessDefinition
      * Array of less files which should be concatenated and compiled.
      * The compiler requires the full file path.
      *
-     * @var array $files
+     * @var array
      */
-    private $files = array();
+    private $files;
+
+    /**
+     * The corresponding theme
+     *
+     * @var Theme */
+    private $theme;
 
     /**
      * Directory which should be set as import directory.
      * If no `@import` used, the import directory can be ignored
-     * @var string $importDirectory
+     *
+     * @var string
      */
-    private $importDirectory = null;
+    private $importDirectory;
 
     /**
      * Less variables for the compiler.
      * Has to be an key value array.
+     *
      * @example
      * array(
      *    'fontColor' => '#fff',
@@ -88,20 +99,22 @@ class LessDefinition
      *    ...
      * )
      *
-     * @var array $config
+     * @var array
      */
     private $config;
 
     /**
-     * @param array $config Contains the less variables, has to be a key value array.
-     * @param array $files Contains the full file name paths.
-     * @param null $importDirectory Full path to the import directory for less @import commands
+     * @param array $config          contains the less variables, has to be a key value array
+     * @param array $files           contains the full file name paths
+     * @param null  $importDirectory Full path to the import directory for less @import commands
+     * @param null  $theme           the corresponding theme
      */
-    public function __construct(array $config = array(), array $files = array(), $importDirectory = null)
+    public function __construct(array $config = [], array $files = [], $importDirectory = null, $theme = null)
     {
         $this->config = $config;
         $this->files = $files;
         $this->importDirectory = $importDirectory;
+        $this->theme = $theme;
     }
 
     /**
@@ -150,5 +163,21 @@ class LessDefinition
     public function getImportDirectory()
     {
         return $this->importDirectory;
+    }
+
+    /**
+     * @return Theme
+     */
+    public function getTheme()
+    {
+        return $this->theme;
+    }
+
+    /**
+     * @param Theme $theme
+     */
+    public function setTheme($theme)
+    {
+        $this->theme = $theme;
     }
 }

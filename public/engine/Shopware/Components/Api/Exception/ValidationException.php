@@ -26,6 +26,7 @@ namespace Shopware\Components\Api\Exception;
 
 use Symfony\Component\Form\FormErrorIterator;
 use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
@@ -33,7 +34,7 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
  * API Exception
  *
  * @category  Shopware
- * @package   Shopware\Components\Api\Exception
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ValidationException extends \Enlight_Exception
@@ -50,7 +51,22 @@ class ValidationException extends \Enlight_Exception
     {
         $this->setViolations($violations);
 
-        parent::__construct();
+        parent::__construct((string) $this);
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        $output = '';
+
+        /** @var ConstraintViolationInterface $violation */
+        foreach ($this->violations as $violation) {
+            $output .= $violation->getPropertyPath() . ': ' . $violation->getMessage() . PHP_EOL;
+        }
+
+        return $output;
     }
 
     /**
@@ -71,6 +87,7 @@ class ValidationException extends \Enlight_Exception
 
     /**
      * @param FormErrorIterator $errors
+     *
      * @return ValidationException
      */
     public static function createFromFormError(FormErrorIterator $errors)
@@ -95,19 +112,5 @@ class ValidationException extends \Enlight_Exception
         }
 
         return new self(new ConstraintViolationList($violations));
-    }
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        $output = "";
-
-        foreach ($this->violations as $violation) {
-            $output .= $violation->getMessage().PHP_EOL;
-        }
-
-        return $output;
     }
 }

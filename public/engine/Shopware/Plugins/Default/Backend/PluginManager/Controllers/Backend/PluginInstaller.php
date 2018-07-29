@@ -43,14 +43,6 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
         $this->pluginManager = $this->get('shopware_plugininstaller.plugin_manager');
     }
 
-    /**
-     * @return ModelRepository
-     */
-    private function getRepository()
-    {
-        return $this->get('models')->getRepository(Plugin::class);
-    }
-
     public function installPluginAction()
     {
         @set_time_limit(300);
@@ -65,8 +57,9 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
         if (!$plugin instanceof Plugin) {
             $this->View()->assign([
                 'success' => false,
-                'message' => sprintf('Plugin not found %s', $this->Request()->getParam('technicalName'))
+                'message' => sprintf('Plugin not found %s', $this->Request()->getParam('technicalName')),
             ]);
+
             return;
         }
 
@@ -100,7 +93,7 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
         } catch (Exception $e) {
             $this->View()->assign([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
 
             return;
@@ -147,20 +140,24 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
 
     public function deletePluginAction()
     {
-        $directory = $this->pluginManager->getPluginPath($this->Request()->getParam('technicalName'));
-
         $plugin = $this->getPluginModel($this->Request()->getParam('technicalName'));
 
         switch (true) {
-            case ($plugin->getSource() == 'Default'):
+            case $plugin->getSource() == 'Default':
                 return $this->View()->assign(['success' => false, 'message' => 'Default plugins can not be deleted']);
-            case ($plugin->getInstalled()):
+            case $plugin->getInstalled():
                 return $this->View()->assign(['success' => false, 'message' => 'Installed plugins can not be deleted']);
             default:
                 try {
+                    $directory = $this->pluginManager->getPluginPath($this->Request()->getParam('technicalName'));
                     $this->removeDirectory($directory);
+                } catch (InvalidArgumentException $e) {
+                    // empty catch intended
                 } catch (Exception $e) {
                     return $this->View()->assign(['success' => false, 'message' => $e->getMessage()]);
+                } finally {
+                    $this->get('models')->remove($plugin);
+                    $this->get('models')->flush();
                 }
         }
 
@@ -204,8 +201,9 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
         } catch (Exception $e) {
             $this->View()->assign([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
+
             return;
         }
 
@@ -214,13 +212,14 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
         if ($information['extension'] !== 'zip') {
             $this->View()->assign([
                 'success' => false,
-                'message' => sprintf('Wrong archive extension %s. Zip archive expected', $information['extension'])
+                'message' => sprintf('Wrong archive extension %s. Zip archive expected', $information['extension']),
             ]);
             unlink($file->getPathname());
+
             return;
         }
 
-        $tempDirectory = Shopware()->Container()->getParameter('kernel.root_dir') . '/files/downloads/';
+        $tempDirectory = rtrim(Shopware()->Container()->getParameter('shopware.app.downloadsdir'), '/') . DIRECTORY_SEPARATOR;
         $tempFileName = tempnam($tempDirectory, $file->getClientOriginalName());
 
         try {
@@ -231,7 +230,7 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
         } catch (Exception $e) {
             $this->View()->assign([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
 
             return;
@@ -244,6 +243,7 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
 
     /**
      * @param string $technicalName
+     *
      * @return Plugin
      */
     public function getPluginModel($technicalName)
@@ -252,22 +252,30 @@ class Shopware_Controllers_Backend_PluginInstaller extends Shopware_Controllers_
     }
 
     /**
+     * @return ModelRepository
+     */
+    private function getRepository()
+    {
+        return $this->get('models')->getRepository(Plugin::class);
+    }
+
+    /**
      * @param string $path
-     * @return array
      */
     private function removeDirectory($path)
     {
+        if (!is_dir($path)) {
+            return;
+        }
         $it = new RecursiveDirectoryIterator($path);
         $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-        $returns = [];
         foreach ($files as $file) {
             if ($file->isDir()) {
-                $returns[] = rmdir($file->getRealPath());
+                rmdir($file->getRealPath());
             } else {
-                $returns[] = unlink($file->getRealPath());
+                unlink($file->getRealPath());
             }
         }
-        $returns[] = rmdir($path);
-        return $returns;
+        rmdir($path);
     }
 }

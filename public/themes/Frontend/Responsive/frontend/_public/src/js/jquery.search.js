@@ -384,9 +384,14 @@
 
             $.publish('plugin/swSearch/onSearchRequest', [ me, searchTerm ]);
 
-            $.ajax({
-                'url': me.requestURL,
-                'data': {
+            if (me.lastSearchAjax) {
+                me.lastSearchAjax.abort();
+            }
+
+            me.lastSearchAjax = $.ajax({
+                url: me.requestURL,
+                dataType: 'html',
+                data: {
                     'sSearch': me.lastSearchTerm
                 },
                 'success': function (response) {
@@ -498,15 +503,15 @@
 
             // Start on top or bottom if the user reached the end of the list
             switch (keyCode) {
-            case keyMap.DOWN:
-                me.selectFirstResultItem($resultItems);
-                break;
-            case keyMap.UP:
-                me.selectLastResultItem($resultItems);
-                break;
-            case keyMap.ENTER:
-                me.onPressEnter($selected);
-                break;
+                case keyMap.DOWN:
+                    me.selectFirstResultItem($resultItems);
+                    break;
+                case keyMap.UP:
+                    me.selectLastResultItem($resultItems);
+                    break;
+                case keyMap.ENTER:
+                    me.onPressEnter($selected);
+                    break;
             }
         },
 
@@ -646,7 +651,7 @@
                 return;
             }
 
-            me.$parent.submit();
+            me.$searchField.parent().submit();
         },
 
         /**

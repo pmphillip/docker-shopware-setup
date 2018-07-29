@@ -22,8 +22,6 @@
  * our trademarks remain entirely with us.
  */
 
-/**
- */
 class Shopware_Controllers_Api_Rest extends Enlight_Controller_Action
 {
     protected $apiBaseUrl;
@@ -32,8 +30,11 @@ class Shopware_Controllers_Api_Rest extends Enlight_Controller_Action
     {
         $this->Front()->Plugins()->ViewRenderer()->setNoRender();
 
-        $serverUrlHelper = new Zend_View_Helper_ServerUrl();
-        $this->apiBaseUrl = $serverUrlHelper->serverUrl() . $this->Request()->getBaseUrl() . '/api/';
+        $this->apiBaseUrl = $this->Request()->getScheme()
+           . '://'
+           . $this->Request()->getHttpHost()
+           . $this->Request()->getBaseUrl()
+           . '/api/';
     }
 
     public function postDispatch()
@@ -77,7 +78,7 @@ class Shopware_Controllers_Api_Rest extends Enlight_Controller_Action
         );
         $result = $this->resource->batch($params);
 
-        $this->View()->assign(array('success' => true, 'data' => $result));
+        $this->View()->assign(['success' => true, 'data' => $result]);
     }
 
     /**
@@ -93,13 +94,17 @@ class Shopware_Controllers_Api_Rest extends Enlight_Controller_Action
             throw new RuntimeException('Property "resource" not found.');
         }
 
-        $params = $this->Request()->getPost();
+        // getParams() returns some additional, irrelevant parameters
+        $params = array_merge($this->Request()->getQuery(), $this->Request()->getPost());
+
+        // Remove stack-related parameters
+        unset($params['module'], $params['controller'], $params['action']);
 
         $this->resource->setResultMode(
             Shopware\Components\Api\Resource\Resource::HYDRATE_ARRAY
         );
         $result = $this->resource->batchDelete($params);
 
-        $this->View()->assign(array('success' => true, 'data' => $result));
+        $this->View()->assign(['success' => true, 'data' => $result]);
     }
 }

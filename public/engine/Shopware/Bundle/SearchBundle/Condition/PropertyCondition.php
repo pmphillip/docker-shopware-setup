@@ -29,17 +29,17 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class PropertyCondition implements ConditionInterface
+class PropertyCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * Each value id is combined via OR expression to restrict the criteria.
      *
      * @var int[]
      */
-    private $valueIds = [];
+    protected $valueIds = [];
 
     /**
      * @param int[] $valueIds
@@ -48,6 +48,7 @@ class PropertyCondition implements ConditionInterface
     {
         Assertion::allIntegerish($valueIds);
         $this->valueIds = array_map('intval', $valueIds);
+        sort($this->valueIds, SORT_NUMERIC);
     }
 
     /**
@@ -64,5 +65,13 @@ class PropertyCondition implements ConditionInterface
     public function getValueIds()
     {
         return $this->valueIds;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

@@ -130,7 +130,7 @@ Ext.define('Shopware.ModuleManager', {
             'width': '100%',
             'height': '100%',
             'border': '0',
-            'src': (fullPath ? name : '{url module="backend" controller="" forceSecure}' + name),
+            'src': (fullPath ? name : '{url module="backend" controller=""}' + name),
             'data-instance': instance
         }));
 
@@ -247,6 +247,10 @@ Ext.define('Shopware.ModuleManager', {
         config.subApp = module.subApp;
         config._isMainWindow = false;
         config.content = content;
+
+        // Delete id before passing the config object to the SimpleModule to avoid collision.
+        // ExtJS generates a unique id if the id is missing
+        delete config.id;
 
         // Create the window and set it as the main window of the sub application
         contentWindow = Ext.create('Shopware.window.SimpleModule', config);

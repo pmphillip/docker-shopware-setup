@@ -32,7 +32,7 @@ It contains the viewport specific styles inside media queries.
         .content--title {
             .unitize(font-size, 18);
             .unitize-margin(10, 0, 15, 0);
-            font-weight: 700;
+            font-weight: @font-bold-weight;
             color: @text-color-dark;
         }
     }
@@ -60,11 +60,25 @@ It contains the viewport specific styles inside media queries.
     }
 }
 
-    // Listing actions
+// Listing actions
 .listing--actions {
     .clearfix();
     .tap-highlight-color();
 }
+
+.listing--wrapper.js--is-loading .js--loading-indicator {
+    .unitize(top, 150);
+}
+
+.listing {
+    .transition(opacity 0.5s ease-out);
+    opacity: 1;
+
+    &.is--loading {
+        opacity: 0;
+    }
+}
+
 
 .action--filter-btn {
     .unitize(margin-bottom, 10);
@@ -77,9 +91,9 @@ It contains the viewport specific styles inside media queries.
         position: relative;
         overflow: hidden;
 
-		.icon--filter {
-			.unitize(margin-right, 8);
-		}
+        .icon--filter {
+            .unitize(margin-right, 8);
+        }
 
         .action--collapse-icon {
             .unitize-padding(0, 10);
@@ -104,7 +118,7 @@ It contains the viewport specific styles inside media queries.
         .secondary-gradient();
         display: block;
         color: #fff;
-        font-weight: bold;
+        font-weight: @font-bold-weight;
 
         &:hover {
             color: #fff;
@@ -155,8 +169,12 @@ It contains the viewport specific styles inside media queries.
 
     .sort--select {
         .unitize-height(34);
-        .unitize(line-height, 34);
-        width: 100%;
+        max-width: 100%;
+
+        &:after,
+        .sort--field {
+            .unitize(line-height, 34);
+        }
     }
 }
 
@@ -190,38 +208,38 @@ It contains the viewport specific styles inside media queries.
 }
 
 .listing {
-	.clearfix();
-	margin: -2% 0 0 -2%;
-	padding: 0 0 2% 0;
+    .clearfix();
+    margin: -2% 0 0 -2%;
+    padding: 0 0 2% 0;
 }
 
     // button wrapper for ininite scrolling actions
 .infinite--actions {
-	width: 100%;
-	margin: 0 auto;
-	text-align: center;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
 
-	.js--load-more, .js--load-previous {
-		.unitize(margin-bottom, 20);
-	}
+    .js--load-more, .js--load-previous {
+        .unitize(margin-bottom, 20);
+    }
 }
 
     // Tablet view
 @media screen and(min-width: @tabletViewportWidth) {
 
-	.category--teaser {
-		.hero--headline {
-			.unitize(@font-size-h1, 16, font-size);
-			.unitize-padding(40, 0, 0, 0);
-			.unitize-margin(0, 40);
-		}
-		.hero--text {
-			.unitize-padding(25, 40, 10, 40);
-		}
-	}
+    .category--teaser {
+        .hero--headline {
+            .unitize(@font-size-h1, 16, font-size);
+            .unitize-padding(40, 0, 0, 0);
+            .unitize-margin(0, 40);
+        }
+        .hero--text {
+            .unitize-padding(25, 40, 10, 40);
+        }
+    }
 
     .listing--content {
-    	.clearfix();
+        .clearfix();
         .unitize-margin(30, 0);
     }
 
@@ -254,6 +272,15 @@ It contains the viewport specific styles inside media queries.
         }
     }
 
+    .listing--actions.without-facets.without-sortings.without-pagination {
+        display: none;
+    }
+
+    .listing--actions.without-facets.without-sortings {
+        .unitize(padding-top, 0);
+        border-top: none;
+    }
+
     .action--per-page {
         .unitize(line-height, 32);
         display: inline-block;
@@ -266,9 +293,13 @@ It contains the viewport specific styles inside media queries.
         .per-page--select {
             .unitize-width(80);
             .unitize-height(32);
-            .unitize(line-height, 30);
-            text-align: center;
             vertical-align: top;
+
+            &:after,
+            .per-page--field {
+                .unitize(line-height, 30);
+                text-align: center;
+            }
         }
     }
 
@@ -277,10 +308,10 @@ It contains the viewport specific styles inside media queries.
         .unitize-margin(0, 10, 0, 0);
         display: inline-block;
         text-align: right;
-		float: right;
+        float: right;
 
         .sort--select {
-            .unitize-width(200);
+            .unitize(max-width, 200);
         }
     }
 
@@ -354,9 +385,8 @@ It contains the viewport specific styles inside media queries.
             }
         }
 
-        #filter,
-        .filter--active-container {
-            display: none;
+        &.is--instant-filter-active .filter--active-container {
+            display: block;
         }
 
         .filter--close-btn {
@@ -398,7 +428,6 @@ It contains the viewport specific styles inside media queries.
 
         #filter {
             .clearfix();
-            .unitize(padding-bottom, 10);
         }
     }
 
@@ -448,11 +477,11 @@ It contains the viewport specific styles inside media queries.
         .sort--label {
             .unitize-margin(0, 10, 0, 0);
             display: inline-block;
-            font-weight: bold;
+            font-weight: @font-bold-weight;
         }
 
         .sort--select {
-            .unitize-width(200);
+            .unitize(max-width, 200);
             vertical-align: top;
         }
     }
@@ -462,21 +491,21 @@ It contains the viewport specific styles inside media queries.
         .per-page--label {
             .unitize-margin(0, 10, 0, 0);
             display: inline-block;
-            font-weight: bold;
+            font-weight: @font-bold-weight;
         }
     }
 
-	.listing--paging {
-		display: block;
-		clear: both;
+    .listing--paging {
+        display: block;
+        clear: both;
 
-		.paging--label {
-			.unitize-margin(0, 10, 0, 0);
-			font-weight: bold;
-		}
+        .paging--label {
+            .unitize-margin(0, 10, 0, 0);
+            font-weight: @font-bold-weight;
+        }
 
-		.paging--display {
-			.unitize(line-height, 30);
-		}
-	}
+        .paging--display {
+            .unitize(line-height, 30);
+        }
+    }
 }

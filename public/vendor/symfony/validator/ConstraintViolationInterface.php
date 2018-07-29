@@ -38,7 +38,7 @@ interface ConstraintViolationInterface
     /**
      * Returns the violation message.
      *
-     * @return string The violation message.
+     * @return string The violation message
      */
     public function getMessage();
 
@@ -49,15 +49,15 @@ interface ConstraintViolationInterface
      * returned by {@link getMessageParameters}. Typically you'll pass the
      * message template and parameters to a translation engine.
      *
-     * @return string The raw violation message.
+     * @return string The raw violation message
      */
     public function getMessageTemplate();
 
     /**
      * Returns the parameters to be inserted into the raw violation message.
      *
-     * @return array A possibly empty list of parameters indexed by the names
-     *               that appear in the message template.
+     * @return array a possibly empty list of parameters indexed by the names
+     *               that appear in the message template
      *
      * @see getMessageTemplate()
      * @deprecated since version 2.7, to be replaced by getParameters() in 3.0.
@@ -78,7 +78,7 @@ interface ConstraintViolationInterface
      * This method returns the value of the parameter for choosing the right
      * pluralization form (in this case "choices").
      *
-     * @return int|null The number to use to pluralize of the message.
+     * @return int|null The number to use to pluralize of the message
      *
      * @deprecated since version 2.7, to be replaced by getPlural() in 3.0.
      */
@@ -111,15 +111,15 @@ interface ConstraintViolationInterface
     /**
      * Returns the value that caused the violation.
      *
-     * @return mixed The invalid value that caused the validated constraint to
-     *               fail.
+     * @return mixed the invalid value that caused the validated constraint to
+     *               fail
      */
     public function getInvalidValue();
 
     /**
      * Returns a machine-digestible error code for the violation.
      *
-     * @return string|null The error code.
+     * @return string|null The error code
      */
     public function getCode();
 }

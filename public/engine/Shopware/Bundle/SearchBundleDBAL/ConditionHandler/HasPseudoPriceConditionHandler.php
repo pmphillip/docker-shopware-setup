@@ -26,38 +26,33 @@ namespace Shopware\Bundle\SearchBundleDBAL\ConditionHandler;
 
 use Shopware\Bundle\SearchBundle\Condition\HasPseudoPriceCondition;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
+use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundleDBAL\ConditionHandlerInterface;
-use Shopware\Bundle\SearchBundleDBAL\PriceHelperInterface;
+use Shopware\Bundle\SearchBundleDBAL\CriteriaAwareInterface;
+use Shopware\Bundle\SearchBundleDBAL\ListingPriceSwitcher;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilder;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class HasPseudoPriceConditionHandler implements ConditionHandlerInterface
+class HasPseudoPriceConditionHandler implements ConditionHandlerInterface, CriteriaAwareInterface
 {
     /**
-     * @var PriceHelperInterface
+     * @var ListingPriceSwitcher
      */
-    private $priceHelper;
+    private $listingPriceSwitcher;
 
     /**
-     * @var \Shopware_Components_Config
+     * @var Criteria
      */
-    private $config;
+    private $criteria;
 
-    /**
-     * @param PriceHelperInterface $priceHelper
-     * @param \Shopware_Components_Config $config
-     */
-    public function __construct(
-        PriceHelperInterface $priceHelper,
-        \Shopware_Components_Config $config
-    ) {
-        $this->priceHelper = $priceHelper;
-        $this->config = $config;
+    public function __construct(ListingPriceSwitcher $listingPriceSwitcher)
+    {
+        $this->listingPriceSwitcher = $listingPriceSwitcher;
     }
 
     /**
@@ -65,7 +60,7 @@ class HasPseudoPriceConditionHandler implements ConditionHandlerInterface
      */
     public function supportsCondition(ConditionInterface $condition)
     {
-        return ($condition instanceof HasPseudoPriceCondition);
+        return $condition instanceof HasPseudoPriceCondition;
     }
 
     /**
@@ -76,7 +71,13 @@ class HasPseudoPriceConditionHandler implements ConditionHandlerInterface
         QueryBuilder $query,
         ShopContextInterface $context
     ) {
-        $this->priceHelper->joinPrices($query, $context);
-        $query->andWhere('IFNULL(customerPrice.pseudoprice, defaultPrice.pseudoprice) > 0');
+        $this->listingPriceSwitcher->joinPrice($query, $this->criteria, $context);
+
+        $query->andWhere('listing_price.pseudoprice > 0');
+    }
+
+    public function setCriteria(Criteria $criteria)
+    {
+        $this->criteria = $criteria;
     }
 }

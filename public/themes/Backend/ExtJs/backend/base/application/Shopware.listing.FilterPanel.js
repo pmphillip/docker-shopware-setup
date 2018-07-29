@@ -124,7 +124,7 @@ Ext.define('Shopware.listing.FilterPanel', {
      * This container is displayed at the top of the filter panel.
      * @type { String }
      */
-    infoTextSnippet: '{s name="filter_panel/info_text"}Activate the filter fields over the checkbox which displayed for each field. Activated fields will be joined with an AND condition.{/s}',
+    infoTextSnippet: '{s name="filter_panel/info_text"}Activate the filter by clicking the regarding checkbox. These filters will be linked with an AND condition.{/s}',
 
     /**
      * Contains the text for the { @link #filterButton }.
@@ -137,6 +137,8 @@ Ext.define('Shopware.listing.FilterPanel', {
      * @type { String }
      */
     resetButtonText: '{s name="filter_panel/reset_button_text"}Reset filters{/s}',
+
+    filterFieldStyle: 'background: #fff',
 
     /**
      * Get the reference to the class from which this object was instantiated.
@@ -356,13 +358,19 @@ Ext.define('Shopware.listing.FilterPanel', {
 
         me.registerEvents();
 
-        me.gridPanel = me.listingWindow.gridPanel;
+        if (!me.gridPanel) {
+            me.gridPanel = me.listingWindow.gridPanel;
+        }
 
         me.items = me.createItems();
 
         me.dockedItems = me.createDockedItems();
 
         me.callParent(arguments);
+    },
+
+    getStore: function() {
+        return this.gridPanel.getStore();
     },
 
     /**
@@ -474,7 +482,7 @@ Ext.define('Shopware.listing.FilterPanel', {
      * @returns { Ext.container.Container }
      */
     createFilterFields: function() {
-        var me = this, items = [], field, config,
+        var me = this, fields = { }, items = [], field, config,
             record = Ext.create(me.getConfig('model'));
 
         //first we have to get all field association for the foreign key fields.
@@ -504,11 +512,23 @@ Ext.define('Shopware.listing.FilterPanel', {
             //create filter field container to add a checkbox for each field.
             var container = Ext.create('Shopware.filter.Field', {
                 field: field,
+                style: me.filterFieldStyle,
                 subApp: me.subApp
             });
             field.container = container;
 
-            items.push(container);
+            fields[modelField.name] = container;
+        });
+
+        var sorting = record.fields.keys;
+        if (configFields && Object.keys(configFields).length > 0) {
+            sorting = Object.keys(configFields);
+        }
+
+        Ext.each(sorting, function(key) {
+            if (fields[key]) {
+                items.push(fields[key]);
+            }
         });
 
         return Ext.create('Ext.container.Container', {
@@ -548,7 +568,8 @@ Ext.define('Shopware.listing.FilterPanel', {
 
         me.toolbar =  Ext.create('Ext.toolbar.Toolbar', {
             items: [ me.createFilterButton(), me.createResetButton() ],
-            dock: 'bottom'
+            dock: 'bottom',
+            margin: '1 0'
         });
         return me.toolbar;
     },
@@ -590,8 +611,8 @@ Ext.define('Shopware.listing.FilterPanel', {
             text: me.resetButtonText,
             handler: function() {
                 me.getForm().reset();
-                me.gridPanel.getStore().clearFilter(true);
-                me.gridPanel.getStore().load();
+                me.getStore().clearFilter(true);
+                me.getStore().load();
             }
         });
         return me.resetButton;
@@ -611,13 +632,13 @@ Ext.define('Shopware.listing.FilterPanel', {
         if (!me.fireEvent(me.eventAlias + '-before-filter-grid', me, me.gridPanel)) {
             return false;
         }
-        me.gridPanel.getStore().clearFilter(true);
+        me.getStore().clearFilter(true);
 
         me.createFilters();
 
         me.fireEvent(me.eventAlias + '-before-grid-load-filter', me, me.gridPanel);
 
-        me.gridPanel.getStore().load({
+        me.getStore().load({
             callback: function(records, operation) {
                 me.fireEvent(me.eventAlias + '-after-filter-grid', me, me.gridPanel, records, operation);
             }
@@ -629,7 +650,7 @@ Ext.define('Shopware.listing.FilterPanel', {
      * add additional filter values.
      */
     createFilters: function() {
-        var me = this,
+        var me = this, expression, field,
             model = Ext.create(me.getConfig('model')),
             values = me.getForm().getValues();
 
@@ -642,9 +663,16 @@ Ext.define('Shopware.listing.FilterPanel', {
                 return true;
             }
 
-            me.gridPanel.getStore().filters.add(key,
+            expression = '=';
+            field = me.getForm().findField(key);
+            if (field && field.expression) {
+                expression = field.expression;
+            }
+
+            me.getStore().filters.add(key,
                 Ext.create('Ext.util.Filter', {
                     property: key,
+                    expression: expression,
                     value: values[key]
                 })
             );

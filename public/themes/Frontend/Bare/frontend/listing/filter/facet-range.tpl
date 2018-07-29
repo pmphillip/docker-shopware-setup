@@ -3,6 +3,7 @@
 {block name="frontend_listing_filter_facet_range"}
     <div class="filter-panel filter--range facet--{$facet->getFacetName()|escape:'htmlall'}"
          data-filter-type="range"
+         data-facet-name="{$facet->getFacetName()}"
          data-field-name="{$facet->getFacetName()|escape:'htmlall'}">
 
         {block name="frontend_listing_filter_facet_range_flyout"}
@@ -29,7 +30,11 @@
                                 {$rangeMin = $facet->getMin()}
                                 {$rangeMax = $facet->getMax()}
                                 {$roundPretty = 'false'}
-                                {$format = ''}
+                                {$format = "{'0.00'|number:['precision' => 2]}"}
+                                {$suffix = $facet->getSuffix()}
+                                {if $facet->getDigits() >= 0}
+                                    {$digits = $facet->getDigits()}
+                                {/if}
                                 {$stepCount = 100}
                                 {$stepCurve = 'linear'}
                             {/block}
@@ -38,9 +43,11 @@
                                  data-range-slider="true"
                                  data-roundPretty="{$roundPretty}"
                                  data-labelFormat="{$format}"
+                                 data-suffix="{$suffix}"
                                  data-stepCount="{$stepCount}"
                                  data-stepCurve="{$stepCurve}"
                                  data-startMin="{$startMin}"
+                                 data-digits="{$digits}"
                                  data-startMax="{$startMax}"
                                  data-rangeMin="{$rangeMin}"
                                  data-rangeMax="{$rangeMax}">

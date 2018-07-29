@@ -24,14 +24,12 @@
 
 namespace Shopware\Components\Routing;
 
-use Zend_Controller_Request_Abstract as ZendRequest;
-use Enlight_Controller_Request_RequestHttp as EnlightRequest;
-use Enlight_Controller_Request_RequestTestCase as RequestTestCase;
+use Enlight_Controller_Request_Request as EnlightRequest;
 use Enlight_Controller_Router as EnlightRouter;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\Routing
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Router extends EnlightRouter implements RouterInterface
@@ -64,10 +62,10 @@ class Router extends EnlightRouter implements RouterInterface
     /**
      * The di constructor of shopware router
      *
-     * @param Context $context
-     * @param MatcherInterface[] $matchers
-     * @param array $generators
-     * @param PreFilterInterface[] $preFilters
+     * @param Context               $context
+     * @param MatcherInterface[]    $matchers
+     * @param array                 $generators
+     * @param PreFilterInterface[]  $preFilters
      * @param PostFilterInterface[] $postFilters
      */
     public function __construct(
@@ -86,6 +84,7 @@ class Router extends EnlightRouter implements RouterInterface
 
     /**
      * Switch the context
+     *
      * @param Context $context
      */
     public function setContext(Context $context)
@@ -124,6 +123,7 @@ class Router extends EnlightRouter implements RouterInterface
     /**
      * @param array[] $list
      * @param Context $context
+     *
      * @return string[]|false[]
      */
     public function generateList(array $list, Context $context = null)
@@ -167,7 +167,8 @@ class Router extends EnlightRouter implements RouterInterface
 
     /**
      * @param array|string $userParams
-     * @param Context $context
+     * @param Context      $context
+     *
      * @return string|false
      */
     public function assemble($userParams = [], Context $context = null)
@@ -197,6 +198,7 @@ class Router extends EnlightRouter implements RouterInterface
                 $url = $postFilter->postFilter($url, $context);
             }
         }
+
         return $url;
     }
 
@@ -265,31 +267,25 @@ class Router extends EnlightRouter implements RouterInterface
     }
 
     /**
-     * @param   ZendRequest|EnlightRequest $request
+     * @param EnlightRequest $request
+     *
      * @deprecated Use self::match()
-     * @return  ZendRequest
+     *
+     * @return EnlightRequest
      */
-    public function route(ZendRequest $request)
+    public function route(EnlightRequest $request)
     {
-        if ($request instanceof EnlightRequest || $request instanceof RequestTestCase) {
-            /** For enlight routing  */
-            $this->context->updateFromEnlightRequest($request);
-        }
+        /* For enlight routing  */
+        $this->context->updateFromEnlightRequest($request);
 
         $params = $this->match($request->getPathInfo(), $this->context);
         if ($params !== false) {
-            if ($request instanceof EnlightRequest || $request instanceof RequestTestCase) {
-                /** For shopware routing (query === userParams)  */
-                $request->setQuery($params);
-            } else {
-                $request->setParams($params);
-            }
+            /* For shopware routing (query === userParams)  */
+            $request->setQuery($params);
         }
 
-        if ($request instanceof EnlightRequest || $request instanceof RequestTestCase) {
-            /** For enlight routing  */
-            $this->context->updateFromEnlightRequest($request);
-        }
+        /* For enlight routing  */
+        $this->context->updateFromEnlightRequest($request);
         $this->context->setParams([]);
 
         return $request;
@@ -301,8 +297,10 @@ class Router extends EnlightRouter implements RouterInterface
      * @see \Shopware_Controllers_Backend_Newsletter::initMailing
      * @see \Enlight_Controller_Router::setGlobalParam
      * @deprecated Use the context
+     *
      * @param string $name
      * @param string $value
+     *
      * @return self
      */
     public function setGlobalParam($name, $value)

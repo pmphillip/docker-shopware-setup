@@ -26,7 +26,6 @@ namespace Shopware\Bundle\MediaBundle\Struct;
 
 /**
  * Class MediaPosition
- * @package Shopware\Bundle\MediaBundle\Struct
  */
 class MediaPosition
 {
@@ -37,6 +36,7 @@ class MediaPosition
     const PARSE_JSON = 2;
     const PARSE_SERIALIZE = 3;
     const PARSE_HTML = 4;
+    const PARSE_PIPES = 5;
 
     /**
      * @var string
@@ -59,10 +59,10 @@ class MediaPosition
     private $parseType;
 
     /**
-     * @param string $sourceTable The source table where images are used. e.g. s_articles_img
+     * @param string $sourceTable  The source table where images are used. e.g. s_articles_img
      * @param string $sourceColumn The source column of the source table. e.g. media_id
-     * @param string $mediaColumn The matching column in the `s_media` table. Defaults to `id`.
-     * @param int $parseType Defines the parse type. e.g. plain, json, html, serialized data
+     * @param string $mediaColumn  The matching column in the `s_media` table. Defaults to `id`.
+     * @param int    $parseType    Defines the parse type. e.g. plain, json, html, serialized data
      */
     public function __construct($sourceTable, $sourceColumn, $mediaColumn = 'id', $parseType = self::PARSE_PLAIN)
     {
@@ -89,7 +89,7 @@ class MediaPosition
     }
 
     /**
-     * @return string The matching column in the `s_media` table.
+     * @return string the matching column in the `s_media` table
      */
     public function getMediaColumn()
     {

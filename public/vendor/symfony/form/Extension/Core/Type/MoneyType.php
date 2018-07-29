@@ -53,7 +53,7 @@ class MoneyType extends AbstractType
     {
         $scale = function (Options $options) {
             if (null !== $options['precision']) {
-                @trigger_error('The form option "precision" is deprecated since version 2.7 and will be removed in 3.0. Use "scale" instead.', E_USER_DEPRECATED);
+                @trigger_error('The form option "precision" is deprecated since Symfony 2.7 and will be removed in 3.0. Use "scale" instead.', E_USER_DEPRECATED);
 
                 return $options['precision'];
             }
@@ -91,7 +91,7 @@ class MoneyType extends AbstractType
     }
 
     /**
-     * Returns the pattern for this locale.
+     * Returns the pattern for this locale in UTF-8.
      *
      * The pattern contains the placeholder "{{ widget }}" where the HTML tag should
      * be inserted

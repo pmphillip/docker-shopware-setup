@@ -21,11 +21,11 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
 use Shopware\Bundle\AccountBundle\Form\Account\AddressFormType;
 use Shopware\Bundle\AccountBundle\Form\Account\PersonalFormType;
 use Shopware\Bundle\AccountBundle\Service\RegisterServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
+use Shopware\Components\Captcha\Exception\CaptchaNotFoundException;
 use Shopware\Models\Customer\Address;
 use Shopware\Models\Customer\Customer;
 use Symfony\Component\Form\Form;
@@ -43,8 +43,6 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
 
     /**
      * Will be called from the dispatcher before an action is processed
-     *
-     * @return void
      */
     public function preDispatch()
     {
@@ -53,8 +51,6 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
 
     /**
      * Will be called when no action is supplied
-     *
-     * @return void
      */
     public function indexAction()
     {
@@ -66,33 +62,36 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
             'sTargetAction' => $sTargetAction,
             'sEsd' => Shopware()->Modules()->Basket()->sCheckForESD(),
             'showNoAccount' => $this->Request()->getParam('showNoAccount', false),
-            'accountMode' => $this->Request()->getParam('skipLogin')
+            'accountMode' => $this->Request()->getParam('skipLogin'),
         ]);
 
         if ($this->shouldRedirectToAccount()) {
             $this->forward('index', 'account');
+
             return;
         } elseif ($this->shouldRedirectToCheckout()) {
             $this->forward('confirm', 'checkout');
+
             return;
         } elseif ($this->shouldRedirectToTarget()) {
             $this->redirect(['controller' => $sTarget, 'action' => $sTargetAction]);
+
             return;
         }
 
+        $this->View()->assign('isAccountless', $this->get('session')->get('isAccountless'));
         $this->View()->assign('register', $this->getRegisterData());
         $this->View()->assign('countryList', $this->getCountries());
     }
 
     /**
      * Checks the registration
-     *
-     * @return void
      */
     public function saveRegisterAction()
     {
         if (!$this->request->isPost()) {
             $this->forward('index');
+
             return;
         }
 
@@ -101,9 +100,6 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
 
         /** @var Enlight_Components_Session_Namespace $session */
         $session = $this->get('session');
-
-        /** @var Enlight_Event_EventManager $eventManager */
-        $eventManager = $this->get('events');
 
         /** @var RegisterServiceInterface $registerService */
         $registerService = $this->get('shopware_account.register_service');
@@ -116,7 +112,8 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $errors = [
             'personal' => $this->getFormErrors($customerForm),
             'billing' => $this->getFormErrors($billingForm),
-            'shipping' => []
+            'shipping' => [],
+            'captcha' => [],
         ];
 
         $shipping = null;
@@ -126,10 +123,20 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
             $errors['shipping'] = $this->getFormErrors($shippingForm);
         }
 
+        $validCaptcha = $this->validateCaptcha($this->get('config')->get('registerCaptcha'), $this->request);
+        if (!$validCaptcha) {
+            $errors['captcha'] = [
+                $this->get('snippets')
+                    ->getNamespace('widgets/captcha/custom_captcha')
+                    ->get('invalidCaptchaMessage'),
+            ];
+        }
+
         $errors['occurred'] = (
             !empty($errors['personal']) ||
             !empty($errors['shipping']) ||
-            !empty($errors['billing'])
+            !empty($errors['billing']) ||
+            !empty($errors['captcha'])
         );
 
         if ($errors['occurred']) {
@@ -140,6 +147,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
             $this->View()->assign('errors', $errors);
             $this->View()->assign($data);
             $this->forward('index');
+
             return;
         }
 
@@ -149,36 +157,120 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         /** @var Address $billing */
         $billing = $billingForm->getData();
 
+        $config = $this->container->get('config');
+
+        $accountMode = (int) $customer->getAccountMode();
+        $doubleOptinWithAccount = ($accountMode === 0) && $config->get('optinregister');
+        $doubleOptInAccountless = ($accountMode === 1) && $config->get('optinaccountless');
+
+        $doubleOptinRegister = $doubleOptinWithAccount || $doubleOptInAccountless;
+
         $customer->setReferer((string) $session->offsetGet('sReferer'));
         $customer->setValidation((string) $data['register']['personal']['sValidation']);
         $customer->setAffiliate((int) $session->offsetGet('sPartner'));
-        $customer->setPaymentId((int) $session->offsetGet("sPaymentID"));
+        $customer->setPaymentId((int) $session->offsetGet('sPaymentID'));
+        $customer->setDoubleOptinRegister($doubleOptinRegister);
+        $customer->setDoubleOptinConfirmDate(null);
 
         $registerService->register(
             $context->getShop(),
             $customer,
             $billing,
-            $shipping
+            $shipping,
+            $doubleOptinRegister
         );
 
-        $this->writeSession($data, $customer);
+        /*
+         * Remove sensitive data before writing to the session
+         */
+        unset($data['register']['personal']['password']);
+        unset($data['register']['personal']['passwordConfirmation']);
+        unset($data['register']['billing']['password']);
 
-        if ($customer->getAccountMode() == Customer::ACCOUNT_MODE_CUSTOMER) {
-            $this->sendRegistrationMail($customer);
+        if ($doubleOptinRegister) {
+            $this->get('events')->notify(
+                'Shopware_Modules_Admin_SaveRegister_DoubleOptIn_Waiting',
+                [
+                    'id' => $customer->getId(),
+                    'billingID' => $customer->getDefaultBillingAddress()->getId(),
+                    'shippingID' => $customer->getDefaultShippingAddress()->getId(),
+                ]
+            );
+
+            $session->offsetSet('isAccountless', $accountMode === Customer::ACCOUNT_MODE_FAST_LOGIN);
+
+            $this->redirectCustomer([
+                'location' => 'register',
+                'optinsuccess' => true,
+            ]);
+
+            return;
         }
 
-        $this->loginCustomer($customer);
-
-        $eventManager->notify(
-            'Shopware_Modules_Admin_SaveRegister_Successful',
-            [
-                'id' => $customer->getId(),
-                'billingID' => $customer->getDefaultBillingAddress()->getId(),
-                'shippingID' => $customer->getDefaultShippingAddress()->getId()
-            ]
-        );
-
+        $this->saveRegisterSuccess($data, $customer);
         $this->redirectCustomer();
+    }
+
+    public function confirmValidationAction()
+    {
+        /** @var \Doctrine\DBAL\Connection $connection */
+        $connection = $this->container->get('dbal_connection');
+
+        /** @var \Shopware\Components\Model\ModelManager $modelManager */
+        $modelManager = $this->container->get('models');
+
+        $hash = $this->Request()->get('sConfirmation');
+
+        $sql = "SELECT `data` FROM `s_core_optin` WHERE `hash` = ? AND type = 'swRegister'";
+        $result = $connection->fetchColumn($sql, [$hash]);
+
+        // Triggers an Error-Message, which tells the customer that his confirmation link was invalid
+        if (empty($result)) {
+            $this->redirectCustomer([
+                'optinhashinvalid' => true,
+            ]);
+
+            return;
+        }
+
+        if (($data = unserialize($result)) === false || !isset($data['customerId'])) {
+            throw new InvalidArgumentException(sprintf('The data for hash \'%s\' is corrupted.', $hash));
+        }
+        $customerId = (int) $data['customerId'];
+
+        /** @var \DateTime $date */
+        $date = new \DateTime();
+
+        /** @var Customer $customer */
+        $customer = $modelManager->find(Customer::class, $customerId);
+
+        // One-Time-Account
+        if ($customer->getAccountMode() === 1) {
+            $redirection = [
+                'controller' => 'checkout',
+                'action' => 'confirm',
+            ];
+        } else {
+            $redirection = [
+                'controller' => 'account',
+                'action' => 'index',
+            ];
+        }
+
+        $customer->setFirstLogin($date);
+        $customer->setDoubleOptinConfirmDate($date);
+        $customer->setActive(true);
+
+        $modelManager->persist($customer);
+        $modelManager->flush();
+
+        $sql = "DELETE FROM `s_core_optin` WHERE `hash` = ?  AND type = 'swRegister'";
+        $connection->executeQuery($sql, [$this->Request()->get('sConfirmation')]);
+
+        $this->saveRegisterSuccess($data, $customer);
+        $this->redirectCustomer(
+            array_merge(['optinconfirmed' => true], $redirection)
+        );
     }
 
     public function ajaxValidateEmailAction()
@@ -191,7 +283,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $errors = $this->getFormErrors($customerForm);
         $errors = [
             'email' => $errors['email'] ?: false,
-            'emailConfirmation' => $errors['emailConfirmation'] ?: false
+            'emailConfirmation' => $errors['emailConfirmation'] ?: false,
         ];
 
         $this->Response()->setHeader('Content-type', 'application/json', true);
@@ -208,11 +300,67 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $errors = $this->getFormErrors($customerForm);
         $errors = [
             'password' => $errors['password'] ?: false,
-            'passwordConfirmation' => $errors['passwordConfirmation'] ?: false
+            'passwordConfirmation' => $errors['passwordConfirmation'] ?: false,
         ];
 
         $this->Response()->setHeader('Content-type', 'application/json', true);
         $this->Response()->setBody(json_encode($errors));
+    }
+
+    /**
+     * @param array    $data
+     * @param Customer $customer
+     *
+     * @throws Enlight_Event_Exception
+     */
+    private function saveRegisterSuccess(array $data, Customer $customer)
+    {
+        /** @var Enlight_Event_EventManager $eventManager */
+        $eventManager = $this->get('events');
+
+        $this->writeSession($data, $customer);
+        $this->loginCustomer($customer);
+
+        if ($customer->getAccountMode() == Customer::ACCOUNT_MODE_CUSTOMER) {
+            $this->sendRegistrationMail($customer);
+        }
+
+        $eventManager->notify(
+            'Shopware_Modules_Admin_SaveRegister_Successful',
+            [
+                'id' => $customer->getId(),
+                'billingID' => $customer->getDefaultBillingAddress()->getId(),
+                'shippingID' => $customer->getDefaultShippingAddress()->getId(),
+            ]
+        );
+    }
+
+    /**
+     * Validates the captcha in the request
+     *
+     * @param string                             $captchaName
+     * @param Enlight_Controller_Request_Request $request
+     *
+     * @return bool
+     */
+    private function validateCaptcha($captchaName, Enlight_Controller_Request_Request $request)
+    {
+        /** @var \Shopware\Components\Captcha\CaptchaValidator $captchaValidator */
+        $captchaValidator = $this->container->get('shopware.captcha.validator');
+
+        try {
+            $isValid = $captchaValidator->validateByName($captchaName, $request);
+        } catch (CaptchaNotFoundException $exception) {
+            // log captchaNotFound Exception
+            $this->container->get('corelogger')->error($exception->getMessage());
+            $isValid = $captchaValidator->validateByName('nocaptcha', $request);
+        }
+
+        if ($isValid) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -231,7 +379,8 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         if (!$this->isUserLoggedIn()) {
             return false;
         }
-        return ($this->Request()->getParam('sValidation') || !Shopware()->Modules()->Basket()->sCountBasket());
+
+        return $this->Request()->getParam('sValidation') || !Shopware()->Modules()->Basket()->sCountBasket();
     }
 
     /**
@@ -252,6 +401,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
 
     /**
      * @param FormInterface $form
+     *
      * @return array
      */
     private function getFormErrors(FormInterface $form)
@@ -262,17 +412,19 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $errors = [
             '' => $this->get('snippets')
                 ->getNamespace('frontend/account/internalMessages')
-                ->get('ErrorFillIn', 'Please fill in all red fields')
+                ->get('ErrorFillIn', 'Please fill in all red fields'),
         ];
 
         foreach ($form->getErrors(true) as $error) {
             $errors[$error->getOrigin()->getName()] = $this->View()->fetch('string:' . $error->getMessage());
         }
+
         return $errors;
     }
 
     /**
      * @param array $data
+     *
      * @return bool
      */
     private function isShippingProvided(array $data)
@@ -287,10 +439,10 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
     {
         $data = $this->request->getPost();
 
-        $countryStateName = "country_state_" . $data['register']['billing']['country'];
+        $countryStateName = 'country_state_' . $data['register']['billing']['country'];
         $data['register']['billing']['state'] = $data['register']['billing'][$countryStateName];
 
-        $countryStateName = "country_shipping_state_" . $data['register']['shipping']['country'];
+        $countryStateName = 'country_shipping_state_' . $data['register']['shipping']['country'];
         $data['register']['shipping']['state'] = $data['register']['shipping'][$countryStateName];
         $data['register']['billing'] += $data['register']['personal'];
         $data['register']['shipping']['phone'] = $data['register']['personal']['phone'];
@@ -316,7 +468,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         );
 
         if ($customerGroupKey && !$customerGroupId) {
-            throw new Enlight_Exception("Invalid customergroup");
+            throw new Enlight_Exception('Invalid customergroup');
         }
 
         $event = Shopware()->Events()->notifyUntil(
@@ -332,8 +484,9 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
     }
 
     /**
-     * @return array
      * @throws Enlight_Exception
+     *
+     * @return array
      */
     private function getRegisterData()
     {
@@ -345,19 +498,19 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $session = $this->get('session');
         $register = array_replace_recursive([
             'personal' => [
-                'sValidation' => $this->getCustomerGroupKey()
+                'sValidation' => $this->getCustomerGroupKey(),
             ],
             'billing' => [
                 'country' => $session->offsetGet('sCountry'),
-                'state' => $session->offsetGet('sState')
-            ]
+                'state' => $session->offsetGet('sState'),
+            ],
         ], $register);
 
         return $register;
     }
 
     /**
-     * @param array $data
+     * @param array    $data
      * @param Customer $customer
      */
     private function writeSession(array $data, Customer $customer)
@@ -373,9 +526,9 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $session->offsetSet('sCountry', $customer->getDefaultBillingAddress()->getCountry()->getId());
     }
 
-
     /**
      * @param Customer $customer
+     *
      * @throws Exception
      */
     private function loginCustomer(Customer $customer)
@@ -388,22 +541,23 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
     /**
      * Redirects after registration to the corresponding controllers and actions
      */
-    private function redirectCustomer()
+    private function redirectCustomer(array $params = [])
     {
         $location = [
             'controller' => $this->Request()->getParam('sTarget', 'account'),
-            'action' => $this->Request()->getParam('sTargetAction', 'index')
+            'action' => $this->Request()->getParam('sTargetAction', 'index'),
         ];
 
         if ($location === ['controller' => 'checkout', 'action' => 'confirm']) {
             $location = ['controller' => 'checkout', 'action' => 'shippingPayment'];
         }
 
-        $this->redirect($location);
+        $this->redirect(array_merge($location, $params));
     }
 
     /**
      * @param array $data
+     *
      * @return Form
      */
     private function createCustomerForm(array $data)
@@ -411,11 +565,13 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $customer = new Customer();
         $form = $this->createForm(PersonalFormType::class, $customer);
         $form->submit($data);
+
         return $form;
     }
 
     /**
      * @param array $data
+     *
      * @return Form
      */
     private function createBillingForm(array $data)
@@ -423,11 +579,13 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $address = new Address();
         $form = $this->createForm(AddressFormType::class, $address);
         $form->submit($data);
+
         return $form;
     }
 
     /**
      * @param array $data
+     *
      * @return Form
      */
     private function createShippingForm(array $data)
@@ -435,6 +593,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $address = new Address();
         $form = $this->createForm(AddressFormType::class, $address);
         $form->submit($data);
+
         return $form;
     }
 
@@ -446,6 +605,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         $context = $this->get('shopware_storefront.context_service')->getShopContext();
         $service = $this->get('shopware_storefront.location_service');
         $countries = $service->getCountries($context);
+
         return $this->get('legacy_struct_converter')->convertCountryStructList($countries);
     }
 
@@ -457,7 +617,7 @@ class Shopware_Controllers_Frontend_Register extends Enlight_Controller_Action
         try {
             Shopware()->Modules()->Admin()->sSaveRegisterSendConfirmation($customer->getEmail());
         } catch (\Exception $e) {
-            $message = sprintf("Could not send user registration email to address %s", $customer->getEmail());
+            $message = sprintf('Could not send user registration email to address %s', $customer->getEmail());
             Shopware()->Container()->get('corelogger')->error($message, ['exception' => $e]);
         }
     }

@@ -27,12 +27,12 @@ namespace Shopware\Bundle\SearchBundleDBAL\ConditionHandler;
 use Shopware\Bundle\SearchBundle\Condition\PropertyCondition;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
 use Shopware\Bundle\SearchBundleDBAL\ConditionHandlerInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilder;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class PropertyConditionHandler implements ConditionHandlerInterface
@@ -42,7 +42,7 @@ class PropertyConditionHandler implements ConditionHandlerInterface
      */
     public function supportsCondition(ConditionInterface $condition)
     {
-        return ($condition instanceof PropertyCondition);
+        return $condition instanceof PropertyCondition;
     }
 
     /**
@@ -55,13 +55,19 @@ class PropertyConditionHandler implements ConditionHandlerInterface
     ) {
         $tableKey = $condition->getName();
 
+        $suffix = md5(json_encode($condition));
+
+        if ($query->hasState('property_' . $tableKey)) {
+            return;
+        }
+        $query->addState('property_' . $tableKey);
+
         $where = [];
         /** @var PropertyCondition $condition */
         foreach ($condition->getValueIds() as $valueId) {
-            $valueKey = $tableKey . '_' . $valueId;
-
-            $where[] = $tableKey . '.valueID = :' . $valueKey;
-            $query->setParameter(':' . $valueKey, $valueId);
+            $valueKey = ':' . $tableKey . '_' . $valueId . '_' . $suffix;
+            $where[] = $tableKey . '.valueID = ' . $valueKey;
+            $query->setParameter($valueKey, $valueId);
         }
 
         $where = implode(' OR ', $where);

@@ -1,8 +1,9 @@
 {extends file='frontend/index/index.tpl'}
 
 {* Breadcrumb *}
-{block name='frontend_index_start' prepend}
-    {$sBreadcrumb = [['name'=>{$sSupport.name}, 'link'=>{url controller=ticket sFid=$sSupport.id}]]}
+{block name='frontend_index_start'}
+    {$sBreadcrumb = [['name' => $sSupport.name, 'link' => {url controller=ticket sFid=$sSupport.id}]]}
+    {$smarty.block.parent}
 {/block}
 
 {* Sidebar left *}
@@ -34,7 +35,11 @@
                     {/if}
 
                     {if $sSupport.sErrors.e}
-                        {$errorContent="{$errorContent}{s name='SupportInfoFillRedFields' namespace="frontend/forms/elements"}{/s}"}
+                        {if $sSupport.sErrors.e['sCaptcha'] == true}
+                            {$errorContent="{$errorContent}{s name='SupportInfoFillCaptcha' namespace="frontend/forms/elements"}{/s}"}
+                        {else}
+                            {$errorContent="{$errorContent}{s name='SupportInfoFillRedFields' namespace="frontend/forms/elements"}{/s}"}
+                        {/if}
                     {/if}
 
                     {block name='frontend_forms_elements_error_messages'}
@@ -49,7 +54,7 @@
             <div class="forms--headline panel panel--body is--wide has--border is--rounded">
                 {if $sSupport.sElements}
                     <h1 class="forms--title">{$sSupport.name}</h1>
-                    <div class="forms--text">{eval var=$sSupport.text}</div>
+                    <div class="forms--text">{$sSupport.text}</div>
                 {elseif $sSupport.text2}
                     {include file="frontend/_includes/messages.tpl" type="success" content=$sSupport.text2}
                 {/if}
@@ -62,8 +67,8 @@
                 <div class="forms--container panel has--border is--rounded">
                     <div class="panel--title is--underline">{$sSupport.name}</div>
                     <div class="panel--body">
-                        {block name='frontend_forms_index_elements'}
-                            {include file="frontend/forms/elements.tpl"}
+                        {block name='frontend_forms_index_form_elements'}
+                            {include file="frontend/forms/form-elements.tpl"}
                         {/block}
                     </div>
                 </div>

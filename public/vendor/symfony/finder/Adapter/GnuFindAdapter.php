@@ -11,7 +11,7 @@
 
 namespace Symfony\Component\Finder\Adapter;
 
-@trigger_error('The '.__NAMESPACE__.'\GnuFindAdapter class is deprecated since version 2.8 and will be removed in 3.0. Use directly the Finder class instead.', E_USER_DEPRECATED);
+@trigger_error('The '.__NAMESPACE__.'\GnuFindAdapter class is deprecated since Symfony 2.8 and will be removed in 3.0. Use directly the Finder class instead.', E_USER_DEPRECATED);
 
 use Symfony\Component\Finder\Shell\Shell;
 use Symfony\Component\Finder\Shell\Command;
@@ -76,7 +76,7 @@ class GnuFindAdapter extends AbstractFindAdapter
      */
     protected function canBeUsed()
     {
-        return $this->shell->getType() === Shell::TYPE_UNIX && parent::canBeUsed();
+        return Shell::TYPE_UNIX === $this->shell->getType() && parent::canBeUsed();
     }
 
     /**

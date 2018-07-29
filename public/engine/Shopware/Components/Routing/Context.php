@@ -24,32 +24,38 @@
 
 namespace Shopware\Components\Routing;
 
-use Enlight_Controller_Request_RequestHttp as EnlightRequest;
+use Enlight_Controller_Request_Request as EnlightRequest;
+use Shopware\Models\Shop\Shop as ShopwareShop;
 use Shopware_Components_Config as ShopwareConfig;
-use \Shopware\Models\Shop\Shop as ShopwareShop;
 
 /**
  * Class Context
  *
  * @see http://php.net/manual/en/reflectionclass.iscloneable.php
  * @see http://api.symfony.com/2.0/Symfony/Component/Routing/RequestContext.html
- * @see \Zend_Controller_Request_Abstract
- * @package Shopware\Components\Routing
+ * @see \Enlight_Controller_Request_Request
  *
  * @category  Shopware
- * @package   Shopware\Components\Routing
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Context implements \JsonSerializable
 {
     /**
+     * @var array
+     */
+    public $params = [];
+
+    /**
      * only for NOT mode_rewrite mode
+     *
      * @var string
      */
     protected $baseFile = 'shopware.php';
 
     /**
-     * @see \Zend_Controller_Request_Http::getHttpHost
+     * @see \Enlight_Controller_Request_Request::getHttpHost
+     *
      * @var string
      */
     protected $host = 'localhost';
@@ -57,35 +63,20 @@ class Context implements \JsonSerializable
     /**
      * @var string
      */
-    protected $secureHost = null;
-
-    /**
-     * @var string
-     */
     protected $baseUrl = '';
 
     /**
-     * @var string
-     */
-    protected $secureBaseUrl = null;
-
-    /**
-     * @var boolean
+     * @var bool
      */
     protected $secure = false;
 
     /**
-     * @var boolean
-     */
-    protected $alwaysSecure = false;
-
-    /**
-     * @var boolean
+     * @var bool
      */
     protected $removeCategory = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $urlToLower = false;
 
@@ -97,28 +88,27 @@ class Context implements \JsonSerializable
     /**
      * @var array
      */
-    public $params = [];
-
-    /**
-     * @var array
-     */
     protected $globalParams = [];
 
     /**
      * Module keys for retrieving module from params
-     * @see \Zend_Controller_Request_Abstract::$_moduleKey
+     *
+     * @see \Enlight_Controller_Request_Request::$_moduleKey
+     *
      * @var string
      */
     protected $moduleKey = 'module';
 
     /**
      * Controller key for retrieving controller from params
+     *
      * @var string
      */
     protected $controllerKey = 'controller';
 
     /**
      * Action key for retrieving action from params
+     *
      * @var string
      */
     protected $actionKey = 'action';
@@ -126,10 +116,10 @@ class Context implements \JsonSerializable
     /**
      * @param string $host
      * @param string $baseUrl
-     * @param bool $secure
-     * @param array $globalParams
+     * @param bool   $secure
+     * @param array  $globalParams
      */
-    public function __construct($host = 'localhost', $baseUrl = '', $secure = false, $globalParams = [])
+    public function __construct($host = 'localhost', $baseUrl = '', $secure = false, array $globalParams = [])
     {
         $this->host = $host;
         $this->baseUrl = $baseUrl;
@@ -174,22 +164,6 @@ class Context implements \JsonSerializable
     /**
      * @return string
      */
-    public function getSecureHost()
-    {
-        return $this->secureHost !== null ? $this->secureHost : $this->host;
-    }
-
-    /**
-     * @param string $secureHost
-     */
-    public function setSecureHost($secureHost)
-    {
-        $this->secureHost = $secureHost;
-    }
-
-    /**
-     * @return string
-     */
     public function getBaseUrl()
     {
         return $this->baseUrl;
@@ -204,23 +178,7 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @return string
-     */
-    public function getSecureBaseUrl()
-    {
-        return $this->secureBaseUrl !== null ? $this->secureBaseUrl : $this->baseUrl;
-    }
-
-    /**
-     * @param string $secureBaseUrl
-     */
-    public function setSecureBaseUrl($secureBaseUrl)
-    {
-        $this->secureBaseUrl = $secureBaseUrl;
-    }
-
-    /**
-     * @return boolean
+     * @return bool
      */
     public function isSecure()
     {
@@ -228,7 +186,7 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @param boolean $secure
+     * @param bool $secure
      */
     public function setSecure($secure)
     {
@@ -236,23 +194,7 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @return boolean
-     */
-    public function isAlwaysSecure()
-    {
-        return $this->alwaysSecure;
-    }
-
-    /**
-     * @param boolean $alwaysSecure
-     */
-    public function setAlwaysSecure($alwaysSecure)
-    {
-        $this->alwaysSecure = $alwaysSecure;
-    }
-
-    /**
-     * @return boolean
+     * @return bool
      */
     public function isRemoveCategory()
     {
@@ -260,7 +202,7 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @param boolean $removeCategory
+     * @param bool $removeCategory
      */
     public function setRemoveCategory($removeCategory)
     {
@@ -268,7 +210,7 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isUrlToLower()
     {
@@ -276,7 +218,7 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @param boolean $urlToLower
+     * @param bool $urlToLower
      */
     public function setUrlToLower($urlToLower)
     {
@@ -300,9 +242,10 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @param   $name
-     * @param   null $default
-     * @return  null|string
+     * @param string     $name
+     * @param null|mixed $default
+     *
+     * @return null|mixed
      */
     public function getParam($name, $default = null)
     {
@@ -318,8 +261,8 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @param $name
-     * @param $param
+     * @param string $name
+     * @param mixed  $param
      */
     public function setParam($name, $param)
     {
@@ -337,6 +280,7 @@ class Context implements \JsonSerializable
     /**
      * @param string $name
      * @param string $default
+     *
      * @return string
      */
     public function getGlobalParam($name, $default = null)
@@ -354,7 +298,7 @@ class Context implements \JsonSerializable
 
     /**
      * @param string $name
-     * @param mixed $globalParam
+     * @param mixed  $globalParam
      */
     public function setGlobalParam($name, $globalParam)
     {
@@ -363,6 +307,7 @@ class Context implements \JsonSerializable
 
     /**
      * @see Enlight_Controller_Router::setGlobalParam
+     *
      * @param array $globalParams
      */
     public function setGlobalParams($globalParams)
@@ -404,6 +349,7 @@ class Context implements \JsonSerializable
 
     /**
      * @param EnlightRequest $request
+     *
      * @return Context
      */
     public static function createFromEnlightRequest(EnlightRequest $request)
@@ -417,7 +363,9 @@ class Context implements \JsonSerializable
 
     /**
      * @see \Enlight_Controller_Router::setGlobalParam
-     * @param  EnlightRequest $request
+     *
+     * @param EnlightRequest $request
+     *
      * @return array
      */
     public static function getGlobalParamsFromRequest(EnlightRequest $request)
@@ -432,6 +380,7 @@ class Context implements \JsonSerializable
                 }
             }
         }
+
         return $globalParams;
     }
 
@@ -448,22 +397,23 @@ class Context implements \JsonSerializable
     }
 
     /**
-     * @param ShopwareShop $shop
+     * @param ShopwareShop   $shop
      * @param ShopwareConfig $config
+     *
      * @return Context
      */
     public static function createFromShop(ShopwareShop $shop, ShopwareConfig $config)
     {
         $self = new self(
             $shop->getHost(), $shop->getBaseUrl(),
-            $shop->getAlwaysSecure() || $shop->getSecure(),
+            $shop->getSecure(),
             []
         );
         $self->setShopId($shop->getId());
         $self->setUrlToLower($config->get('routerToLower'));
         $self->setBaseFile($config->get('baseFile'));
-        $self->setAlwaysSecure($shop->getAlwaysSecure());
-        $self->setRemoveCategory((bool)$config->get('routerRemoveCategory'));
+        $self->setRemoveCategory((bool) $config->get('routerRemoveCategory'));
+
         return $self;
     }
 

@@ -28,10 +28,11 @@ use Doctrine\ORM\AbstractQuery;
 use Shopware\Bundle\AttributeBundle\Repository\SearchCriteria;
 use Shopware\Components\Model\ModelManager;
 use Shopware\Components\Model\QueryBuilder;
+use Shopware\Components\Model\SearchBuilder;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\AttributeBundle\Repository\Searcher
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
 class GenericSearcher implements SearcherInterface
@@ -47,18 +48,30 @@ class GenericSearcher implements SearcherInterface
     protected $entityManager;
 
     /**
-     * GenericSearcher constructor.
-     * @param string $entity
-     * @param ModelManager $entityManager
+     * @var SearchBuilder
      */
-    public function __construct($entity, ModelManager $entityManager)
+    protected $searchBuilder;
+
+    /**
+     * GenericSearcher constructor.
+     *
+     * @param string        $entity
+     * @param ModelManager  $entityManager
+     * @param SearchBuilder $searchBuilder
+     */
+    public function __construct($entity, ModelManager $entityManager, SearchBuilder $searchBuilder = null)
     {
         $this->entity = $entity;
         $this->entityManager = $entityManager;
+        $this->searchBuilder = $searchBuilder;
+        if (!$this->searchBuilder) {
+            $this->searchBuilder = Shopware()->Container()->get('shopware.model.search_builder');
+        }
     }
 
     /**
      * @param SearchCriteria $criteria
+     *
      * @return SearcherResult
      */
     public function search(SearchCriteria $criteria)
@@ -77,11 +90,13 @@ class GenericSearcher implements SearcherInterface
         if ($criteria->sortings) {
             $builder->addOrderBy($criteria->sortings);
         }
+
         return $this->createResult($builder);
     }
 
     /**
      * @param SearchCriteria $criteria
+     *
      * @return \Doctrine\ORM\QueryBuilder|QueryBuilder
      */
     protected function createQuery(SearchCriteria $criteria)
@@ -90,31 +105,28 @@ class GenericSearcher implements SearcherInterface
         $builder->select($this->getIdentifierField());
         $builder->from($criteria->entity, 'entity');
         $builder->setAlias('entity');
+
         return $builder;
     }
 
     /**
      * @param SearchCriteria $criteria
-     * @param QueryBuilder $builder
+     * @param QueryBuilder   $builder
      */
     protected function addSearchTermCondition(SearchCriteria $criteria, QueryBuilder $builder)
     {
-        $fields = $this->getSearchFields($criteria);
-        $search = [];
-        foreach ($fields as $field) {
-            $search[] = $field . ' LIKE :search';
-        }
-        $builder->andWhere(implode(' OR ', $search));
-        $builder->setParameter(':search', '%' . $criteria->term . '%');
+        $this->searchBuilder->addSearchTerm($builder, $criteria->term, $this->getSearchFields($criteria));
     }
 
     /**
      * @param SearchCriteria $criteria
+     *
      * @return string[]
      */
     protected function getSearchFields(SearchCriteria $criteria)
     {
         $classMetaData = $this->entityManager->getClassMetadata($this->entity);
+
         return array_map(function ($field) {
             return 'entity.' . $field;
         }, $classMetaData->fieldNames);
@@ -122,6 +134,7 @@ class GenericSearcher implements SearcherInterface
 
     /**
      * @param QueryBuilder $builder
+     *
      * @return SearcherResult
      */
     protected function createResult(QueryBuilder $builder)

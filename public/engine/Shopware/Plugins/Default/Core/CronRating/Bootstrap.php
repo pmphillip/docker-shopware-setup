@@ -22,6 +22,8 @@
  * our trademarks remain entirely with us.
  */
 
+use Shopware\Models\Shop\Shop;
+
 /**
  * Shopware Cron for article ratings
  */
@@ -29,6 +31,7 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
 {
     /**
      * Bootstrap Installation method
+     *
      * @return bool
      */
     public function install()
@@ -37,14 +40,16 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
             'Shopware_CronJob_ArticleComment',
             'onRun'
         );
+
         return true;
     }
 
     /**
      * @param Enlight_Components_Cron_EventArgs $job
      *
-     * @return void|string
      * @throws \Exception
+     *
+     * @return void|string
      */
     public function onRun(Enlight_Components_Cron_EventArgs $job)
     {
@@ -60,15 +65,19 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
 
         $orderIds = array_keys($orders);
         $customers = $this->getCustomers($orderIds);
-        $positions = $this->getPositions($orderIds);
+        $orderPositions = $this->getPositions($orderIds);
+
+        $shopPositionBaseProducts = $this->structurePositionsArray($orderPositions);
+
+        $shopPositionImages = $this->getPositionImages($shopPositionBaseProducts);
 
         $count = 0;
         foreach ($orders as $orderId => $order) {
-            if (empty($customers[$orderId]['email']) || count($positions[$orderId]) === 0) {
+            if (empty($customers[$orderId]['email']) || empty($orderPositions[$orderId])) {
                 continue;
             }
 
-            /** @var Shopware\Models\Shop\Repository $repository  */
+            /** @var Shopware\Models\Shop\Repository $repository */
             $repository = Shopware()->Models()->getRepository('Shopware\Models\Shop\Shop');
 
             $shopId = is_numeric($order['language']) ? $order['language'] : $order['subshopID'];
@@ -79,23 +88,47 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
             $shop->setCurrency($repository->find($order['currencyID']));
             $shop->registerResources();
 
-            foreach ($positions[$orderId] as &$position) {
-                $position['link'] = Shopware()->Container()->get('router')->assemble(array(
+            foreach ($orderPositions[$orderId] as &$position) {
+                $position['link'] = $this->get('router')->assemble([
                     'module' => 'frontend', 'sViewport' => 'detail',
-                    'sArticle' => $position['articleID']
-                ));
+                    'sArticle' => $position['articleID'],
+                ]);
+
+                $position['link_rating_tab'] = $this->get('router')->assemble([
+                    'module' => 'frontend', 'sViewport' => 'detail',
+                    'sArticle' => $position['articleID'],
+                    'jumpTab' => 'rating',
+                ]);
+
+                if (!isset($shopPositionImages[$shopId][$position['articleordernumber']]['source'])) {
+                    continue;
+                }
+
+                $position['image_original']
+                    = $position['image_small']
+                    = $position['image_large']
+                    = $shopPositionImages[$shopId][$position['articleordernumber']]['source'];
+
+                if (!isset($shopPositionImages[$shopId][$position['articleordernumber']]['thumbnails'])) {
+                    continue;
+                }
+
+                $thumbnails = $shopPositionImages[$shopId][$position['articleordernumber']]['thumbnails'];
+
+                $position['image_small'] = isset($thumbnails[0]) ? $thumbnails[0]['source'] : $position['image_original'];
+                $position['image_large'] = isset($thumbnails[1]) ? $thumbnails[1]['source'] : $position['image_original'];
             }
 
-            $context = array(
+            $context = [
                 'sOrder' => $order,
                 'sUser' => $customers[$orderId],
-                'sArticles' => $positions[$orderId],
-            );
+                'sArticles' => $orderPositions[$orderId],
+            ];
 
             $mail = Shopware()->TemplateMail()->createMail('sARTICLECOMMENT', $context);
             $mail->addTo($customers[$orderId]['email']);
             $mail->send();
-            $count++;
+            ++$count;
         }
 
         if ($count <= 0) {
@@ -103,6 +136,34 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
         }
 
         return $count . ' rating mail(s) sent.';
+    }
+
+    /**
+     * @param array $positions
+     *
+     * @return array
+     */
+    public function getPositionImages($shopPositions)
+    {
+        $shopPositionImages = [];
+
+        foreach ($shopPositions as $shopId => $positions) {
+            $context = $this->get('shopware_storefront.context_service')->createShopContext($shopId);
+
+            $shopPositionImages[$shopId] = $this->get('shopware_storefront.media_service')->getCovers(
+                $positions,
+                $context
+            );
+
+            $shopPositionImages[$shopId] = array_map(
+                function ($mediaStruct) {
+                    return $this->get('legacy_struct_converter')->convertMediaStruct($mediaStruct);
+                },
+                $shopPositionImages[$shopId]
+            );
+        }
+
+        return $shopPositionImages;
     }
 
     /**
@@ -168,7 +229,8 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
             WHERE o.status IN (2, 7)
             AND o.ordertime LIKE CONCAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), '%')
         ";
-        return Shopware()->Db()->fetchAssoc($sql, array($sendTime));
+
+        return Shopware()->Db()->fetchAssoc($sql, [$sendTime]);
     }
 
     /**
@@ -232,10 +294,11 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
                 s_order_billingaddress as b
             LEFT JOIN s_order_shippingaddress as s
                 ON s.orderID = b.orderID
-            LEFT JOIN s_user_billingaddress as ub
-                ON ub.userID = b.userID
             LEFT JOIN s_user as u
                 ON b.userID = u.id
+            LEFT JOIN s_user_addresses as ub
+                ON u.default_billing_address_id = ub.id
+                AND u.id = ub.user_id
             LEFT JOIN s_core_countries as bc
                 ON bc.id = b.countryID
             LEFT JOIN s_core_countries as sc
@@ -252,6 +315,7 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
                 ON s.id = sa.shippingID
             WHERE b.orderID IN ($orderIds)
         ";
+
         return Shopware()->Db()->fetchAssoc($sql);
     }
 
@@ -282,22 +346,92 @@ class Shopware_Plugins_Core_CronRating_Bootstrap extends Shopware_Components_Plu
                 d.esdarticle,
                 d.taxID,
                 t.tax,
-                d.esdarticle as esd
+                d.esdarticle as esd,
+                o.subshopID as subshopID,
+                o.language as language
             FROM s_order_details as d
             LEFT JOIN s_core_tax as t
             ON t.id = d.taxID                        
             LEFT JOIN s_articles_details ad
             ON d.articleordernumber = ad.ordernumber
+            LEFT JOIN s_order o
+            ON d.orderID = o.id
             WHERE d.orderID IN ($orderIds)
             AND ad.active = 1
             AND d.modus = 0
             ORDER BY orderdetailsID ASC
         ";
         $result = Shopware()->Db()->fetchAll($sql);
-        $rows = array();
+        $rows = [];
         foreach ($result as $row) {
             $rows[$row['orderID']][$row['orderdetailsID']] = $row;
         }
+
         return $rows;
+    }
+
+    /**
+     * Transforms the array from order => positions to shop => positions
+     *
+     * Input:
+     *
+     * [
+     *   [order_1] => [
+     *     position_a,
+     *     position_b,
+     *     ...
+     *   ],
+     *   [order_2] => [
+     *     position_c,
+     *     position_d,
+     *     ...
+     *   ], ...
+     * ]
+     *
+     * Output:
+     *
+     * [
+     *   [shop_1] => [
+     *     position_a,
+     *     position_b,
+     *     ...
+     *   ],
+     *   [shop_2] => [
+     *     position_c,
+     *     position_d
+     *   ]
+     * ]
+     *
+     * by using the corresponding shopId for every order's positions.
+     *
+     * @param $orderPositions
+     *
+     * @return array
+     */
+    private function structurePositionsArray($orderPositions)
+    {
+        $shopPositionNumbers = [];
+
+        foreach ($orderPositions as $order_id => $positions) {
+            $firstPosition = $positions[array_keys($positions)[0]];
+            $shopId = is_numeric($firstPosition['language']) ? $firstPosition['language'] : $firstPosition['subshopID'];
+
+            if (!is_array($shopPositionNumbers[$shopId])) {
+                $shopPositionNumbers[$shopId] = [];
+            }
+
+            $shopPositionNumbers[$shopId] = array_merge(
+                array_column($positions, 'articleordernumber'),
+                $shopPositionNumbers[$shopId]);
+        }
+
+        $shopPositionBaseProducts = [];
+        $baseProductFactory = $this->get('shopware_storefront.base_product_factory');
+
+        foreach ($shopPositionNumbers as $shopId => $shopPositions) {
+            $shopPositionBaseProducts[$shopId] = $baseProductFactory->createBaseProducts($shopPositions);
+        }
+
+        return $shopPositionBaseProducts;
     }
 }

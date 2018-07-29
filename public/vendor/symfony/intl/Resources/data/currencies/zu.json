@@ -1,5 +1,5 @@
 {
-    "Version": "2.1.10.93",
+    "Version": "2.1.31.74",
     "Names": {
         "AED": [
             "AED",
@@ -93,9 +93,13 @@
             "BWP",
             "i-Botswana Pula"
         ],
+        "BYN": [
+            "BYN",
+            "i-Belarusian Ruble"
+        ],
         "BYR": [
             "BYR",
-            "i-Belarusian Ruble"
+            "i-Belarusian Ruble (2000–2016)"
         ],
         "BZD": [
             "BZD",
@@ -135,7 +139,7 @@
         ],
         "CUP": [
             "CUP",
-            "I-Cuban Peso"
+            "i-Cuban Peso"
         ],
         "CVE": [
             "CVE",
@@ -395,7 +399,7 @@
         ],
         "MZN": [
             "MZN",
-            "I-Metical yase-Mozambicque"
+            "i-Mozambican Metical"
         ],
         "NAD": [
             "NAD",
@@ -459,7 +463,7 @@
         ],
         "RON": [
             "RON",
-            "I-Romanian Leu"
+            "i-Romanian Leu"
         ],
         "RSD": [
             "RSD",
@@ -515,7 +519,7 @@
         ],
         "SSP": [
             "SSP",
-            "Upondo waseNingizimu Sudan"
+            "i-South Sudanese Pound"
         ],
         "STD": [
             "STD",
@@ -603,7 +607,7 @@
         ],
         "XAF": [
             "FCFA",
-            "i-CFA Franc BCEA"
+            "i-Central African CFA Franc"
         ],
         "XCD": [
             "EC$",
@@ -611,7 +615,7 @@
         ],
         "XOF": [
             "CFA",
-            "i-CFA Franc BCEAO"
+            "i-West African CFA Franc"
         ],
         "XPF": [
             "CFPF",

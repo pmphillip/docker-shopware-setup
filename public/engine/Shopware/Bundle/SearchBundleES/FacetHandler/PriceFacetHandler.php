@@ -27,13 +27,14 @@ namespace Shopware\Bundle\SearchBundleES\FacetHandler;
 use ONGR\ElasticsearchDSL\Aggregation\StatsAggregation;
 use ONGR\ElasticsearchDSL\Search;
 use Shopware\Bundle\ESIndexingBundle\FieldMappingInterface;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
 use Shopware\Bundle\SearchBundle\Condition\PriceCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundle\Facet\PriceFacet;
 use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundle\Facet\PriceFacet;
 use Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult;
 use Shopware\Bundle\SearchBundle\ProductNumberSearchResult;
+use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundleES\PriceFieldMapper;
 use Shopware\Bundle\SearchBundleES\ResultHydratorInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Components\QueryAliasMapper;
@@ -51,23 +52,18 @@ class PriceFacetHandler implements HandlerInterface, ResultHydratorInterface
     private $queryAliasMapper;
 
     /**
-     * @var FieldMappingInterface
+     * @var PriceFieldMapper
      */
-    private $fieldMapping;
+    private $priceFieldMapper;
 
-    /**
-     * @param \Shopware_Components_Snippet_Manager $snippetManager
-     * @param QueryAliasMapper $queryAliasMapper
-     * @param FieldMappingInterface $fieldMapping
-     */
     public function __construct(
         \Shopware_Components_Snippet_Manager $snippetManager,
         QueryAliasMapper $queryAliasMapper,
-        FieldMappingInterface $fieldMapping
+        PriceFieldMapper $priceFieldMapper
     ) {
         $this->snippetManager = $snippetManager;
         $this->queryAliasMapper = $queryAliasMapper;
-        $this->fieldMapping = $fieldMapping;
+        $this->priceFieldMapper = $priceFieldMapper;
     }
 
     /**
@@ -75,7 +71,7 @@ class PriceFacetHandler implements HandlerInterface, ResultHydratorInterface
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof PriceFacet);
+        return $criteriaPart instanceof PriceFacet;
     }
 
     /**
@@ -88,7 +84,7 @@ class PriceFacetHandler implements HandlerInterface, ResultHydratorInterface
         ShopContextInterface $context
     ) {
         $aggregation = new StatsAggregation('price');
-        $field = $this->fieldMapping->getPriceField($context);
+        $field = $this->priceFieldMapper->getPriceField($criteria, $context);
         $aggregation->setField($field);
         $search->addAggregation($aggregation);
     }
@@ -113,19 +109,23 @@ class PriceFacetHandler implements HandlerInterface, ResultHydratorInterface
         if ($data['count'] <= 0) {
             return;
         }
+        if ($data['min'] == $data['max']) {
+            return;
+        }
 
         $criteriaPart = $this->createFacet(
             $criteria,
-            (float)$data['min'],
-            (float)$data['max']
+            round((float) $data['min'], 2),
+            round((float) $data['max'], 2)
         );
         $result->addFacet($criteriaPart);
     }
 
     /**
      * @param Criteria $criteria
-     * @param float $min
-     * @param float $max
+     * @param float    $min
+     * @param float    $max
+     *
      * @return RangeFacetResult
      */
     private function createFacet(Criteria $criteria, $min, $max)
@@ -133,15 +133,11 @@ class PriceFacetHandler implements HandlerInterface, ResultHydratorInterface
         $activeMin = $min;
         $activeMax = $max;
 
-        /**@var $condition PriceCondition */
+        /** @var $condition PriceCondition */
         if ($condition = $criteria->getCondition('price')) {
             $activeMin = $condition->getMinPrice();
             $activeMax = $condition->getMaxPrice();
         }
-
-        $label = $this->snippetManager
-            ->getNamespace('frontend/listing/facet_labels')
-            ->get('price', 'Price');
 
         if (!$minFieldName = $this->queryAliasMapper->getShortAlias('priceMin')) {
             $minFieldName = 'priceMin';
@@ -150,17 +146,29 @@ class PriceFacetHandler implements HandlerInterface, ResultHydratorInterface
             $maxFieldName = 'priceMax';
         }
 
+        /** @var PriceFacet $facet */
+        $facet = $criteria->getFacet('price');
+        if ($facet && !empty($facet->getLabel())) {
+            $label = $facet->getLabel();
+        } else {
+            $label = $this->snippetManager
+                ->getNamespace('frontend/listing/facet_labels')
+                ->get('price', 'Price');
+        }
+
         return new RangeFacetResult(
             'price',
             $criteria->hasCondition('price'),
             $label,
-            (float)$min,
-            (float)$max,
-            (float)$activeMin,
-            (float)$activeMax,
+            (float) $min,
+            (float) $max,
+            (float) $activeMin,
+            (float) $activeMax,
             $minFieldName,
             $maxFieldName,
             [],
+            null,
+            2,
             'frontend/listing/filter/facet-currency-range.tpl'
         );
     }

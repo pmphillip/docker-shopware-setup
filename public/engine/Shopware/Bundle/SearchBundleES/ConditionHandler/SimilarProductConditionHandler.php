@@ -33,10 +33,10 @@ use ONGR\ElasticsearchDSL\Search;
 use Shopware\Bundle\SearchBundle\Condition\SimilarProductCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
-class SimilarProductConditionHandler implements HandlerInterface
+class SimilarProductConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * @var Connection
@@ -45,6 +45,7 @@ class SimilarProductConditionHandler implements HandlerInterface
 
     /**
      * SimilarProductConditionHandler constructor.
+     *
      * @param Connection $connection
      */
     public function __construct(Connection $connection)
@@ -57,13 +58,13 @@ class SimilarProductConditionHandler implements HandlerInterface
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof SimilarProductCondition);
+        return $criteriaPart instanceof SimilarProductCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
@@ -90,7 +91,20 @@ class SimilarProductConditionHandler implements HandlerInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        $this->handleFilter($criteriaPart, $criteria, $search, $context);
+    }
+
+    /**
      * @param int $productId
+     *
      * @return int[]
      */
     private function getProductCategories($productId)

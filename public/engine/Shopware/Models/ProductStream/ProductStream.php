@@ -1,9 +1,31 @@
 <?php
+/**
+ * Shopware 5
+ * Copyright (c) shopware AG
+ *
+ * According to our dual licensing model, this program can be used either
+ * under the terms of the GNU Affero General Public License, version 3,
+ * or under a proprietary license.
+ *
+ * The texts of the GNU Affero General Public License with an additional
+ * permission and of our proprietary license can be found at and
+ * in the LICENSE file you have received along with this program.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * "Shopware" is a registered trademark of shopware AG.
+ * The licensing of the program under the AGPLv3 does not imply a
+ * trademark license. Therefore any rights, title and interest in
+ * our trademarks remain entirely with us.
+ */
 
 namespace Shopware\Models\ProductStream;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
 
 /**
  * @ORM\Table(name="s_product_streams")
@@ -12,7 +34,15 @@ use Doctrine\ORM\Mapping as ORM;
 class ProductStream extends ModelEntity
 {
     /**
-     * @var integer $id
+     * INVERSE SIDE
+     *
+     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\ProductStream", mappedBy="productStream", orphanRemoval=true, cascade={"persist"})
+     *
+     * @var \Shopware\Models\Attribute\ProductStream
+     */
+    protected $attribute;
+    /**
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
@@ -21,14 +51,14 @@ class ProductStream extends ModelEntity
     private $id;
 
     /**
-     * @var string $name
+     * @var string
      *
      * @ORM\Column(name="name", type="string", nullable=false)
      */
     private $name;
 
     /**
-     * @var string $name
+     * @var string
      *
      * @ORM\Column(name="description", type="string", nullable=false)
      */
@@ -40,6 +70,7 @@ class ProductStream extends ModelEntity
     private $type;
 
     /**
+     * @deprecated since version 5.3, to be removed in 6.0 - Use \Shopware\Models\ProductStream\ProductStream::$sortingId instead
      * @ORM\Column(name="sorting", type="string", nullable=false)
      */
     private $sorting;
@@ -50,13 +81,11 @@ class ProductStream extends ModelEntity
      */
     private $conditions = true;
 
-
     /**
-     * INVERSE SIDE
-     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\ProductStream", mappedBy="productStream", orphanRemoval=true, cascade={"persist"})
-     * @var \Shopware\Models\Attribute\ProductStream
+     * @var int
+     * @ORM\Column(name="sorting_id", type="integer", nullable=true)
      */
-    protected $attribute;
+    private $sortingId;
 
     /**
      * @return int
@@ -131,6 +160,8 @@ class ProductStream extends ModelEntity
     }
 
     /**
+     * @deprecated since version 5.3, to be removed in 6.0 - Use \Shopware\Models\ProductStream\ProductStream::$sortingId instead
+     *
      * @return mixed
      */
     public function getSorting()
@@ -139,6 +170,8 @@ class ProductStream extends ModelEntity
     }
 
     /**
+     * @deprecated since version 5.3, to be removed in 6.0 - Use \Shopware\Models\ProductStream\ProductStream::$sortingId instead
+     *
      * @param mixed $sorting
      */
     public function setSorting($sorting)
@@ -156,10 +189,27 @@ class ProductStream extends ModelEntity
 
     /**
      * @param \Shopware\Models\Attribute\ProductStream|array|null $attribute
+     *
      * @return \Shopware\Models\Attribute\ProductStream
      */
     public function setAttribute($attribute)
     {
         return $this->setOneToOne($attribute, '\Shopware\Models\Attribute\ProductStream', 'attribute', 'productStream');
+    }
+
+    /**
+     * @return int
+     */
+    public function getSortingId()
+    {
+        return $this->sortingId;
+    }
+
+    /**
+     * @param int $sortingId
+     */
+    public function setSortingId($sortingId)
+    {
+        $this->sortingId = $sortingId;
     }
 }

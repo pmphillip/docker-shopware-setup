@@ -120,12 +120,12 @@ class NumberToLocalizedStringTransformer implements DataTransformerInterface
     /**
      * Transforms a number type into localized number.
      *
-     * @param int|float $value Number value.
+     * @param int|float $value Number value
      *
-     * @return string Localized value.
+     * @return string Localized value
      *
-     * @throws TransformationFailedException If the given value is not numeric
-     *                                       or if the value can not be transformed.
+     * @throws TransformationFailedException if the given value is not numeric
+     *                                       or if the value can not be transformed
      */
     public function transform($value)
     {
@@ -157,8 +157,8 @@ class NumberToLocalizedStringTransformer implements DataTransformerInterface
      *
      * @return int|float The numeric value
      *
-     * @throws TransformationFailedException If the given value is not a string
-     *                                       or if the value can not be transformed.
+     * @throws TransformationFailedException if the given value is not a string
+     *                                       or if the value can not be transformed
      */
     public function reverseTransform($value)
     {
@@ -257,16 +257,17 @@ class NumberToLocalizedStringTransformer implements DataTransformerInterface
     /**
      * Rounds a number according to the configured scale and rounding mode.
      *
-     * @param int|float $number A number.
+     * @param int|float $number A number
      *
-     * @return int|float The rounded number.
+     * @return int|float The rounded number
      */
     private function round($number)
     {
         if (null !== $this->precision && null !== $this->roundingMode) {
             // shift number to maintain the correct scale during rounding
             $roundingCoef = pow(10, $this->precision);
-            $number *= $roundingCoef;
+            // string representation to avoid rounding errors, similar to bcmul()
+            $number = (string) ($number * $roundingCoef);
 
             switch ($this->roundingMode) {
                 case self::ROUND_CEILING:

@@ -29,15 +29,15 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class SimpleCondition implements ConditionInterface
+class SimpleCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * @var string
      */
-    private $name;
+    protected $name;
 
     /**
      * @param string $name
@@ -50,10 +50,18 @@ class SimpleCondition implements ConditionInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

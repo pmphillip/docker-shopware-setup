@@ -48,8 +48,7 @@ class ViolationPath implements \IteratorAggregate, PropertyPathInterface
     /**
      * Creates a new violation path from a string.
      *
-     * @param string $violationPath The property path of a {@link \Symfony\Component\Validator\ConstraintViolation}
-     *                              object.
+     * @param string $violationPath The property path of a {@link \Symfony\Component\Validator\ConstraintViolation} object
      */
     public function __construct($violationPath)
     {
@@ -206,11 +205,11 @@ class ViolationPath implements \IteratorAggregate, PropertyPathInterface
      * In this example, "address" and "office" map to forms, while
      * "street does not.
      *
-     * @param int $index The element index.
+     * @param int $index The element index
      *
-     * @return bool Whether the element maps to a form.
+     * @return bool Whether the element maps to a form
      *
-     * @throws OutOfBoundsException If the offset is invalid.
+     * @throws OutOfBoundsException if the offset is invalid
      */
     public function mapsForm($index)
     {

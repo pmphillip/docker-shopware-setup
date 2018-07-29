@@ -24,13 +24,13 @@
 
 namespace Shopware\Models\CommentConfirm;
 
-use Shopware\Components\Model\ModelRepository;
 use Doctrine\ORM\Query;
+use Shopware\Components\Model\ModelRepository;
 
 /**
  * Repository for the CommentConfirm model (Shopware\Models\CommentConfirm\CommentConfirm).
  * <br>
- * The CommentConfirm model repository is responsible to manage all data's in s_core_optin
+ * The CommentConfirm model repository is responsible to manage all data in s_core_optin
  * This repository can be used to work with the saved optin data.
  */
 class Repository extends ModelRepository
@@ -39,11 +39,13 @@ class Repository extends ModelRepository
      * Returns an instance of the \Doctrine\ORM\Query object which select the blog article for the detail page
      *
      * @param string $hash
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getConfirmationByHashQuery($hash)
     {
         $builder = $this->getConfirmationByHashBuilder($hash);
+
         return $builder->getQuery();
     }
 
@@ -52,12 +54,13 @@ class Repository extends ModelRepository
      * This function can be hooked to modify the query builder of the query object.
      *
      * @param string $hash
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getConfirmationByHashBuilder($hash)
     {
-        $builder = $this->createQueryBuilder("commentConfirmation");
-        $builder->select(array('commentConfirmation'))
+        $builder = $this->createQueryBuilder('commentConfirmation');
+        $builder->select(['commentConfirmation'])
                 ->where('commentConfirmation.hash = :hash')
                 ->setParameter('hash', $hash);
 

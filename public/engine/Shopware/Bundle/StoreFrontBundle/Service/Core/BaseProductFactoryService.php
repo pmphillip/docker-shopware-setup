@@ -30,7 +30,6 @@ use Shopware\Bundle\StoreFrontBundle\Struct\BaseProduct;
 
 /**
  * Class BaseProductFactory
- * @package Shopware\Bundle\StoreFrontBundle\Struct
  */
 class BaseProductFactoryService implements BaseProductFactoryServiceInterface
 {
@@ -48,7 +47,7 @@ class BaseProductFactoryService implements BaseProductFactoryServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createBaseProduct($number)
     {
@@ -58,21 +57,25 @@ class BaseProductFactoryService implements BaseProductFactoryServiceInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createBaseProducts($numbers)
     {
+        if (!count($numbers)) {
+            return [];
+        }
+
         $query = $this->connection->createQueryBuilder();
         $query->select([
             'variant.id as variantId',
             'variant.ordernumber as number',
-            'variant.articleID as productId'
+            'variant.articleID as productId',
         ]);
         $query->from('s_articles_details', 'variant')
             ->where('variant.ordernumber IN(:numbers)')
             ->setParameter(':numbers', $numbers, Connection::PARAM_STR_ARRAY);
 
-        /**@var $statement \PDOStatement*/
+        /** @var $statement \PDOStatement */
         $statement = $query->execute();
 
         $data = $statement->fetchAll(\PDO::FETCH_ASSOC);

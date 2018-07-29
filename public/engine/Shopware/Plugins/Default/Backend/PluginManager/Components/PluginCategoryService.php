@@ -30,9 +30,6 @@ use Shopware\Bundle\PluginInstallerBundle\Service\PluginStoreService;
 use Shopware\Bundle\PluginInstallerBundle\Struct\CategoryStruct;
 use Shopware\Bundle\PluginInstallerBundle\Struct\StructHydrator;
 
-/**
- * @package ShopwarePlugins\PluginManager\Components
- */
 class PluginCategoryService
 {
     const CATEGORY_HIGHLIGHTS = -1;
@@ -56,8 +53,8 @@ class PluginCategoryService
 
     /**
      * @param PluginStoreService $pluginService
-     * @param Connection $connection
-     * @param StructHydrator $hydrator
+     * @param Connection         $connection
+     * @param StructHydrator     $hydrator
      */
     public function __construct(
         PluginStoreService $pluginService,
@@ -75,6 +72,7 @@ class PluginCategoryService
      *
      * @param string $locale
      * @param string $fallbackLocale
+     *
      * @return CategoryStruct[]
      */
     public function get($locale, $fallbackLocale)
@@ -83,9 +81,7 @@ class PluginCategoryService
 
         $firstLevel = $categories[null];
 
-        $result = $this->buildTree($firstLevel, $categories);
-
-        return $result;
+        return $this->buildTree($firstLevel, $categories);
     }
 
     /**
@@ -95,11 +91,11 @@ class PluginCategoryService
     {
         $categories = $this->pluginService->getCategories();
 
-        $this->connection->exec("DELETE FROM s_core_plugin_categories");
+        $this->connection->exec('DELETE FROM s_core_plugin_categories');
 
         $statement = $this->connection->prepare(
-            "INSERT INTO s_core_plugin_categories (id, locale, parent_id, name)
-             VALUES (:id, :locale, :parent_id, :name)"
+            'INSERT INTO s_core_plugin_categories (id, locale, parent_id, name)
+             VALUES (:id, :locale, :parent_id, :name)'
         );
 
         $pseudo = $this->getPseudoCategories();
@@ -113,7 +109,7 @@ class PluginCategoryService
                     ':id' => $category->getId(),
                     ':name' => $name,
                     ':locale' => $locale,
-                    ':parent_id' => $category->getParentId()
+                    ':parent_id' => $category->getParentId(),
                 ]);
             }
         }
@@ -125,20 +121,21 @@ class PluginCategoryService
     private function getPseudoCategories()
     {
         return [
-            [ ':id' => self::CATEGORY_HIGHLIGHTS,     ':name' => 'Highlights',     ':locale' => 'de_DE', ':parent_id' => null ],
-            [ ':id' => self::CATEGORY_HIGHLIGHTS,     ':name' => 'Highlights',     ':locale' => 'en_GB', ':parent_id' => null ],
-            [ ':id' => self::CATEGORY_NEWCOMER,       ':name' => 'Neuheiten',      ':locale' => 'de_DE', ':parent_id' => null ],
-            [ ':id' => self::CATEGORY_NEWCOMER,       ':name' => 'Newcomer',       ':locale' => 'en_GB', ':parent_id' => null ],
-            [ ':id' => self::CATEGORY_RECOMMENDATION, ':name' => 'Empfehlungen',   ':locale' => 'de_DE', ':parent_id' => null ],
-            [ ':id' => self::CATEGORY_RECOMMENDATION, ':name' => 'Recommendation', ':locale' => 'en_GB', ':parent_id' => null ],
+            [':id' => self::CATEGORY_HIGHLIGHTS,     ':name' => 'Highlights',     ':locale' => 'de_DE', ':parent_id' => null],
+            [':id' => self::CATEGORY_HIGHLIGHTS,     ':name' => 'Highlights',     ':locale' => 'en_GB', ':parent_id' => null],
+            [':id' => self::CATEGORY_NEWCOMER,       ':name' => 'Neuheiten',      ':locale' => 'de_DE', ':parent_id' => null],
+            [':id' => self::CATEGORY_NEWCOMER,       ':name' => 'Newcomer',       ':locale' => 'en_GB', ':parent_id' => null],
+            [':id' => self::CATEGORY_RECOMMENDATION, ':name' => 'Empfehlungen',   ':locale' => 'de_DE', ':parent_id' => null],
+            [':id' => self::CATEGORY_RECOMMENDATION, ':name' => 'Recommendation', ':locale' => 'en_GB', ':parent_id' => null],
         ];
     }
 
     /**
      * Creates a nested tree for the provided categories
      *
-     * @param CategoryStruct[] $level Level which should be iterate and assigned to the tree.
+     * @param CategoryStruct[] $level      level which should be iterate and assigned to the tree
      * @param CategoryStruct[] $categories Grouped by the category parent
+     *
      * @return CategoryStruct[]
      */
     private function buildTree($level, $categories)
@@ -155,13 +152,16 @@ class PluginCategoryService
                 $category->setChildren($categories[$id]);
             }
         }
+
         return $level;
     }
 
     /**
      * Returns all categories, grouped by the parent id
+     *
      * @param string $locale
      * @param string $fallbackLocale
+     *
      * @return array
      */
     private function getCategories($locale, $fallbackLocale)
@@ -187,7 +187,9 @@ class PluginCategoryService
 
     /**
      * Loads category info from the database
+     *
      * @param string $locale
+     *
      * @return array
      */
     private function getCategoryDataForLocale($locale)
@@ -199,7 +201,7 @@ class PluginCategoryService
                 'categories.parent_id',
                 'categories.name',
                 'categories.id as categoryId',
-                'categories.parent_id as parentId'
+                'categories.parent_id as parentId',
             ]
         );
 
@@ -207,7 +209,7 @@ class PluginCategoryService
             ->where('categories.locale = :locale')
             ->setParameter(':locale', $locale);
 
-        /**@var $statement PDOStatement */
+        /** @var $statement PDOStatement */
         $statement = $query->execute();
 
         return $statement->fetchAll(\PDO::FETCH_GROUP);

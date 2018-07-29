@@ -25,7 +25,6 @@
 namespace Shopware\Components;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Shopware\Components\Form as Form;
 
 /**
  * Base class for the shopware themes.
@@ -33,20 +32,36 @@ use Shopware\Components\Form as Form;
  * Contains the inheritance and config definition of a theme.
  *
  * @category  Shopware
- * @package   Shopware\Components
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Theme
 {
     /**
      * Defines the parent theme
-     * @var null
+     *
+     * @var string|null
      */
     protected $extend = null;
 
     /**
+     * Defines for which themes the LESS definition should be discarded
+     *
+     * @var array
+     */
+    protected $discardedLessThemes = [];
+
+    /**
+     * Defines for which themes the JavaScript files should be discarded
+     *
+     * @var array
+     */
+    protected $discardedJavascriptThemes = [];
+
+    /**
      * Defines the human readable theme name
      * which displayed in the backend
+     *
      * @var string
      */
     protected $name = '';
@@ -54,20 +69,22 @@ class Theme
     /**
      * Allows to define a description text
      * for the theme
-     * @var null
+     *
+     * @var string|null
      */
     protected $description = null;
 
     /**
      * Name of the theme author.
-     * @var null
+     *
+     * @var string|null
      */
     protected $author = null;
 
     /**
      * License of the theme source code.
      *
-     * @var null
+     * @var string|null
      */
     protected $license = null;
 
@@ -96,7 +113,7 @@ class Theme
      *
      * @var array
      */
-    protected $javascript = array();
+    protected $javascript = [];
 
     /**
      * The css property allows to define .css files
@@ -106,7 +123,7 @@ class Theme
      *
      * @var array
      */
-    protected $css = array();
+    protected $css = [];
 
     /**
      * Defines if theme assets should be injected before or after plugin assets.
@@ -121,6 +138,7 @@ class Theme
      * Don't override this function. Used
      * from the backend template module
      * to get the template hierarchy
+     *
      * @return null|string
      */
     public function getExtend()
@@ -129,7 +147,7 @@ class Theme
     }
 
     /**
-     * @return null
+     * @return string
      */
     public function getName()
     {
@@ -137,7 +155,7 @@ class Theme
     }
 
     /**
-     * @return null
+     * @return string|null
      */
     final public function getAuthor()
     {
@@ -145,7 +163,7 @@ class Theme
     }
 
     /**
-     * @return null
+     * @return string|null
      */
     public function getDescription()
     {
@@ -153,7 +171,7 @@ class Theme
     }
 
     /**
-     * @return null
+     * @return string|null
      */
     public function getLicense()
     {
@@ -169,7 +187,8 @@ class Theme
     public function getTemplate()
     {
         $class = get_class($this);
-        $paths = explode("\\", $class);
+        $paths = explode('\\', $class);
+
         return $paths[count($paths) - 2];
     }
 
@@ -185,6 +204,7 @@ class Theme
 
     /**
      * Returns the javascript files definition.
+     *
      * @return array
      */
     public function getJavascript()
@@ -194,6 +214,7 @@ class Theme
 
     /**
      * Returns the css files definition.
+     *
      * @return array
      */
     public function getCss()
@@ -242,13 +263,15 @@ class Theme
      *
      *      $collection->add($set);
      *   }
+     *
+     * @param ArrayCollection $collection
      */
     public function createConfigSets(ArrayCollection $collection)
     {
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function injectBeforePlugins()
     {
@@ -256,29 +279,67 @@ class Theme
     }
 
     /**
+     * @return array
+     */
+    public function getDiscardedLessThemes()
+    {
+        return $this->discardedLessThemes;
+    }
+
+    /**
+     * @param bool $discardedLessThemes
+     */
+    public function setDiscardedLessThemes($discardedLessThemes)
+    {
+        $this->discardedLessThemes = $discardedLessThemes;
+    }
+
+    /**
+     * @return array
+     */
+    public function getDiscardedJavascriptThemes()
+    {
+        return $this->discardedJavascriptThemes;
+    }
+
+    /**
+     * @param array $discardedJavascriptThemes
+     */
+    public function setDiscardedJavascriptThemes($discardedJavascriptThemes)
+    {
+        $this->discardedJavascriptThemes = $discardedJavascriptThemes;
+    }
+
+    /**
      * Creates a ext js tab panel.
-     * @param $name
-     * @param array $options
+     *
+     * @param string $name
+     * @param array  $options
+     *
      * @return Form\Container\TabContainer
      */
-    protected function createTabPanel($name, array $options = array())
+    protected function createTabPanel($name, array $options = [])
     {
         $element = new Form\Container\TabContainer($name);
         $element->fromArray($options);
+
         return $element;
     }
 
     /**
      * Creates a ext js form field.
-     * @param $name
-     * @param $title
-     * @param array $options
+     *
+     * @param string $name
+     * @param string $title
+     * @param array  $options
+     *
      * @return Form\Container\FieldSet
      */
-    protected function createFieldSet($name, $title, array $options = array())
+    protected function createFieldSet($name, $title, array $options = [])
     {
         $element = new Form\Container\FieldSet($name, $title);
         $element->fromArray($options);
+
         return $element;
     }
 
@@ -286,27 +347,31 @@ class Theme
      * Creates a ext js container which can be used as tab panel element or
      * as normal container.
      *
-     * @param $name
-     * @param $title
-     * @param array $options
+     * @param string $name
+     * @param string $title
+     * @param array  $options
+     *
      * @return Form\Container\Tab
      */
-    protected function createTab($name, $title, array $options = array())
+    protected function createTab($name, $title, array $options = [])
     {
         $element = new Form\Container\Tab($name, $title);
         $element->fromArray($options);
+
         return $element;
     }
 
     /**
      * Creates a ext js text field.
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     *
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Text
      */
-    protected function createTextField($name, $label, $defaultValue, array $options = array())
+    protected function createTextField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Text($name);
         $element->fromArray($options);
@@ -318,178 +383,202 @@ class Theme
 
     /**
      * Creates a ext js number field.
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     *
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Number
      */
-    protected function createNumberField($name, $label, $defaultValue, array $options = array())
+    protected function createNumberField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Number($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a ext js check box field.
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     *
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Boolean
      */
-    protected function createCheckboxField($name, $label, $defaultValue, array $options = array())
+    protected function createCheckboxField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Boolean($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a custom shopware color picker field.
      *
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Color
      */
-    protected function createColorPickerField($name, $label, $defaultValue, array $options = array())
+    protected function createColorPickerField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Color($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a ext js date field.
      *
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Date
      */
-    protected function createDateField($name, $label, $defaultValue, array $options = array())
+    protected function createDateField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Date($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a ext js text field with auto suffix `em`
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     *
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Em
      */
-    protected function createEmField($name, $label, $defaultValue, array $options = array())
+    protected function createEmField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Em($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a single media selection field.
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     *
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Media
      */
-    protected function createMediaField($name, $label, $defaultValue, array $options = array())
+    protected function createMediaField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Media($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a text field with an auto suffix `%`
      *
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Percent
      */
-    protected function createPercentField($name, $label, $defaultValue, array $options = array())
+    protected function createPercentField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Percent($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a text field with an auto suffix `px
      *
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\Pixel
      */
-    protected function createPixelField($name, $label, $defaultValue, array $options = array())
+    protected function createPixelField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\Pixel($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a ext js combo box field.
      *
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array[] $store [['text' => 'displayText', 'value'  => 10], ...]
-     * @param array $options
+     * @param string  $name
+     * @param string  $label
+     * @param mixed   $defaultValue
+     * @param array[] $store        [['text' => 'displayText', 'value'  => 10], ...]
+     * @param array   $options
+     *
      * @return Form\Field\Selection
      */
-    protected function createSelectField($name, $label, $defaultValue, array $store, array $options = array())
+    protected function createSelectField($name, $label, $defaultValue, array $store, array $options = [])
     {
         $element = new Form\Field\Selection($name, $store);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 
     /**
      * Creates a ext js text area field.
      *
-     * @param $name
-     * @param $label
-     * @param $defaultValue
-     * @param array $options
+     * @param string $name
+     * @param string $label
+     * @param mixed  $defaultValue
+     * @param array  $options
+     *
      * @return Form\Field\TextArea
      */
-    protected function createTextAreaField($name, $label, $defaultValue, array $options = array())
+    protected function createTextAreaField($name, $label, $defaultValue, array $options = [])
     {
         $element = new Form\Field\TextArea($name);
         $element->fromArray($options);
         $element->setLabel($label);
         $element->setDefaultValue($defaultValue);
+
         return $element;
     }
 }

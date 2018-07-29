@@ -1,8 +1,9 @@
 {extends file="frontend/index/index.tpl"}
 
 {* Breadcrumb *}
-{block name="frontend_index_start" prepend}
-    {$sBreadcrumb = [['name'=>"{s name='SitemapTitle'}{/s}", 'link'=>{url controller=sitemap}]]}
+{block name="frontend_index_start"}
+    {$sBreadcrumb = [['name' => "{s name='SitemapTitle'}{/s}", 'link' => {url controller=sitemap}]]}
+    {$smarty.block.parent}
 {/block}
 
 {block name="frontend_index_content"}
@@ -65,7 +66,7 @@
                                         {/block}
                                     {else}
                                         {block name="frontend_sitemap_navigation_defaultpages"}
-                                            <a href="{$categoryTree.link}" title="{$categoryTree.name|escape}" class="sitemap--navigation-head-link is--active">
+                                            <a href="{$categoryTree.link}" title="{$categoryTree.name|escape}" class="sitemap--navigation-head-link is--active"{if $categoryTree.external && $categoryTree.externalTarget} target="{$categoryTree.externalTarget}"{/if}>
                                                 {$categoryTree.name}
                                             </a>
                                         {/block}

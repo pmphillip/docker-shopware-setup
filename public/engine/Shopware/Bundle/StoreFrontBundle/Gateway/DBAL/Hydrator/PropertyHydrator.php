@@ -28,7 +28,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Gateway\DBAL\Hydrator
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class PropertyHydrator extends Hydrator
@@ -45,7 +45,7 @@ class PropertyHydrator extends Hydrator
 
     /**
      * @param AttributeHydrator $attributeHydrator
-     * @param MediaHydrator $mediaHydrator
+     * @param MediaHydrator     $mediaHydrator
      */
     public function __construct(
         AttributeHydrator $attributeHydrator,
@@ -57,6 +57,7 @@ class PropertyHydrator extends Hydrator
 
     /**
      * @param array $data
+     *
      * @return Struct\Property\Set[]
      */
     public function hydrateValues(array $data)
@@ -108,6 +109,57 @@ class PropertyHydrator extends Hydrator
 
     /**
      * @param array $data
+     *
+     * @return Struct\Property\Group
+     */
+    public function hydrateGroup(array $data)
+    {
+        $group = new Struct\Property\Group();
+        $translation = $this->getTranslation($data, '__propertyGroup', ['optionName' => 'name']);
+        $data = array_merge($data, $translation);
+
+        $group->setId((int) $data['__propertyGroup_id']);
+        $group->setName($data['__propertyGroup_name']);
+        $group->setFilterable((bool) $data['__propertyGroup_filterable']);
+
+        if ($data['__propertyGroupAttribute_id']) {
+            $this->attributeHydrator->addAttribute($group, $data, 'propertyGroupAttribute');
+        }
+
+        return $group;
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return Struct\Property\Option
+     */
+    public function hydrateOption(array $data)
+    {
+        $option = new Struct\Property\Option();
+        $translation = $this->getTranslation($data, '__propertyOption', ['optionValue' => 'value']);
+        $data = array_merge($data, $translation);
+
+        $option->setId((int) $data['__propertyOption_id']);
+        $option->setName($data['__propertyOption_value']);
+        $option->setPosition((int) $data['__propertyOption_position']);
+
+        if ($data['__propertyOptionAttribute_id']) {
+            $this->attributeHydrator->addAttribute($option, $data, 'propertyOptionAttribute', 'core', 'propertyOption');
+        }
+
+        if (isset($data['__media_id']) && $data['__media_id']) {
+            $option->setMedia(
+                $this->mediaHydrator->hydrate($data)
+            );
+        }
+
+        return $option;
+    }
+
+    /**
+     * @param array $data
+     *
      * @return Struct\Property\Set
      */
     private function hydrateSet(array $data)
@@ -129,53 +181,6 @@ class PropertyHydrator extends Hydrator
     }
 
     /**
-     * @param array $data
-     * @return Struct\Property\Group
-     */
-    public function hydrateGroup(array $data)
-    {
-        $group = new Struct\Property\Group();
-        $translation = $this->getTranslation($data, '__propertyGroup', ['optionName' => 'name']);
-        $data = array_merge($data, $translation);
-
-        $group->setId((int) $data['__propertyGroup_id']);
-        $group->setName($data['__propertyGroup_name']);
-        $group->setFilterable((bool) $data['__propertyGroup_filterable']);
-
-        if ($data['__propertyGroupAttribute_id']) {
-            $this->attributeHydrator->addAttribute($group, $data, 'propertyGroupAttribute');
-        }
-        return $group;
-    }
-
-    /**
-     * @param array $data
-     * @return Struct\Property\Option
-     */
-    public function hydrateOption(array $data)
-    {
-        $option = new Struct\Property\Option();
-        $translation = $this->getTranslation($data, '__propertyOption', ['optionValue' => 'value']);
-        $data = array_merge($data, $translation);
-
-        $option->setId((int) $data['__propertyOption_id']);
-        $option->setName($data['__propertyOption_value']);
-        $option->setPosition((int) $data['__propertyOption_position']);
-
-        if ($data['__propertyOptionAttribute_id']) {
-            $this->attributeHydrator->addAttribute($option, $data, 'propertyOptionAttribute');
-        }
-
-        if (isset($data['__media_id']) && $data['__media_id']) {
-            $option->setMedia(
-                $this->mediaHydrator->hydrate($data)
-            );
-        }
-
-        return $option;
-    }
-
-    /**
      * Sort groups by position in set
      *
      * @param array $data
@@ -191,7 +196,6 @@ class PropertyHydrator extends Hydrator
         });
     }
 
-
     /**
      * @param $options Struct\Property\Option[]
      * @param int $sortMode
@@ -200,11 +204,13 @@ class PropertyHydrator extends Hydrator
     {
         if ($sortMode == Struct\Property\Set::SORT_POSITION) {
             $this->sortOptionsByPosition($options);
+
             return;
         }
 
         if ($sortMode == Struct\Property\Set::SORT_NUMERIC) {
             $this->sortOptionsNumercialValue($options);
+
             return;
         }
 
@@ -231,8 +237,8 @@ class PropertyHydrator extends Hydrator
     private function sortOptionsNumercialValue(&$options)
     {
         usort($options, function (Struct\Property\Option $a, Struct\Property\Option $b) {
-            $a = floatval(str_replace(',', '.', $a->getName()));
-            $b = floatval(str_replace(',', '.', $b->getName()));
+            $a = (float) str_replace(',', '.', $a->getName());
+            $b = (float) str_replace(',', '.', $b->getName());
 
             if ($a == $b) {
                 return 0;

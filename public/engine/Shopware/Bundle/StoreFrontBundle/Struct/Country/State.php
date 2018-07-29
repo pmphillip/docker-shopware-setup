@@ -28,10 +28,10 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Extendable;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct\Country
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class State extends Extendable implements \JsonSerializable
+class State extends Extendable
 {
     /**
      * @var int
@@ -102,7 +102,7 @@ class State extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {

@@ -28,6 +28,7 @@ use Elasticsearch\Client;
 use Shopware\Bundle\ESIndexingBundle\Console\ProgressHelperInterface;
 use Shopware\Bundle\ESIndexingBundle\DataIndexerInterface;
 use Shopware\Bundle\ESIndexingBundle\Struct\ShopIndex;
+use Shopware\Bundle\SearchBundleDBAL\VariantHelperInterface;
 
 class ProductIndexer implements DataIndexerInterface
 {
@@ -47,22 +48,30 @@ class ProductIndexer implements DataIndexerInterface
     private $queryFactory;
 
     /**
-     * @param Client $client
-     * @param ProductProviderInterface $provider
+     * @var VariantHelperInterface
+     */
+    private $variantHelper;
+
+    /**
+     * @param Client                       $client
+     * @param ProductProviderInterface     $provider
      * @param ProductQueryFactoryInterface $queryFactory
+     * @param VariantHelperInterface       $variantHelper
      */
     public function __construct(
         Client $client,
         ProductProviderInterface $provider,
-        ProductQueryFactoryInterface $queryFactory
+        ProductQueryFactoryInterface $queryFactory,
+        VariantHelperInterface $variantHelper
     ) {
         $this->client = $client;
         $this->provider = $provider;
         $this->queryFactory = $queryFactory;
+        $this->variantHelper = $variantHelper;
     }
 
     /**
-     * @param ShopIndex $index
+     * @param ShopIndex               $index
      * @param ProgressHelperInterface $progress
      */
     public function populate(ShopIndex $index, ProgressHelperInterface $progress)
@@ -72,8 +81,14 @@ class ProductIndexer implements DataIndexerInterface
         $progress->start($idQuery->fetchCount(), 'Indexing products');
 
         while ($ids = $idQuery->fetch()) {
-            $query = $this->queryFactory->createProductIdQuery($ids);
-            $this->indexProducts($index, $query->fetch());
+            if (!$this->variantHelper->getVariantFacet()) {
+                $query = $this->queryFactory->createProductIdQuery($ids);
+                $numbers = $query->fetch();
+            } else {
+                $numbers = $ids;
+            }
+
+            $this->indexProducts($index, $numbers);
             $progress->advance(count(array_unique($ids)));
         }
 
@@ -82,8 +97,7 @@ class ProductIndexer implements DataIndexerInterface
 
     /**
      * @param ShopIndex $index
-     * @param string[] $numbers
-     * @return \string[]
+     * @param string[]  $numbers
      */
     public function indexProducts(ShopIndex $index, $numbers)
     {
@@ -92,7 +106,7 @@ class ProductIndexer implements DataIndexerInterface
         }
 
         $products = $this->provider->get($index->getShop(), $numbers);
-        $remove   = array_diff($numbers, array_keys($products));
+        $remove = array_diff($numbers, array_keys($products));
 
         $documents = [];
         foreach ($products as $product) {
@@ -106,8 +120,8 @@ class ProductIndexer implements DataIndexerInterface
 
         $this->client->bulk([
             'index' => $index->getName(),
-            'type'  => ProductMapping::TYPE,
-            'body'  => $documents
+            'type' => ProductMapping::TYPE,
+            'body' => $documents,
         ]);
     }
 }

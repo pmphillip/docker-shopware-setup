@@ -38,13 +38,13 @@ Ext.define('Shopware.apps.Performance.view.tabs.settings.fields.Filter', {
      * Define that the base field set is an extension of the "Base" fieldSet
      * @string
      */
-    extend:'Shopware.apps.Performance.view.tabs.settings.fields.Base',
+    extend: 'Shopware.apps.Performance.view.tabs.settings.fields.Base',
 
     /**
      * List of short aliases for class names. Most useful for defining xtypes for widgets.
      * @string
      */
-    alias:'widget.performance-tabs-settings-filter',
+    alias: 'widget.performance-tabs-settings-filter',
 
     /**
      * Description of the fieldSet
@@ -57,7 +57,7 @@ Ext.define('Shopware.apps.Performance.view.tabs.settings.fields.Filter', {
      * want to create a new customer or edit an existing customer
      * @return void
      */
-    initComponent:function () {
+    initComponent: function() {
         var me = this;
 
         me.items = me.getItems();
@@ -68,71 +68,30 @@ Ext.define('Shopware.apps.Performance.view.tabs.settings.fields.Filter', {
     getItems: function() {
         var me = this;
 
+        me.listingModeField = Ext.create('Shopware.apps.Base.view.element.ListingFilterModeSelect', {
+            name: 'filters[listingMode]',
+            fieldLabel: '{s name=fieldset/filter/text/listingMode}{/s}',
+            labelWidth: 210,
+            labelStyle: 'font-weight: 700;',
+            anchor: '100%'
+        });
+
         return [
             {
                 xtype: 'fieldset',
                 defaults: me.defaults,
-                title: '{s name=fieldset/information}Information{/s}',
+                title: '{s name=fieldset/information}{/s}',
                 items: [
-                    me.createDescriptionContainer("{s name=fieldset/filter/info}Here you can adjust various settings which impact the performance of product filters.{/s}")]
+                    me.createDescriptionContainer("{s name=fieldset/filter/info}{/s}")
+                ]
             },
             {
                 xtype: 'fieldset',
                 defaults: me.defaults,
                 title: '{s name=fieldset/listings}Listings{/s}',
-                items: [{
-                    name: 'filters[showSupplierInCategories]',
-                    fieldLabel: '{s name=fieldset/filter/text/showManufacturerFacet}Hersteller Filter anzeigen{/s}',
-                    helpText:   '{s name=fieldset/filter/text/showManufacturerFacetHelp}Ermöglicht dem Kunden, die angezeigten Produkte nach Ihren Herstellern zu filtern{/s}',
-
-                    xtype: 'checkbox',
-                    uncheckedValue: false,
-                    inputValue: true
-                }, {
-                    name: 'filters[showImmediateDeliveryFacet]',
-                    fieldLabel: '{s name=fieldset/filter/text/showImmediateDeliveryFacet}Sofort lieferbar Filter anzeigen{/s}',
-                    helpText:   '{s name=fieldset/filter/text/showImmediateDeliveryFacetHelp}Ermöglicht dem Kunden, nur Produkte anzuzeigen, die sofort lieferbar sind.{/s}',
-
-                    xtype: 'checkbox',
-                    uncheckedValue: false,
-                    inputValue: true
-                }, {
-                    name: 'filters[showShippingFreeFacet]',
-                    fieldLabel: '{s name=fieldset/filter/text/showShippingFreeFacet}Versandkostenfrei Filter anzeigen{/s}',
-                    helpText:   '{s name=fieldset/filter/text/showShippingFreeFacetHelp}Ermöglicht dem Kunden, nur Produkte anzuzeigen, welche als Versandkostenfrei markiert wurden{/s}',
-
-                    xtype: 'checkbox',
-                    uncheckedValue: false,
-                    inputValue: true
-                }, {
-                    name: 'filters[showPriceFacet]',
-                    fieldLabel: '{s name=fieldset/filter/text/showPriceFacet}Preis Filter anzeigen{/s}',
-                    helpText:   '{s name=fieldset/filter/text/showPriceFacetHelp}Ermöglicht dem Kunden, die angezeigten Produkte nach Ihren Preisen zu filtern{/s}',
-
-                    xtype: 'checkbox',
-                    uncheckedValue: false,
-                    inputValue: true
-                }, {
-                    name: 'filters[showVoteAverageFacet]',
-                    fieldLabel: '{s name=fieldset/filter/text/showVoteAverageFacet}Bewertungs Filter anzeigen{/s}',
-                    helpText:   '{s name=fieldset/filter/text/showVoteAverageFacetHelp}Ermöglicht dem Kunden, die angezeigten Produkte nach Ihren Durchschnitts-Bewertungen zu filtern{/s}',
-
-                    xtype: 'checkbox',
-                    uncheckedValue: false,
-                    inputValue: true
-                }, {
-                    name: 'filters[displayFiltersInListings]',
-                    fieldLabel: '{s name=fieldset/filter/text/showPropertyFacet}Eigenschaften Filter anzeigen{/s}',
-                    helpText:   '{s name=fieldset/filter/text/showPropertyFacetHelp}Ermöglicht dem Kunden, die angezeigten Produkte nach Ihren Eigenschaften zu filtern{/s}',
-                    cls: 'property-facet',
-                    xtype: 'checkbox',
-                    uncheckedValue: false,
-                    inputValue: true
-                }]
+                items: [ me.listingModeField ]
             }
         ];
     }
-
-
 });
 //{/block}

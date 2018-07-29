@@ -28,12 +28,12 @@ use Doctrine\DBAL\Connection;
 use Shopware\Bundle\SearchBundle\Condition\CustomerGroupCondition;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
 use Shopware\Bundle\SearchBundleDBAL\ConditionHandlerInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilder;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CustomerGroupConditionHandler implements ConditionHandlerInterface
@@ -43,7 +43,7 @@ class CustomerGroupConditionHandler implements ConditionHandlerInterface
      */
     public function supportsCondition(ConditionInterface $condition)
     {
-        return ($condition instanceof CustomerGroupCondition);
+        return $condition instanceof CustomerGroupCondition;
     }
 
     /**
@@ -54,17 +54,19 @@ class CustomerGroupConditionHandler implements ConditionHandlerInterface
         QueryBuilder $query,
         ShopContextInterface $context
     ) {
+        $key = ':customerGroupIds' . md5(json_encode($condition));
+
         $query->leftJoin(
             'product',
             's_articles_avoid_customergroups',
             'avoidCustomerGroup',
             'avoidCustomerGroup.articleID = product.id
-             AND avoidCustomerGroup.customerGroupId IN (:customerGroupIds)'
+             AND avoidCustomerGroup.customerGroupId IN (' . $key . ')'
         );
 
-        /** @var CustomerGroupCondition $condition */
+        /* @var CustomerGroupCondition $condition */
         $query->setParameter(
-            ':customerGroupIds',
+            $key,
             $condition->getCustomerGroupIds(),
             Connection::PARAM_INT_ARRAY
         );

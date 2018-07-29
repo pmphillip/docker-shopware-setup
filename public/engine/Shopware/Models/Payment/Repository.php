@@ -25,7 +25,6 @@
 namespace   Shopware\Models\Payment;
 
 use Shopware\Components\Model\ModelRepository;
-use Doctrine\ORM\Query\Expr;
 
 /**
  * Shopware Payment Model
@@ -37,15 +36,19 @@ class Repository extends ModelRepository
     /**
      * Returns a query-object for all known and active payments
      *
-     * @deprecated use getActivePaymentsQuery instead
+     * @deprecated Will be removed in 5.5. Use getActivePaymentsQuery instead.
+     *
      * @param null $filter
      * @param null $order
      * @param null $offset
      * @param null $limit
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getPaymentsQuery($filter = null, $order = null, $offset = null, $limit = null)
     {
+        trigger_error(sprintf('%s::%s() is deprecated and will be removed in 5.5. Use Shopware\Models\Payment\Repository::getActivePaymentsQuery() instead.', __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
         return $this->getActivePaymentsQuery($filter, $order, $offset, $limit);
     }
 
@@ -53,13 +56,17 @@ class Repository extends ModelRepository
      * Helper method to create the query builder for the "getPaymentsQuery" function.
      * This function can be hooked to modify the query builder of the query object.
      *
-     * @deprecated use getActivePaymentsQueryBuilder instead
+     * @deprecated Will be removed in 5.5. Use getActivePaymentsQueryBuilder instead.
+     *
      * @param null $filter
      * @param null $order
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getPaymentsQueryBuilder($filter = null, $order = null)
     {
+        trigger_error(sprintf('%s::%s() is deprecated and will be removed in 5.5. Use Shopware\Models\Payment\Repository::getActivePaymentsQueryBuilder() instead.', __CLASS__, __METHOD__), E_USER_DEPRECATED);
+
         return $this->getActivePaymentsQueryBuilder($filter, $order);
     }
 
@@ -70,6 +77,7 @@ class Repository extends ModelRepository
      * @param null $order
      * @param null $offset
      * @param null $limit
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getActivePaymentsQuery($filter = null, $order = null, $offset = null, $limit = null)
@@ -78,6 +86,7 @@ class Repository extends ModelRepository
         if ($limit !== null) {
             $builder->setFirstResult($offset)->setMaxResults($limit);
         }
+
         return $builder->getQuery();
     }
 
@@ -87,19 +96,20 @@ class Repository extends ModelRepository
      *
      * @param null $filter
      * @param null $order
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getActivePaymentsQueryBuilder($filter = null, $order = null)
     {
         $builder = $this->createQueryBuilder('p');
         $builder->select(
-            array(
+            [
                 'p.id as id',
                 'p.name as name',
                 'p.description as description',
                 'p.position as position',
-                'p.active as active'
-            )
+                'p.active as active',
+            ]
         );
         $builder->where('p.active = 1');
 
@@ -120,6 +130,7 @@ class Repository extends ModelRepository
      * @param null $order
      * @param null $offset
      * @param null $limit
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getAllPaymentsQuery($filter = null, $order = null, $offset = null, $limit = null)
@@ -128,6 +139,7 @@ class Repository extends ModelRepository
         if ($limit !== null) {
             $builder->setFirstResult($offset)->setMaxResults($limit);
         }
+
         return $builder->getQuery();
     }
 
@@ -137,19 +149,20 @@ class Repository extends ModelRepository
      *
      * @param null $filter
      * @param null $order
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getAllPaymentsQueryBuilder($filter = null, $order = null)
     {
         $builder = $this->createQueryBuilder('p');
         $builder->select(
-            array(
+            [
                 'p.id as id',
                 'p.name as name',
                 'p.description as description',
                 'p.position as position',
-                'p.active as active'
-            )
+                'p.active as active',
+            ]
         );
         if ($filter !== null) {
             $builder->addFilter($filter);
@@ -163,17 +176,20 @@ class Repository extends ModelRepository
 
     /**
      * Returns an instance of the \Doctrine\ORM\Query object which .....
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getListQuery()
     {
         $builder = $this->getListQueryBuilder();
+
         return $builder->getQuery();
     }
 
     /**
      * Helper function to create the query builder for the "getListQuery" function.
      * This function can be hooked to modify the query builder of the query object.
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getListQueryBuilder()
@@ -190,28 +206,34 @@ class Repository extends ModelRepository
 
     /**
      * Returns an instance of the \Doctrine\ORM\Query object which .....
+     *
      * @param $paymentId
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getAttributesQuery($paymentId)
     {
         $builder = $this->getAttributesQueryBuilder($paymentId);
+
         return $builder->getQuery();
     }
 
     /**
      * Helper function to create the query builder for the "getAttributesQuery" function.
      * This function can be hooked to modify the query builder of the query object.
+     *
      * @param $paymentId
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getAttributesQueryBuilder($paymentId)
     {
         $builder = $this->getEntityManager()->createQueryBuilder();
-        $builder->select(array('attribute'))
+        $builder->select(['attribute'])
                       ->from('Shopware\Models\Attribute\Payment', 'attribute')
                       ->where('attribute.paymentId = ?1')
                       ->setParameter(1, $paymentId);
+
         return $builder;
     }
 }

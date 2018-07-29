@@ -32,19 +32,19 @@ namespace Shopware\Components\Routing;
  * @see \Symfony\Component\Routing\UrlMatcherInterface
  * @see \Symfony\Component\Routing\UrlGeneratorInterface
  * @see http://api.symfony.com/2.0/Symfony/Component/Routing/RouterInterface.html
- * @see \Zend_Controller_Router_Interface
  * @see \Enlight_Controller_Router
  * @see http://framework.zend.com/manual/1.12/de/zend.controller.router.html#zend.controller.router.subclassing
  *
  * @category  Shopware
- * @package   Shopware\Components\Routing
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 interface RouterInterface
 {
     /**
      * @param array[]|string[] $list
-     * @param Context|null $context
+     * @param Context|null     $context
+     *
      * @return string[]|false[]
      */
     public function generateList(array $list, Context $context = null);
@@ -52,12 +52,14 @@ interface RouterInterface
     /**
      * @param array|string $userParams
      * @param Context|null $context
+     *
      * @return string|false
      */
     public function assemble($userParams = [], Context $context = null);
 
     /**
      * Switch the context
+     *
      * @param Context $context
      */
     public function setContext(Context $context);
@@ -68,8 +70,9 @@ interface RouterInterface
     public function getContext();
 
     /**
-     * @param string $pathInfo
+     * @param string       $pathInfo
      * @param Context|null $context
+     *
      * @return array|false
      */
     public function match($pathInfo, Context $context = null);

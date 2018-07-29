@@ -55,16 +55,22 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
     public function preDispatch()
     {
         $this->admin = Shopware()->Modules()->Admin();
+
+        $session = $this->container->get('session');
+        if ($session->get('sOneTimeAccount') && $this->Request()->has('sidebar')) {
+            $this->admin->logout();
+        }
+
         $this->addressRepository = $this->get('models')->getRepository(Address::class);
         $this->addressService = $this->get('shopware_account.address_service');
 
         $this->View()->assign('sUserLoggedIn', $this->admin->sCheckUser());
 
         if (!$this->View()->getAssign('sUserLoggedIn')) {
-            $this->forward('index', 'register');
-            return;
+            return $this->forward('index', 'register', 'frontend', $this->getForwardParameters());
         }
 
+        $this->View()->assign('userInfo', $this->get('shopware_account.store_front_greeting_service')->fetch());
         $this->View()->assign('sUserData', $this->admin->sGetUserData());
         $this->View()->assign('sAction', $this->Request()->getActionName());
     }
@@ -74,7 +80,30 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
      */
     public function indexAction()
     {
-        $addresses = $this->addressRepository->getListArray($this->get('session')->get('sUserId'));
+        $addresses = $this->addressRepository->getListArray(
+            $this->container->get('session')->get('sUserId')
+        );
+
+        // Create a list of ids of occuring countries and states
+        $countryIds = array_unique(array_filter(array_column($addresses, 'countryId')));
+        $stateIds = array_unique(array_filter(array_column($addresses, 'stateId')));
+
+        $countryRepository = $this->container->get('shopware_storefront.country_gateway');
+        $context = $this->container->get('shopware_storefront.context_service')->getShopContext();
+
+        $countries = $countryRepository->getCountries($countryIds, $context);
+        $states = $countryRepository->getStates($stateIds, $context);
+
+        // Apply translations for countries and states to address array, converting them from structs to arrays in the process
+        foreach ($addresses as &$address) {
+            if (array_key_exists($address['countryId'], $countries)) {
+                $address['country'] = json_decode(json_encode($countries[$address['countryId']]), true);
+            }
+            if (array_key_exists($address['stateId'], $states)) {
+                $address['state'] = json_decode(json_encode($states[$address['stateId']]), true);
+            }
+        }
+        unset($address);
 
         $this->View()->assign('error', $this->Request()->getParam('error'));
         $this->View()->assign('success', $this->Request()->getParam('success'));
@@ -105,16 +134,18 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
             }
 
             if ($this->Request()->getParam('sTarget', null)) {
-                $action = $this->Request()->getParam('sTargetAction', 'index') ? : 'index';
+                $action = $this->Request()->getParam('sTargetAction', 'index') ?: 'index';
                 $this->redirect([
                     'controller' => $this->Request()->getParam('sTarget'),
                     'action' => $action,
-                    'success' => 'address'
+                    'success' => 'address',
                 ]);
+
                 return;
             }
 
             $this->redirect(['action' => 'index', 'success' => 'create']);
+
             return;
         }
 
@@ -145,16 +176,18 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
             }
 
             if ($this->Request()->getParam('sTarget')) {
-                $action = $this->Request()->getParam('sTargetAction', 'index') ? : 'index';
+                $action = $this->Request()->getParam('sTargetAction', 'index') ?: 'index';
                 $this->redirect([
                     'controller' => $this->Request()->getParam('sTarget'),
                     'action' => $action,
-                    'success' => 'address'
+                    'success' => 'address',
                 ]);
+
                 return;
             }
 
             $this->redirect(['action' => 'index', 'success' => 'update']);
+
             return;
         }
 
@@ -175,6 +208,7 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
             $this->addressService->delete($address);
 
             $this->redirect(['action' => 'index', 'success' => 'delete']);
+
             return;
         }
 
@@ -184,53 +218,6 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
         $addressView['attribute'] = $this->get('models')->toArray($address->getAttribute());
 
         $this->View()->assign('address', $addressView);
-    }
-
-    /**
-     * @param FormInterface $form
-     * @return array
-     */
-    private function getFormViewData(FormInterface $form)
-    {
-        $errorFlags = [];
-        $errorMessages = [];
-        $viewData = [];
-
-        foreach ($form->getErrors(true) as $error) {
-            $errorFlags[$error->getOrigin()->getName()] = true;
-            if ($error->getMessage()) {
-                $errorMessages[] = $error->getMessage();
-            }
-        }
-
-        $errorMessages = array_unique($errorMessages);
-
-        if (!empty($errorFlags)) {
-            $errorMessage = $this->get('snippets')
-                ->getNamespace('frontend/account/internalMessages')
-                ->get('ErrorFillIn', 'Please fill in all red fields');
-            array_unshift($errorMessages, $errorMessage);
-        }
-
-        /** @var Address $address */
-        $address = $form->getViewData();
-
-        $formData = array_merge(
-            $this->get('models')->toArray($address),
-            ['attribute' => $this->get('models')->toArray($address->getAttribute())],
-            ['additional' => $address->getAdditional()],
-            $form->getExtraData()
-        );
-
-        $viewData['error_flags'] = $errorFlags;
-        $viewData['error_messages'] = $errorMessages;
-        $viewData['countryList'] = $this->admin->sGetCountryList();
-        $viewData['formData'] = $formData;
-        $viewData['sTarget'] = $this->Request()->getParam('sTarget', null);
-        $viewData['sTargetAction'] = $this->Request()->getParam('sTargetAction', null);
-        $viewData['extraData'] = $this->Request()->getParam('extraData', []);
-
-        return $viewData;
     }
 
     /**
@@ -245,6 +232,7 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
 
         if (!$this->Request()->isPost()) {
             $this->redirect(['action' => 'index']);
+
             return;
         }
 
@@ -265,6 +253,7 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
 
         if (!$this->Request()->isPost()) {
             $this->redirect(['action' => 'index']);
+
             return;
         }
 
@@ -290,6 +279,12 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
                 }
             }
         }
+
+        /** @var string $data */
+        $extraData = array_map(function ($data) {
+            // only allow alphanumeric characters, commas and spaces
+            return preg_replace('/[^A-Za-z0-9 ,]/', '', $data);
+        }, $extraData);
 
         $this->View()->assign('addresses', $addresses);
         $this->View()->assign('activeAddressId', $activeAddressId);
@@ -337,7 +332,7 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
 
         $form = $this->createForm(AddressFormType::class, $address);
         $form->handleRequest($this->Request());
-        
+
         if ($form->isValid()) {
             if ($address->getId()) {
                 $this->addressService->update($address);
@@ -345,7 +340,7 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
                 $customer = $this->get('models')->find(Customer::class, $userId);
                 $this->addressService->create($address, $customer);
             }
-            
+
             $this->handleExtraData($extraData, $address);
 
             $addressView = $this->get('models')->toArray($address);
@@ -382,25 +377,73 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
     }
 
     /**
+     * @param FormInterface $form
+     *
+     * @return array
+     */
+    private function getFormViewData(FormInterface $form)
+    {
+        $errorFlags = [];
+        $errorMessages = [];
+        $viewData = [];
+
+        foreach ($form->getErrors(true) as $error) {
+            $errorFlags[$error->getOrigin()->getName()] = true;
+            if ($error->getMessage()) {
+                $errorMessages[] = $error->getMessage();
+            }
+        }
+
+        $errorMessages = array_unique($errorMessages);
+
+        if (!empty($errorFlags)) {
+            $errorMessage = $this->get('snippets')
+                ->getNamespace('frontend/account/internalMessages')
+                ->get('ErrorFillIn', 'Please fill in all red fields');
+            array_unshift($errorMessages, $errorMessage);
+        }
+
+        /** @var Address $address */
+        $address = $form->getViewData();
+
+        $formData = array_merge(
+            $this->get('models')->toArray($address),
+            ['attribute' => $this->get('models')->toArray($address->getAttribute())],
+            ['additional' => $address->getAdditional()],
+            $form->getExtraData()
+        );
+
+        $viewData['error_flags'] = $errorFlags;
+        $viewData['error_messages'] = $errorMessages;
+        $viewData['countryList'] = $this->admin->sGetCountryList();
+        $viewData['formData'] = $formData;
+        $viewData['sTarget'] = $this->Request()->getParam('sTarget', null);
+        $viewData['sTargetAction'] = $this->Request()->getParam('sTargetAction', null);
+        $viewData['extraData'] = $this->Request()->getParam('extraData', []);
+
+        return $viewData;
+    }
+
+    /**
      * Handle extra data, sent by the api request to do various actions afterwards
      *
      * - sessionKey, set a session variable named the value of the submitted sessionKey containing the address id.
      * - setDefaultBillingAddress, sets the address as new default billing address
      * - setDefaultShippingAddress, sets the address as new default shipping address
      *
-     * @param array $extraData
+     * @param array   $extraData
      * @param Address $address
      */
     private function handleExtraData(array $extraData, Address $address)
     {
         if (!empty($extraData['sessionKey'])) {
-            $keys = explode(",", $extraData['sessionKey']);
+            $keys = explode(',', $extraData['sessionKey']);
             foreach ($keys as $key) {
                 if (!$key) {
                     continue;
                 }
 
-                if ($key == 'checkoutShippingAddressId') {
+                if ($key === 'checkoutShippingAddressId') {
                     $this->refreshSession($address);
                 }
 
@@ -431,5 +474,23 @@ class Shopware_Controllers_Frontend_Address extends Enlight_Controller_Action
         $this->get('session')->offsetSet('sArea', $areaId);
 
         $this->get('shopware_storefront.context_service')->initializeShopContext();
+    }
+
+    /**
+     * @return array
+     */
+    private function getForwardParameters()
+    {
+        if (!$this->Request()->getParam('sTarget') && !$this->Request()->getParam('sTargetAction')) {
+            return [
+                'sTarget' => $this->Request()->getControllerName(),
+                'sTargetAction' => $this->Request()->getActionName(),
+            ];
+        }
+
+        return [
+            'sTarget' => $this->Request()->getParam('sTarget'),
+            'sTargetAction' => $this->Request()->getParam('sTargetAction'),
+        ];
     }
 }

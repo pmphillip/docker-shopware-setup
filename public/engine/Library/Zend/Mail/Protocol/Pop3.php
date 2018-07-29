@@ -20,6 +20,8 @@
  * @version    $Id$
  */
 
+use Zend\Mail\Protocol\ProtocolTrait;
+
 
 /**
  * @category   Zend
@@ -30,6 +32,8 @@
  */
 class Zend_Mail_Protocol_Pop3
 {
+    use ProtocolTrait;
+
     /**
      * Default timeout in seconds for initiating session
      */
@@ -105,7 +109,6 @@ class Zend_Mail_Protocol_Pop3
             /**
              * @see Zend_Mail_Protocol_Exception
              */
-            require_once 'Zend/Mail/Protocol/Exception.php';
             throw new Zend_Mail_Protocol_Exception('cannot connect to host; error = ' . $errstr .
                                                    ' (errno = ' . $errno . ' )');
         }
@@ -122,12 +125,11 @@ class Zend_Mail_Protocol_Pop3
 
         if ($ssl === 'TLS') {
             $this->request('STLS');
-            $result = stream_socket_enable_crypto($this->_socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            $result = stream_socket_enable_crypto($this->_socket, true, $this->getCryptoMethod());
             if (!$result) {
                 /**
                  * @see Zend_Mail_Protocol_Exception
                  */
-                require_once 'Zend/Mail/Protocol/Exception.php';
                 throw new Zend_Mail_Protocol_Exception('cannot enable TLS');
             }
         }
@@ -150,7 +152,6 @@ class Zend_Mail_Protocol_Pop3
             /**
              * @see Zend_Mail_Protocol_Exception
              */
-            require_once 'Zend/Mail/Protocol/Exception.php';
             throw new Zend_Mail_Protocol_Exception('send failed - connection closed?');
         }
     }
@@ -170,7 +171,6 @@ class Zend_Mail_Protocol_Pop3
             /**
              * @see Zend_Mail_Protocol_Exception
              */
-            require_once 'Zend/Mail/Protocol/Exception.php';
             throw new Zend_Mail_Protocol_Exception('read failed - connection closed?');
         }
 
@@ -186,7 +186,6 @@ class Zend_Mail_Protocol_Pop3
             /**
              * @see Zend_Mail_Protocol_Exception
              */
-            require_once 'Zend/Mail/Protocol/Exception.php';
             throw new Zend_Mail_Protocol_Exception('last request failed');
         }
 
@@ -385,7 +384,6 @@ class Zend_Mail_Protocol_Pop3
                 /**
                  * @see Zend_Mail_Protocol_Exception
                  */
-                require_once 'Zend/Mail/Protocol/Exception.php';
                 throw new Zend_Mail_Protocol_Exception('top not supported and no fallback wanted');
             }
         }

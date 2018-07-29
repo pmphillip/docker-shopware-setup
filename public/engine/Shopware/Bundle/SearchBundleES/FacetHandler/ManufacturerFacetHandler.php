@@ -26,14 +26,14 @@ namespace Shopware\Bundle\SearchBundleES\FacetHandler;
 
 use ONGR\ElasticsearchDSL\Aggregation\TermsAggregation;
 use ONGR\ElasticsearchDSL\Search;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
 use Shopware\Bundle\SearchBundle\Condition\ManufacturerCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundle\Facet\ManufacturerFacet;
 use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundle\Facet\ManufacturerFacet;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListItem;
 use Shopware\Bundle\SearchBundle\ProductNumberSearchResult;
+use Shopware\Bundle\SearchBundleES\HandlerInterface;
 use Shopware\Bundle\SearchBundleES\ResultHydratorInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\ManufacturerServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product\Manufacturer;
@@ -60,9 +60,9 @@ class ManufacturerFacetHandler implements HandlerInterface, ResultHydratorInterf
     private $queryAliasMapper;
 
     /**
-     * @param ManufacturerServiceInterface $manufacturerService
+     * @param ManufacturerServiceInterface         $manufacturerService
      * @param \Shopware_Components_Snippet_Manager $snippetManager
-     * @param QueryAliasMapper $queryAliasMapper
+     * @param QueryAliasMapper                     $queryAliasMapper
      */
     public function __construct(
         ManufacturerServiceInterface $manufacturerService,
@@ -79,7 +79,7 @@ class ManufacturerFacetHandler implements HandlerInterface, ResultHydratorInterf
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof ManufacturerFacet);
+        return $criteriaPart instanceof ManufacturerFacet;
     }
 
     /**
@@ -116,7 +116,9 @@ class ManufacturerFacetHandler implements HandlerInterface, ResultHydratorInterf
             return;
         }
 
-        $manufacturers = $this->getManufacturers($buckets, $context);
+        $ids = array_column($buckets, 'key');
+        $manufacturers = $this->manufacturerService->getList($ids, $context);
+
         $items = $this->createListItems($criteria, $manufacturers);
 
         $criteriaPart = $this->createFacet($criteria, $items);
@@ -124,33 +126,21 @@ class ManufacturerFacetHandler implements HandlerInterface, ResultHydratorInterf
     }
 
     /**
-     * @param $buckets
-     * @param ShopContextInterface $context
-     * @return \Shopware\Bundle\StoreFrontBundle\Struct\Product\Manufacturer[]
-     * @throws \Exception
-     */
-    private function getManufacturers($buckets, ShopContextInterface $context)
-    {
-        $ids = array_column($buckets, 'key');
-        $manufacturers = $this->manufacturerService->getList($ids, $context);
-        return $manufacturers;
-    }
-
-    /**
-     * @param Criteria $criteria
-     * @param $manufacturers
+     * @param Criteria       $criteria
+     * @param Manufacturer[] $manufacturers
+     *
      * @return array
      */
     private function createListItems(Criteria $criteria, $manufacturers)
     {
         $actives = [];
-        /**@var $condition ManufacturerCondition*/
+        /** @var $condition ManufacturerCondition */
         if ($condition = $criteria->getCondition('manufacturer')) {
             $actives = $condition->getManufacturerIds();
         }
 
         $items = [];
-        /**@var $manufacturer Manufacturer */
+        /** @var $manufacturer Manufacturer */
         foreach ($manufacturers as $manufacturer) {
             $items[] = new ValueListItem(
                 $manufacturer->getId(),
@@ -170,6 +160,7 @@ class ManufacturerFacetHandler implements HandlerInterface, ResultHydratorInterf
     /**
      * @param Criteria $criteria
      * @param $items
+     *
      * @return ValueListFacetResult
      */
     private function createFacet(Criteria $criteria, $items)
@@ -178,8 +169,14 @@ class ManufacturerFacetHandler implements HandlerInterface, ResultHydratorInterf
             $fieldName = 'sSupplier';
         }
 
-        $label = $this->snippetManager->getNamespace('frontend/listing/facet_labels')
-            ->get('manufacturer', 'Manufacturer');
+        /** @var ManufacturerFacet $facet */
+        $facet = $criteria->getFacet('manufacturer');
+        if ($facet && !empty($facet->getLabel())) {
+            $label = $facet->getLabel();
+        } else {
+            $label = $this->snippetManager->getNamespace('frontend/listing/facet_labels')
+                ->get('manufacturer', 'Manufacturer');
+        }
 
         return new ValueListFacetResult(
             'manufacturer',

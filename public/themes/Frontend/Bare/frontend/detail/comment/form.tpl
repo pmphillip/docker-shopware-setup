@@ -20,7 +20,7 @@
 
         {* Review author name *}
         {block name='frontend_detail_comment_input_name'}
-            <input name="sVoteName" type="text" value="{$sFormData.sVoteName|escape}" class="review--field{if $sErrorFlag.sVoteName} has--error{/if}" placeholder="{s name="DetailCommentLabelName"}{/s}*" required="required" aria-required="true" />
+            <input name="sVoteName" type="text" value="{$sFormData.sVoteName|escape}" class="review--field{if $sErrorFlag.sVoteName} has--error{/if}" placeholder="{s name="DetailCommentLabelName"}{/s}" />
         {/block}
 
         {* Reviewer email address *}
@@ -37,8 +37,7 @@
 
         {* Review Rating *}
         {block name='frontend_detail_comment_input_rating'}
-            <div class="field--select review--field">
-                <span class="arrow"></span>
+            <div class="field--select review--field select-field">
                 <select name="sVoteStars">
                     <option value="10">{s name="Rate10"}{/s}</option>
                     <option value="9">{s name="Rate9"}{/s}</option>
@@ -61,23 +60,27 @@
 
         {* Captcha *}
         {block name='frontend_detail_comment_input_captcha'}
-            <div class="review--captcha">
+            {if {config name=captchaMethod} === 'legacy'}
+                <div class="review--captcha">
 
-                {* Deferred loading of the captcha image *}
-                {block name='frontend_detail_comment_input_captcha_placeholder'}
-                    <div class="captcha--placeholder" data-src="{url module=widgets controller=Captcha action=refreshCaptcha}"></div>
-                {/block}
+                    {* Deferred loading of the captcha image *}
+                    {block name='frontend_detail_comment_input_captcha_placeholder'}
+                        <div class="captcha--placeholder" {if $sErrorFlag.sCaptcha} data-hasError="true"{/if} data-src="{url module=widgets controller=Captcha action=refreshCaptcha}"></div>
+                    {/block}
 
-                {block name='frontend_detail_comment_input_captcha_label'}
-                    <strong class="captcha--notice">{s name="DetailCommentLabelCaptcha"}{/s}</strong>
-                {/block}
+                    {block name='frontend_detail_comment_input_captcha_label'}
+                        <strong class="captcha--notice">{s name="DetailCommentLabelCaptcha"}{/s}</strong>
+                    {/block}
 
-                {block name='frontend_detail_comment_input_captcha_code'}
-                    <div class="captcha--code">
-                        <input type="text" name="sCaptcha" class="review--field{if $sErrorFlag.sCaptcha} has--error{/if}" required="required" aria-required="true" />
-                    </div>
-                {/block}
-            </div>
+                    {block name='frontend_detail_comment_input_captcha_code'}
+                        <div class="captcha--code">
+                            <input type="text" name="sCaptcha" class="review--field{if $sErrorFlag.sCaptcha} has--error{/if}" required="required" aria-required="true" />
+                        </div>
+                    {/block}
+                </div>
+            {else}
+                <div class="captcha--placeholder" data-src="{url module=widgets controller=Captcha action=index}"{if isset($sErrorFlag) && count($sErrorFlag) > 0} data-hasError="true"{/if}></div>
+            {/if}
         {/block}
 
         {* Notice that all fields which contains a star symbole needs to be filled out *}
@@ -85,6 +88,13 @@
             <p class="review--notice">
                 {s name="DetailCommentInfoFields"}{/s}
             </p>
+        {/block}
+
+        {* Data protection information *}
+        {block name='frontend_detail_comment_input_privacy'}
+            {if {config name=ACTDPRTEXT} || {config name=ACTDPRCHECK}}
+                {include file="frontend/_includes/privacy.tpl"}
+            {/if}
         {/block}
 
         {* Review actions *}

@@ -28,10 +28,10 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ImmediateDeliveryCondition implements ConditionInterface
+class ImmediateDeliveryCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * {@inheritdoc}
@@ -39,5 +39,13 @@ class ImmediateDeliveryCondition implements ConditionInterface
     public function getName()
     {
         return 'immediate_delivery';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

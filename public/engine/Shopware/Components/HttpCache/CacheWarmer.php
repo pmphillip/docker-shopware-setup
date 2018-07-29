@@ -26,6 +26,7 @@ namespace Shopware\Components\HttpCache;
 
 use Doctrine\DBAL\Connection;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ClientException;
 use Shopware\Components\HttpClient\GuzzleFactory;
 use Shopware\Components\Logger;
 
@@ -35,7 +36,7 @@ use Shopware\Components\Logger;
  * Warm up the cache with direct http calls using the SEO URLs
  *
  * @category  Shopware
- * @package   Shopware\Components\HttpCacheWarmer
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CacheWarmer
@@ -53,7 +54,7 @@ class CacheWarmer
     protected $connection;
 
     /**
-     * @var Logger $logger
+     * @var Logger
      */
     protected $logger;
 
@@ -66,7 +67,7 @@ class CacheWarmer
      * standard constructor
      *
      * @param Connection $connection
-     * @param Logger $logger
+     * @param Logger     $logger
      */
     public function __construct(Connection $connection, Logger $logger, GuzzleFactory $guzzleFactory)
     {
@@ -79,8 +80,9 @@ class CacheWarmer
      * calculates the amount of available urls based on a specific viewport and shop
      *
      * @param string $viewPort
-     * @param integer $shopId
-     * @return integer $urlCount | the number of the seo urls
+     * @param int    $shopId
+     *
+     * @return int $urlCount | the number of the seo urls
      */
     public function getSEOURLByViewPortCount($viewPort, $shopId)
     {
@@ -89,17 +91,18 @@ class CacheWarmer
             FROM s_core_rewrite_urls
             WHERE org_path LIKE :path AND main=1 AND subshopID = :shopId
         ',
-            array('shopId' => $shopId, 'path' => $viewPort . '%')
+            ['shopId' => $shopId, 'path' => $viewPort . '%']
         );
 
-        return (int)$urlCount;
+        return (int) $urlCount;
     }
 
     /**
      * returns the amount of all available seo urls
      *
-     * @param integer $shopId
-     * @return integer $urlCount | the number of all seo urls
+     * @param int $shopId
+     *
+     * @return int $urlCount | the number of all seo urls
      */
     public function getAllSEOUrlCount($shopId)
     {
@@ -108,24 +111,25 @@ class CacheWarmer
             FROM s_core_rewrite_urls
             WHERE main=1 AND subshopID = :shopId
         ',
-            array('shopId' => $shopId)
+            ['shopId' => $shopId]
         );
 
-        return (int)$urlCount;
+        return (int) $urlCount;
     }
 
     /**
      * returns all available seo urls
      *
-     * @param integer $shopId
+     * @param int  $shopId
      * @param null $limit
      * @param null $offset
+     *
      * @return string[]
      */
     public function getAllSEOUrls($shopId, $limit = null, $offset = null)
     {
         $qb = $this->connection->createQueryBuilder();
-        $qb->select(array('urls.path'))
+        $qb->select(['urls.path'])
             ->from('s_core_rewrite_urls', 'urls')
             ->where('main = 1')
             ->andWhere('subshopID = :shopId')
@@ -148,15 +152,16 @@ class CacheWarmer
      * returns the urls from the seo url table by the given view ports
      *
      * @param string[] $viewPorts
-     * @param integer $shopId
-     * @param null $limit
-     * @param null $offset
+     * @param int      $shopId
+     * @param int|null $limit
+     * @param int|null $offset
+     *
      * @return string[]
      */
     public function getSEOUrlByViewPort($viewPorts, $shopId, $limit = null, $offset = null)
     {
         $qb = $this->connection->createQueryBuilder();
-        $qb->select(array('path'))
+        $qb->select(['path'])
             ->from('s_core_rewrite_urls', 'urls')
             ->where('main = 1')
             ->andWhere('subshopID = :shopId')
@@ -177,7 +182,7 @@ class CacheWarmer
             $qb->andWhere('org_path Like ' . $qb->createNamedParameter($viewPorts[0] . '%'));
         }
 
-        if ($limit != null && $offset != null) {
+        if ($limit !== null && $offset !== null) {
             $qb->setFirstResult($offset);
             $qb->setMaxResults($limit);
         }
@@ -193,14 +198,14 @@ class CacheWarmer
      * calls every given url with the specific shop cookie
      *
      * @param string[] $urls
-     * @param integer $shopId
+     * @param int      $shopId
      */
     public function callUrls($urls, $shopId)
     {
         $shop = $this->getShopDataById($shopId);
 
         $guzzleConfig = [];
-        if (!empty($shop["main_id"])) {
+        if (!empty($shop['main_id'])) {
             //is not the main shop call url without shop cookie encoded in it
             $guzzleConfig['cookies'] = ['shop' => $shopId];
         }
@@ -209,9 +214,19 @@ class CacheWarmer
             $request = $this->guzzleClient->createRequest('GET', $url, $guzzleConfig);
             try {
                 $this->guzzleClient->send($request);
+            } catch (ClientException $e) {
+                if ($e->getResponse() && $e->getResponse()->getStatusCode() === 404) {
+                    $this->logger->notice(
+                        'Warm up http-cache error with shopId ' . $shopId . ' ' . $e->getMessage()
+                    );
+                } else {
+                    $this->logger->error(
+                        'Warm up http-cache error with shopId ' . $shopId . ' ' . $e->getMessage()
+                    );
+                }
             } catch (\Exception $e) {
                 $this->logger->error(
-                    "Warm up http-cache error with shopId " . $shopId . " " . $e->getMessage()
+                    'Warm up http-cache error with shopId ' . $shopId . ' ' . $e->getMessage()
                 );
             }
         }
@@ -220,8 +235,9 @@ class CacheWarmer
     /**
      * helper to add the host and the basepath as a prefix to the url
      *
-     * @param integer $shopId
+     * @param int      $shopId
      * @param string[] $urls
+     *
      * @return string[]
      */
     private function prepareUrl($shopId, $urls)
@@ -230,19 +246,19 @@ class CacheWarmer
 
         //if not already the main shop get it
         $mainShop = !empty($shop['main_id']) ? $this->getShopDataById($shop['main_id']) : $shop;
-        $httpHost = $mainShop['always_secure'] ? 'https://' : 'http://';
+        $httpHost = $mainShop['secure'] ? 'https://' : 'http://';
         if ($shop['base_url']) {
             $baseUrl = $shop['base_url'];
         } else {
             // if no virtual url of the language shop is give us the one from the main shop. Otherwise use simply the base_path
-            $baseUrl = $mainShop['base_url'] ? $mainShop['base_url'] : $mainShop['base_path'];
+            $baseUrl = $mainShop['base_url'] ?: $mainShop['base_path'];
         }
         // use the main host if no language host ist available
         $shopHost = empty($shop['host']) ? $mainShop['host'] : $shop['host'];
 
         foreach ($urls as &$url) {
             $url = strtolower($url);
-            $url = $httpHost . $shopHost . $baseUrl . "/" . $url;
+            $url = $httpHost . $shopHost . $baseUrl . '/' . $url;
         }
 
         return $urls;
@@ -251,14 +267,15 @@ class CacheWarmer
     /**
      * returns the shop object by id
      *
-     * @param integer $shopId
+     * @param int $shopId
+     *
      * @return array
      */
     private function getShopDataById($shopId)
     {
         $shopData = $this->connection->fetchAssoc(
             'SELECT * FROM s_core_shops WHERE active = 1 AND id = :id',
-            array('id' => $shopId)
+            ['id' => $shopId]
         );
 
         return $shopData;

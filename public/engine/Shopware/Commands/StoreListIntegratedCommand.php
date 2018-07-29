@@ -25,15 +25,12 @@
 namespace Shopware\Commands;
 
 use Shopware\Bundle\PluginInstallerBundle\Context\ListingRequest;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Components\Console\Command
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class StoreListIntegratedCommand extends StoreCommand
@@ -54,23 +51,24 @@ class StoreListIntegratedCommand extends StoreCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $context = new ListingRequest(null, \Shopware::VERSION, 0, 1000, [['property' => 'dummy', 'value' => 1]], []);
+        $shopwareVersion = $this->container->getParameter('shopware.release.version');
+        $context = new ListingRequest(null, $shopwareVersion, 0, 1000, [['property' => 'dummy', 'value' => 1]], []);
         $listing = $this->container->get('shopware_plugininstaller.plugin_service_view')->getStoreListing($context);
 
         $result = [];
         foreach ($listing->getPlugins() as $plugin) {
             $result[] = [
-                'id'               => $plugin->getId(),
-                'technicalName'    => $plugin->getTechnicalName(),
-                'label'            => $plugin->getLabel(),
-                'installed'        => ($plugin->getInstallationDate() !== null),
-                'version'          => $plugin->getVersion(),
-                'updateAvailable'  => $plugin->isUpdateAvailable()
+                'id' => $plugin->getId(),
+                'technicalName' => $plugin->getTechnicalName(),
+                'label' => $plugin->getLabel(),
+                'installed' => ($plugin->getInstallationDate() !== null),
+                'version' => $plugin->getVersion(),
+                'updateAvailable' => $plugin->isUpdateAvailable(),
             ];
         }
 
         $table = $this->getHelperSet()->get('table');
-        $table->setHeaders(array('Id', 'Technical name', 'Label', 'Installed', 'Version', 'Update available'))
+        $table->setHeaders(['Id', 'Technical name', 'Label', 'Installed', 'Version', 'Update available'])
             ->setRows($result);
 
         $table->render($output);

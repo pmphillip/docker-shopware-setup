@@ -70,8 +70,6 @@ Ext.define('Shopware.apps.NewsletterManager.view.newsletter.Editor', {
             'openPreview');
 
         me.callParent(arguments);
-
-
     },
 
     /**
@@ -91,15 +89,13 @@ Ext.define('Shopware.apps.NewsletterManager.view.newsletter.Editor', {
                     validationUrl: '{url controller="base" action="validateEmail"}',
                     validationErrorMsg: '{s name=invalid_email namespace=backend/base/vtype}The email address entered is not valid{/s}',
                     name: 'mailAddress',
-                    checkChangeBuffer: 200,
                     padding: '0 0 0 8',
                     ui: 'shopware-ui',
+                    checkChangeBuffer: 1000,
                     listeners: {
-                        change: function(field, value) {
+                        validitychange: function(field, isValid) {
                             var button = Ext.getCmp('sendMail');
-                            if(button !== null) {
-                                button.setDisabled(!field.isValid());
-                            }
+                            button.setDisabled(!(isValid && field.getValue() !== ''));
                         }
                     },
                     fieldLabel: '{s name=testMailAddress}Mail address{/s}' // re-use the column-snippet
@@ -114,7 +110,6 @@ Ext.define('Shopware.apps.NewsletterManager.view.newsletter.Editor', {
                         me.fireEvent('sendTestMail', me.form);
                     },
                     disabled: true
-
                 },
                 '-',
                 {
@@ -130,7 +125,6 @@ Ext.define('Shopware.apps.NewsletterManager.view.newsletter.Editor', {
         });
 
         return me.toolbar;
-
     },
 
     /**
@@ -142,14 +136,15 @@ Ext.define('Shopware.apps.NewsletterManager.view.newsletter.Editor', {
 
         me.tinyMce = Ext.create('Shopware.form.field.TinyMCE', {
             name : 'content',
-            // Workarround for the tinyMCE height bug
+            // Workaround for the tinyMCE height bug
             margin: '0 0 27 0 ',
             height: 457,
             editor: {
                 relative_urls: false
             }
         });
-        return me.tinyMce
+
+        return me.tinyMce;
     }
 
 });

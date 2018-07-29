@@ -1,5 +1,5 @@
 {
-    "Version": "2.1.12.94",
+    "Version": "2.1.32.59",
     "Names": {
         "ADP": [
             "ADP",
@@ -185,9 +185,13 @@
             "BYB",
             "beloruski novi rubelj (1994–1999)"
         ],
+        "BYN": [
+            "BYN",
+            "beloruski rubelj"
+        ],
         "BYR": [
             "BYR",
-            "beloruski rubelj"
+            "beloruski rubelj (2000–2016)"
         ],
         "BZD": [
             "BZD",
@@ -223,7 +227,7 @@
         ],
         "CNY": [
             "CN¥",
-            "kitajski juan renminbi"
+            "kitajski juan"
         ],
         "COP": [
             "COP",
@@ -703,11 +707,11 @@
         ],
         "PEN": [
             "PEN",
-            "perujski novi sol"
+            "perujski sol"
         ],
         "PES": [
             "PES",
-            "perujski sol"
+            "perujski sol (1863–1965)"
         ],
         "PGK": [
             "PGK",
@@ -987,7 +991,7 @@
         ],
         "XOF": [
             "CFA",
-            "CFA frank BCEAO"
+            "zahodnoafriški frank CFA"
         ],
         "XPF": [
             "CFPF",

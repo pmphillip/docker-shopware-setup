@@ -22,9 +22,12 @@
  * our trademarks remain entirely with us.
  */
 
+use ShopwarePlugins\RestApi\Components\BasicAuthResolver;
+use ShopwarePlugins\RestApi\Components\StaticResolver;
+
 /**
  * @category  Shopware
- * @package   ShopwarePlugins\RestApi
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Shopware_Plugins_Core_RestApi_Bootstrap extends Shopware_Components_Plugin_Bootstrap
@@ -61,11 +64,11 @@ class Shopware_Plugins_Core_RestApi_Bootstrap extends Shopware_Components_Plugin
      */
     public function getCapabilities()
     {
-        return array(
+        return [
             'install' => false,
             'enable' => false,
-            'update' => true
-        );
+            'update' => true,
+        ];
     }
 
     /**
@@ -86,7 +89,7 @@ class Shopware_Plugins_Core_RestApi_Bootstrap extends Shopware_Components_Plugin
      */
     public function onDispatchLoopStartup(Enlight_Controller_EventArgs $args)
     {
-        $this->request  = $args->getSubject()->Request();
+        $this->request = $args->getSubject()->Request();
         $this->response = $args->getSubject()->Response();
 
         if ($this->request->getModuleName() != 'api') {
@@ -103,11 +106,10 @@ class Shopware_Plugins_Core_RestApi_Bootstrap extends Shopware_Components_Plugin
      * This pre-dispatch event-hook checks permissions
      *
      * @param \Enlight_Controller_EventArgs $args
-     * @return void
      */
     public function onFrontPreDispatch(Enlight_Controller_EventArgs $args)
     {
-        $request  = $args->getRequest();
+        $request = $args->getRequest();
         $response = $args->getResponse();
 
         if ($request->getModuleName() != 'api') {
@@ -168,6 +170,7 @@ class Shopware_Plugins_Core_RestApi_Bootstrap extends Shopware_Components_Plugin
      * database adapter by default
      *
      * @param Enlight_Event_EventArgs $args
+     *
      * @return null|\Zend_Auth
      */
     public function onInitResourceAuth(Enlight_Event_EventArgs $args)
@@ -176,15 +179,21 @@ class Shopware_Plugins_Core_RestApi_Bootstrap extends Shopware_Components_Plugin
             return;
         }
 
-        $adapter = new Zend_Auth_Adapter_Http(array(
-            'accept_schemes'  => 'digest',
-            'realm'           => 'Shopware REST-API',
-            'digest_domains'  => '/',
-            'nonce_timeout'  => 3600,
-        ));
+        $adapter = new Zend_Auth_Adapter_Http([
+            'accept_schemes' => 'basic digest',
+            'realm' => 'Shopware REST-API',
+            'digest_domains' => '/',
+            'nonce_timeout' => 3600,
+        ]);
+
+        $adapter->setBasicResolver(
+            new BasicAuthResolver(
+                $this->get('models')
+            )
+        );
 
         $adapter->setDigestResolver(
-            new \ShopwarePlugins\RestApi\Components\StaticResolver(
+            new StaticResolver(
                 $this->get('models')
             )
         );

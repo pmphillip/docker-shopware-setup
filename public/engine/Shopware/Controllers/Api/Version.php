@@ -29,10 +29,13 @@ class Shopware_Controllers_Api_Version extends Shopware_Controllers_Api_Rest
      */
     public function indexAction()
     {
-        $result['data'] = array(
-            'version'  => Shopware::VERSION,
-            'revision' => Shopware::REVISION,
-        );
+        /** @var \Shopware\Components\ShopwareReleaseStruct $shopwareRelease */
+        $shopwareRelease = $this->container->get('shopware.release');
+
+        $result['data'] = [
+            'version' => $shopwareRelease->getVersion(),
+            'revision' => $shopwareRelease->getRevision(),
+        ];
 
         $this->View()->assign($result);
         $this->View()->assign('success', true);

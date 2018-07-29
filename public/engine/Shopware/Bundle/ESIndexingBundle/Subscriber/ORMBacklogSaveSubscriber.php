@@ -25,7 +25,7 @@
 namespace Shopware\Bundle\ESIndexingBundle\Subscriber;
 
 use Enlight\Event\SubscriberInterface;
-use Shopware\Components\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ORMBacklogSaveSubscriber implements SubscriberInterface
 {
@@ -35,9 +35,21 @@ class ORMBacklogSaveSubscriber implements SubscriberInterface
     private $backlog;
 
     /**
-     * @var Container
+     * @var ContainerInterface
      */
     private $container;
+
+    /**
+     * @param ORMBacklogSubscriber $backlog
+     * @param ContainerInterface   $container
+     */
+    public function __construct(
+        ORMBacklogSubscriber $backlog,
+        ContainerInterface $container
+    ) {
+        $this->backlog = $backlog;
+        $this->container = $container;
+    }
 
     /**
      * {@inheritdoc}
@@ -46,20 +58,8 @@ class ORMBacklogSaveSubscriber implements SubscriberInterface
     {
         return [
             'Enlight_Controller_Front_DispatchLoopShutdown' => 'onTerminate',
-            'Shopware_Command_After_Run' => 'onTerminate'
+            'Shopware_Command_After_Run' => 'onTerminate',
         ];
-    }
-
-    /**
-     * @param ORMBacklogSubscriber $backlog
-     * @param Container $container
-     */
-    public function __construct(
-        ORMBacklogSubscriber $backlog,
-        Container $container
-    ) {
-        $this->backlog = $backlog;
-        $this->container = $container;
     }
 
     public function onTerminate()

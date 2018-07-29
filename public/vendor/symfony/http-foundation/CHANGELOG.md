@@ -1,11 +1,6 @@
 CHANGELOG
 =========
 
-3.0.0
------
-
- * The precedence of parameters returned from `Request::get()` changed from "GET, PATH, BODY" to "PATH, GET, BODY"
-
 2.8.0
 -----
 

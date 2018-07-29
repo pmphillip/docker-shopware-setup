@@ -40,7 +40,7 @@ class ValidatorExtension extends AbstractExtension
             $metadata = $validator->getMetadataFor('Symfony\Component\Form\Form');
         // 2.4 API
         } elseif ($validator instanceof LegacyValidatorInterface) {
-            @trigger_error('Passing an instance of Symfony\Component\Validator\ValidatorInterface as argument to the '.__METHOD__.' method is deprecated since version 2.8 and will be removed in 3.0. Use an implementation of Symfony\Component\Validator\Validator\ValidatorInterface instead', E_USER_DEPRECATED);
+            @trigger_error('Passing an instance of Symfony\Component\Validator\ValidatorInterface as argument to the '.__METHOD__.' method is deprecated since Symfony 2.8 and will be removed in 3.0. Use an implementation of Symfony\Component\Validator\Validator\ValidatorInterface instead', E_USER_DEPRECATED);
             $metadata = $validator->getMetadataFactory()->getMetadataFor('Symfony\Component\Form\Form');
         } else {
             throw new UnexpectedTypeException($validator, 'Symfony\Component\Validator\Validator\ValidatorInterface or Symfony\Component\Validator\ValidatorInterface');
@@ -60,7 +60,7 @@ class ValidatorExtension extends AbstractExtension
 
     public function loadTypeGuesser()
     {
-        // 2.5 API
+        // 2.5 API
         if ($this->validator instanceof ValidatorInterface) {
             return new ValidatorTypeGuesser($this->validator);
         }

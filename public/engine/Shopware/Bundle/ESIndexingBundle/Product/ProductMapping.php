@@ -21,6 +21,7 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
+
 namespace Shopware\Bundle\ESIndexingBundle\Product;
 
 use Shopware\Bundle\AttributeBundle\Service\CrudService;
@@ -32,7 +33,6 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Shop;
 
 /**
  * Class ProductMapping
- * @package Shopware\Bundle\ESIndexingBundle\Product
  */
 class ProductMapping implements MappingInterface
 {
@@ -59,10 +59,10 @@ class ProductMapping implements MappingInterface
     private $crudService;
 
     /**
-     * @param IdentifierSelector $identifierSelector
+     * @param IdentifierSelector    $identifierSelector
      * @param FieldMappingInterface $fieldMapping
-     * @param TextMappingInterface $textMapping
-     * @param CrudService $crudService
+     * @param TextMappingInterface  $textMapping
+     * @param CrudService           $crudService
      */
     public function __construct(
         IdentifierSelector $identifierSelector,
@@ -91,20 +91,20 @@ class ProductMapping implements MappingInterface
     {
         return [
             '_source' => [
-                'includes' => ['id', 'mainVariantId', 'variantId', 'number']
+                'includes' => ['id', 'mainVariantId', 'variantId', 'number'],
             ],
             'properties' => [
-                //identifiers
+                // Identifiers
                 'id' => ['type' => 'long'],
                 'mainVariantId' => ['type' => 'long'],
                 'variantId' => ['type' => 'long'],
 
-                //number fields
-                'number' => $this->textMapping->getNotAnalyzedField(),
+                // Number fields
+                'number' => array_merge($this->textMapping->getTextField(), ['analyzer' => 'standard']),
                 'ean' => $this->textMapping->getNotAnalyzedField(),
-                'manufacturerNumber' => $this->textMapping->getNotAnalyzedField(),
+                'manufacturerNumber' => $this->fieldMapping->getLanguageField($shop),
 
-                //language fields
+                // Language fields
                 'name' => $this->fieldMapping->getLanguageField($shop),
                 'shortDescription' => $this->fieldMapping->getLanguageField($shop),
                 'longDescription' => $this->fieldMapping->getLanguageField($shop),
@@ -112,7 +112,7 @@ class ProductMapping implements MappingInterface
                 'keywords' => $this->fieldMapping->getLanguageField($shop),
                 'metaTitle' => $this->fieldMapping->getLanguageField($shop),
 
-                //other fields
+                // Other fields
                 'calculatedPrices' => $this->getCalculatedPricesMapping($shop),
                 'minStock' => ['type' => 'long'],
                 'stock' => ['type' => 'long'],
@@ -125,11 +125,11 @@ class ProductMapping implements MappingInterface
                 'length' => ['type' => 'long'],
                 'width' => ['type' => 'double'],
 
-                //grouped id fields
+                // Grouped id fields
                 'blockedCustomerGroupIds' => ['type' => 'long'],
                 'categoryIds' => ['type' => 'long'],
 
-                //flags
+                // Flags
                 'isMainVariant' => ['type' => 'boolean'],
                 'closeouts' => ['type' => 'boolean'],
                 'allowsNotification' => ['type' => 'boolean'],
@@ -143,11 +143,11 @@ class ProductMapping implements MappingInterface
                 'customerPriceCount' => ['type' => 'long'],
                 'fallbackPriceCount' => ['type' => 'long'],
 
-                //dates
+                // Dates
                 'formattedCreatedAt' => ['type' => 'date', 'format' => 'yyyy-MM-dd'],
                 'formattedReleaseDate' => ['type' => 'date', 'format' => 'yyyy-MM-dd'],
 
-                //nested structs
+                // Nested structs
                 'manufacturer' => $this->getManufacturerMapping($shop),
                 'priceGroup' => $this->getPriceGroupMapping(),
                 'properties' => $this->getPropertyMapping($shop),
@@ -155,13 +155,15 @@ class ProductMapping implements MappingInterface
                 'tax' => $this->getTaxMapping(),
                 'unit' => $this->getUnitMapping(),
 
-                'attributes' => $this->getAttributeMapping()
-            ]
+                'attributes' => $this->getAttributeMapping(),
+                'configuration' => $this->getVariantOptionsMapping($shop),
+            ],
         ];
     }
 
     /**
      * @param Shop $shop
+     *
      * @return array
      */
     private function getPropertyMapping(Shop $shop)
@@ -172,7 +174,7 @@ class ProductMapping implements MappingInterface
                 'id' => ['type' => 'long'],
                 'name' => $this->fieldMapping->getLanguageField($shop),
                 'position' => ['type' => 'long'],
-            ]
+            ],
         ];
     }
 
@@ -192,12 +194,13 @@ class ProductMapping implements MappingInterface
                 'purchaseStep' => ['type' => 'long'],
                 'purchaseUnit' => ['type' => 'long'],
                 'referenceUnit' => ['type' => 'long'],
-            ]
+            ],
         ];
     }
 
     /**
      * @param Shop $shop
+     *
      * @return array
      */
     private function getManufacturerMapping(Shop $shop)
@@ -211,8 +214,8 @@ class ProductMapping implements MappingInterface
                 'link' => $this->textMapping->getKeywordField(),
                 'metaTitle' => $this->textMapping->getKeywordField(),
                 'metaDescription' => $this->textMapping->getKeywordField(),
-                'metaKeywords' => $this->textMapping->getKeywordField()
-            ]
+                'metaKeywords' => $this->textMapping->getKeywordField(),
+            ],
         ];
     }
 
@@ -224,8 +227,8 @@ class ProductMapping implements MappingInterface
         return [
             'properties' => [
                 'id' => ['type' => 'long'],
-                'name' => $this->textMapping->getKeywordField()
-            ]
+                'name' => $this->textMapping->getKeywordField(),
+            ],
         ];
     }
 
@@ -243,10 +246,10 @@ class ProductMapping implements MappingInterface
                     'properties' => [
                         'date' => $this->textMapping->getKeywordField(),
                         'timezone' => $this->textMapping->getKeywordField(),
-                        'timezone_type' => ['type' => 'long']
-                    ]
+                        'timezone_type' => ['type' => 'long'],
+                    ],
                 ],
-            ]
+            ],
         ];
     }
 
@@ -259,13 +262,14 @@ class ProductMapping implements MappingInterface
             'properties' => [
                 'id' => ['type' => 'long'],
                 'name' => $this->textMapping->getKeywordField(),
-                'tax' => ['type' => 'long']
-            ]
+                'tax' => ['type' => 'long'],
+            ],
         ];
     }
 
     /**
      * @param Shop $shop
+     *
      * @return array
      */
     private function getCalculatedPricesMapping(Shop $shop)
@@ -273,6 +277,9 @@ class ProductMapping implements MappingInterface
         $prices = [];
         $customerGroups = $this->identifierSelector->getCustomerGroupKeys();
         $currencies = $this->identifierSelector->getShopCurrencyIds($shop->getId());
+        if (!$shop->isMain()) {
+            $currencies = $this->identifierSelector->getShopCurrencyIds($shop->getParentId());
+        }
 
         foreach ($currencies as $currency) {
             foreach ($customerGroups as $customerGroup) {
@@ -293,8 +300,8 @@ class ProductMapping implements MappingInterface
             'properties' => [
                 'calculatedPrice' => ['type' => 'double'],
                 'calculatedReferencePrice' => ['type' => 'double'],
-                'calculatedPseudoPrice' => ['type' => 'double']
-            ]
+                'calculatedPseudoPrice' => ['type' => 'double'],
+            ],
         ];
     }
 
@@ -333,9 +340,32 @@ class ProductMapping implements MappingInterface
         return [
             'properties' => [
                 'core' => [
-                    'properties' => $properties
-                ]
-            ]
+                    'properties' => $properties,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @param Shop $shop
+     *
+     * @return array
+     */
+    private function getVariantOptionsMapping(Shop $shop)
+    {
+        return [
+            'properties' => [
+                'id' => ['type' => 'long'],
+                'name' => $this->fieldMapping->getLanguageField($shop),
+                'description' => $this->fieldMapping->getLanguageField($shop),
+                'options' => [
+                    'properties' => [
+                        'id' => ['type' => 'long'],
+                        'name' => $this->fieldMapping->getLanguageField($shop),
+                        'description' => $this->fieldMapping->getLanguageField($shop),
+                    ],
+                ],
+            ],
         ];
     }
 }

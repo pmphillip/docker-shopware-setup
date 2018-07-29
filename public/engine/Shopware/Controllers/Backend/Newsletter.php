@@ -21,7 +21,6 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
 use Shopware\Components\CSRFWhitelistAware;
 
 /**
@@ -41,7 +40,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getWhitelistedCSRFActions()
     {
@@ -49,7 +48,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             'view',
             'index',
             'cron',
-            'log'
+            'log',
         ];
     }
 
@@ -63,14 +62,14 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         if ($this->Request()->getParam('id')) {
             if ($this->Request()->getParam('testmail')) {
                 return $this->forward('mail');
-            } else {
-                return $this->forward('view');
             }
+
+            return $this->forward('view');
         } elseif ($this->Request()->getParam('campaign')) {
             return $this->forward('view');
-        } else {
-            return $this->forward('cron');
         }
+
+        return $this->forward('cron');
     }
 
     /**
@@ -84,7 +83,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             $mailingID = (int) $this->Request()->getParam('id');
             if (!Shopware()->Container()->get('Auth')->hasIdentity()) {
                 $hash = $this->createHash($mailingID);
-                if ($hash!==$this->Request()->getParam('hash')) {
+                if ($hash !== $this->Request()->getParam('hash')) {
                     return;
                 }
             }
@@ -92,7 +91,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             $mailingID = (int) $this->Request()->getParam('campaign');
             $mailaddressID = (int) $this->Request()->getParam('mailaddress');
             $hash = $this->createHash($mailaddressID, $mailingID);
-            if ($hash!==$this->Request()->getParam('hash')) {
+            if ($hash !== $this->Request()->getParam('hash')) {
                 return;
             }
         }
@@ -102,26 +101,24 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
 
         if (!empty($mailaddressID)) {
             $sql = 'SELECT email FROM s_campaigns_mailaddresses WHERE id=?';
-            $email = Shopware()->Db()->fetchOne($sql, array($mailaddressID));
+            $email = Shopware()->Db()->fetchOne($sql, [$mailaddressID]);
             $user = $this->getMailingUserByEmail($email);
             $template->assign('sUser', $user, true);
             $template->assign('sCampaignHash', $hash, true);
             $template->assign('sRecommendations', $this->getMailingSuggest($mailing['id'], $user['userID']), true);
         }
 
-        $body = $template->fetch('newsletter/index/'.$mailing['template'], $template);
-
+        $body = $template->fetch('newsletter/index/' . $mailing['template'], $template);
 
         if (!$this->Request()->getParam('id')) {
             $body = $this->trackFilter($body, $mailing['id']);
         }
 
         if (empty($mailing['plaintext'])) {
-            $body = $template->fetch('newsletter/index/'.$mailing['template'], $template);
+            $body = $template->fetch('newsletter/index/' . $mailing['template'], $template);
         } else {
-            $body = $template->fetch('newsletter/alt/'.$mailing['template'], $template);
+            $body = $template->fetch('newsletter/alt/' . $mailing['template'], $template);
         }
-
 
         if (empty($mailing['plaintext'])) {
             if (!$this->Request()->getParam('id')) {
@@ -153,6 +150,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             $mailing = $this->initMailing();
             if (empty($mailing)) {
                 echo "Nothing to do...\n";
+
                 return;
             }
 
@@ -161,23 +159,25 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             // Check lock time. Add a buffer of 30 seconds to the lock time (default request time)
             if (!empty($mailing['locked']) && strtotime($mailing['locked']) > time() - 30) {
                 echo "Current mail: '" . $subjectCurrentMailing . "'\n";
-                echo "Wait " . (strtotime($mailing['locked']) + 30 - time()) . " seconds ...\n";
+                echo 'Wait ' . (strtotime($mailing['locked']) + 30 - time()) . " seconds ...\n";
+
                 return;
             }
 
             // When entering the mail dispatch, set lock time to 15 minutes in the future *if* the
             // last lock time is in the past
             $sql = 'UPDATE s_campaigns_mailings SET locked=? WHERE id=? AND (locked < ? OR locked IS NULL)';
-            $result = Shopware()->Db()->query($sql, array(
+            $result = Shopware()->Db()->query($sql, [
                     date('Y-m-d H:i:s', time() + 15 * 60),
                     $mailing['id'],
-                    date('Y-m-d H:i:s')
-                )
+                    date('Y-m-d H:i:s'),
+                ]
             );
 
             // If no rows were affected, exit
             if (!$result->rowCount()) {
                 echo "Lock condition detected ...\n";
+
                 return;
             }
 
@@ -185,9 +185,10 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             $emails = $this->getMailingEmails($mailing['id']);
             if (empty($emails)) {
                 $sql = 'UPDATE s_campaigns_mailings SET status=2 WHERE id=?';
-                Shopware()->Db()->query($sql, array($mailing['id']));
+                Shopware()->Db()->query($sql, [$mailing['id']]);
                 echo "Current mail: '" . $subjectCurrentMailing . "'\n";
                 echo "Mailing completed\n";
+
                 return;
             }
 
@@ -195,17 +196,17 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             // As the above getMailingEmails query might be quite slow, we need to lock the
             // dispatch of newsletters before and after this query
             $sql = 'UPDATE s_campaigns_mailings SET locked=? WHERE id=?';
-            Shopware()->Db()->query($sql, array(
+            Shopware()->Db()->query($sql, [
                     date('Y-m-d H:i:s', time() + 15 * 60),
-                    $mailing['id']
-                )
+                    $mailing['id'],
+                ]
             );
 
             echo "Current mail: '" . $subjectCurrentMailing . "'\n";
             echo count($emails) . " Recipients fetched\n";
         } else {
             $mailing = $this->initMailing($mailingID);
-            $emails = array($this->Request()->getParam('testmail'));
+            $emails = [$this->Request()->getParam('testmail')];
         }
 
         $template = $this->initTemplate($mailing);
@@ -254,14 +255,14 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             $validator = $this->container->get('validator.email');
             if (!$validator->isValid($user['email'])) {
                 echo "Skipped invalid email\n";
-                // SW-4526
+            // SW-4526
                 // Don't `continue` with next iteration without setting user's lastmailing
                 // else the mailing.status will never be set to 2
                 // and sending the mail will block
             } else {
                 try {
                     $mail->send();
-                    $counter++;
+                    ++$counter;
                 } catch (Exception $e) {
                     echo $e->getMessage() . "\n";
                 }
@@ -270,7 +271,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             if (empty($mailingID)) {
                 //echo "Send mail to ".$user['email']."\n";
                 $sql = 'UPDATE s_campaigns_mailaddresses SET lastmailing=? WHERE email=?';
-                Shopware()->Db()->query($sql, array($mailing['id'], $user['email']));
+                Shopware()->Db()->query($sql, [$mailing['id'], $user['email']]);
             }
         }
         echo $counter . ' out of ' . count($emails) . ' Mails sent successfully';
@@ -278,42 +279,12 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         // In cronmode: Once we are done, release the lock (by setting it 15 seconds to future)
         if (empty($mailingID)) {
             $sql = 'UPDATE s_campaigns_mailings SET locked=? WHERE id=?';
-            Shopware()->Db()->query($sql, array(
+            Shopware()->Db()->query($sql, [
                     date('Y-m-d H:i:s', time() + 15),
-                    $mailing['id']
-                )
+                    $mailing['id'],
+                ]
             );
         }
-    }
-
-    /**
-     * Returns plugin bootstrap if plugin exits, is enabled, and active.
-     * Otherwise return null.
-     *
-     * @param string $pluginName
-     * @return Enlight_Plugin_Bootstrap|null
-     */
-    private function getPluginBootstrap($pluginName)
-    {
-        /** @var Shopware_Components_Plugin_Namespace $namespace */
-        $namespace = Shopware()->Plugins()->Core();
-        $pluginBootstrap = $namespace->get($pluginName);
-
-        if (!$pluginBootstrap instanceof Enlight_Plugin_Bootstrap) {
-            return null;
-        }
-
-        /**@var $plugin \Shopware\Models\Plugin\Plugin */
-        $plugin = Shopware()->Models()->find('\Shopware\Models\Plugin\Plugin', $pluginBootstrap->getId());
-        if (!$plugin) {
-            return null;
-        }
-
-        if (!$plugin->getActive() || !$plugin->getInstalled()) {
-            return null;
-        }
-
-        return $pluginBootstrap;
     }
 
     /**
@@ -327,9 +298,9 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $cronBootstrap = $this->getPluginBootstrap('Cron');
         if ($cronBootstrap && !$cronBootstrap->authorizeCronAction($this->Request())) {
             $this->Response()
-                 ->clearHeaders()
-                 ->setHttpResponseCode(403)
-                 ->appendBody("Forbidden");
+                ->clearHeaders()
+                ->setHttpResponseCode(403)
+                ->appendBody('Forbidden');
 
             return;
         }
@@ -348,12 +319,12 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $mailing = (int) $this->Request()->getParam('mailing');
         $mail = (int) $this->Request()->getParam('mailaddress');
 
-        if (empty($mailing)||empty($mail)) {
+        if (empty($mailing) || empty($mail)) {
             return;
         }
 
         $sql = 'SELECT email FROM s_campaigns_mailaddresses WHERE id=?';
-        $email = Shopware()->Db()->fetchOne($sql, array($mail));
+        $email = Shopware()->Db()->fetchOne($sql, [$mail]);
 
         if (empty($email)) {
             return;
@@ -365,11 +336,11 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             WHERE lastmailing=?
             AND email=?
         ';
-        $stm = Shopware()->Db()->query($sql, array($mailing, $email));
+        $stm = Shopware()->Db()->query($sql, [$mailing, $email]);
 
         if ($stm->rowCount()) {
             $sql = 'UPDATE s_campaigns_mailings SET `read`=`read`+1 WHERE id=?';
-            Shopware()->Db()->query($sql, array($mailing));
+            Shopware()->Db()->query($sql, [$mailing]);
         }
 
         $this->Response()->setHeader('Content-Type', 'image/gif');
@@ -384,7 +355,9 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
      * Init mailing method
      *
      * Initializes the mailing using the mailing id.
+     *
      * @param int|null $mailingID
+     *
      * @return array|null
      */
     public function initMailing($mailingID = null)
@@ -405,7 +378,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
 
         Shopware()->Session()->sUserGroup = $mailing['customergroup'];
         $sql = 'SELECT * FROM s_core_customergroups WHERE groupkey=?';
-        Shopware()->Session()->sUserGroupData =  Shopware()->Db()->fetchRow($sql, array($mailing['customergroup']));
+        Shopware()->Session()->sUserGroupData = Shopware()->Db()->fetchRow($sql, [$mailing['customergroup']]);
 
         Shopware()->Container()->get('router')->setGlobalParam('module', 'frontend');
         Shopware()->Config()->DontAttachSession = true;
@@ -422,6 +395,14 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
     public function initTemplate($mailing)
     {
         $template = clone Shopware()->Template();
+        $shop = Shopware()->Shop();
+        $inheritance = Shopware()->Container()->get('theme_inheritance');
+
+        $config = $inheritance->buildConfig(
+            $shop->getTemplate(),
+            $shop,
+            false
+        );
 
         $user = $this->getMailingUserByEmail(Shopware()->Config()->Mail);
         $template->assign('sUser', $user, true);
@@ -432,10 +413,11 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $template->assign('sCampaign', $this->getMailingDetails($mailing['id']), true);
         $template->assign('sConfig', Shopware()->Config());
         $template->assign('sBasefile', Shopware()->Config()->BaseFile);
+        $template->assign('theme', $config);
 
         if (!$template->isCached($mailing['template'])) {
             $template->assign('sMailing', $mailing);
-            $template->assign('sStart', 'http://'.Shopware()->Config()->BasePath.'/'.Shopware()->Config()->BaseFile);
+            $template->assign('sStart', ($shop->getSecure() ? 'https://' : 'http://') . $shop->getHost() . $shop->getBaseUrl());
             $template->assign('sUserGroup', Shopware()->System()->sUSERGROUP);
             $template->assign('sUserGroupData', Shopware()->System()->sUSERGROUPDATA);
             $template->assign('sMainCategories', Shopware()->Modules()->Categories()->sGetMainCategories());
@@ -448,9 +430,10 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
      * Returns mailing data using the mailing id.
      *
      * @param int $id
+     *
      * @return array
      */
-    public function getMailing($id=null)
+    public function getMailing($id = null)
     {
         if (!empty($id)) {
             $where = Shopware()->Db()->quoteInto('cm.id=?', $id);
@@ -460,18 +443,18 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $sql = 'SELECT cm.*, ct.path as template
         FROM s_campaigns_mailings cm, s_campaigns_templates ct
         WHERE ct.id=cm.templateID
-        AND '.$where . '
+        AND ' . $where . '
         AND (`timed_delivery` <= NOW()
         OR `timed_delivery` IS NULL)';
 
-        $mailing = Shopware()->Db()->fetchRow($sql);
-        return $mailing;
+        return Shopware()->Db()->fetchRow($sql);
     }
 
     /**
      * Returns mailing details by mailing id.
      *
      * @param int $id
+     *
      * @return array
      */
     public function getMailingDetails($id)
@@ -479,13 +462,13 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $details = Shopware()->Modules()->Marketing()->sMailCampaignsGetDetail((int) $id);
 
         foreach ($details['containers'] as $key => $container) {
-            if ($container['type']=='ctVoucher') {
+            if ($container['type'] === 'ctVoucher') {
                 if (!empty($container['value'])) {
                     $details['voucher'] = $container['value'];
                 }
                 $details['containers'][$key]['type'] = 'ctText';
             }
-            if ($container['type']=='ctSuggest') {
+            if ($container['type'] === 'ctSuggest') {
                 $details['suggest'] = true;
             }
         }
@@ -498,23 +481,25 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
      *
      * @param int $id
      * @param int $userID
+     *
      * @return array
      */
     public function getMailingSuggest($id, $userID)
     {
-        return array();
+        return [];
     }
 
     /**
      * Returns mailing voucher using the voucher id.
      *
      * @param int $id
-     * @return array
+     *
+     * @return array|bool
      */
     public function getMailingVoucher($id)
     {
         $sql = 'SELECT value FROM s_campaigns_containers WHERE type=? AND promotionID=?';
-        $voucherID = Shopware()->Db()->fetchOne($sql, array('ctVoucher', $id));
+        $voucherID = Shopware()->Db()->fetchOne($sql, ['ctVoucher', $id]);
         if (empty($voucherID)) {
             return false;
         }
@@ -525,20 +510,21 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             AND (ev.valid_from <= CURDATE() OR ev.valid_from IS NULL)
             AND ev.id=?
         ";
-        $voucher = Shopware()->Db()->fetchRow($sql, array($voucherID));
-        return $voucher;
+
+        return Shopware()->Db()->fetchRow($sql, [$voucherID]);
     }
 
     /**
      * Returns the mailing email addresses based on the mailing id.
      *
      * @param int $id
-     * @return array
+     *
+     * @return array|bool
      */
     public function getMailingEmails($id)
     {
         $sql = 'SELECT groups, languageID FROM s_campaigns_mailings WHERE id=?';
-        $mailing = Shopware()->Db()->fetchRow($sql, array($id));
+        $mailing = Shopware()->Db()->fetchRow($sql, [$id]);
 
         if (empty($mailing)) {
             return false;
@@ -569,6 +555,15 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $limit = !empty(Shopware()->Config()->MailCampaignsPerCall) ? (int) Shopware()->Config()->MailCampaignsPerCall : 1000;
         $limit = max(1, $limit);
 
+        $customerStreams = '1=2';
+        $ids = array_keys($mailing['groups'][2]);
+        if (!empty($ids)) {
+            $ids = array_map(function ($id) {
+                return (int) $id;
+            }, $ids);
+            $customerStreams = 'mapping.stream_id IN (' . implode(',', $ids) . ')';
+        }
+
         /**
          * Get mails belonging to selected customergroups of the selected subshop
          * -OR- belonging to the selected newsletter groups
@@ -580,45 +575,46 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
 
             LEFT JOIN s_user su
             ON sc.email=su.email
+            
+            LEFT JOIN s_customer_streams_mapping mapping
+              ON mapping.customer_id = su.id
 
             WHERE sc.lastmailing != ?
-            AND
-            (
-                (
-                su.language = ?
-                AND ($customerGroups)
-                )
-            OR
-                ($recipientGroups)
+            AND (
+              (su.language = ? AND ($customerGroups))
+              OR ($recipientGroups)
+              OR ($customerStreams)
             )
             GROUP BY sc.email
         ";
         $sql = Shopware()->Db()->limit($sql, $limit);
 
-        return Shopware()->Db()->fetchCol($sql, array($id, $mailing['languageID']));
+        return Shopware()->Db()->fetchCol($sql, [$id, $mailing['languageID']]);
     }
 
     /**
      * Returns a new voucher code using the voucher id.
      *
      * @param int $voucherID
+     *
      * @return string
      */
     public function getVoucherCode($voucherID)
     {
-        $sql = "
+        $sql = '
             SELECT id, code
             FROM s_emarketing_voucher_codes evc
             WHERE evc.voucherID=? AND evc.userID IS NULL AND evc.cashed=0
             LIMIT 1
             FOR UPDATE
-        ";
-        $code = Shopware()->Db()->fetchRow($sql, array($voucherID));
+        ';
+        $code = Shopware()->Db()->fetchRow($sql, [$voucherID]);
         if (empty($code)) {
             return false;
         }
-        $sql = "UPDATE `s_emarketing_voucher_codes` SET `cashed`=2 WHERE `id`=?";
-        Shopware()->Db()->query($sql, array($code['id']));
+        $sql = 'UPDATE `s_emarketing_voucher_codes` SET `cashed`=2 WHERE `id`=?';
+        Shopware()->Db()->query($sql, [$code['id']]);
+
         return $code['code'];
     }
 
@@ -626,6 +622,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
      * Returns mailing user data by email.
      *
      * @param string $email
+     *
      * @return array
      */
     public function getMailingUserByEmail($email)
@@ -647,7 +644,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         ';
 
         $sql = '
-            SELECT '.$select.'
+            SELECT ' . $select . '
             FROM s_campaigns_mailaddresses cm
             LEFT JOIN s_campaigns_groups cg
             ON cg.id=cm.groupID
@@ -656,15 +653,16 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
             LEFT JOIN s_user u
             ON u.email=cm.email
             AND u.accountmode=0
-            LEFT JOIN s_user_billingaddress ub
-            ON ub.userID=u.id
+            LEFT JOIN s_user_addresses ub
+            ON u.default_billing_address_id=ub.id
+            AND u.id = ub.user_id
             WHERE cm.email=?
         ';
-        $user = Shopware()->Db()->fetchRow($sql, array($email));
+        $user = Shopware()->Db()->fetchRow($sql, [$email]);
 
         if (empty($user)) {
             $sql = '
-                SELECT '.$select.'
+                SELECT ' . $select . '
                 FROM s_campaigns_mailaddresses cm
                 LEFT JOIN s_campaigns_groups cg
                 ON cg.id=cm.groupID
@@ -673,8 +671,9 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
                 LEFT JOIN s_user u
                 ON u.email=cm.email
                 AND u.accountmode=0
-                LEFT JOIN s_user_billingaddress ub
-                ON ub.userID=u.id
+                LEFT JOIN s_user_addresses ub
+                ON u.default_billing_address_id=ub.id
+                AND u.id = ub.user_id
                 LIMIT 1
             ';
             $user = Shopware()->Db()->fetchRow($sql);
@@ -688,6 +687,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
      * Pre filter the old template source.
      *
      * @param string $source
+     *
      * @return string
      */
     public function preFilter($source)
@@ -697,6 +697,7 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
         $source = str_replace('@suggestions', '{include file="alt/suggest`$sMailing.template`"}', $source);
         $source = str_replace('http://intranet.shopware2.de/magneto/templates/0/de/media/', '../../media/', $source);
         $source = preg_replace('#{eval var=($sCampaignContainer.data.link)}#Umsi', '{include file="string:`$1`"}', $source);
+
         return $source;
     }
 
@@ -704,63 +705,96 @@ class Shopware_Controllers_Backend_Newsletter extends Enlight_Controller_Action 
      * Replaces the relative pictures links with absolute links.
      *
      * @param string $source
+     *
      * @return string
      */
     public function outputFilter($source)
     {
         $source = preg_replace('#(src|background)="([^:"./][^:"]+)"#Umsi', '$1="../../campaigns/$2"', $source);
-        $callback = array(Shopware()->Plugins()->Core()->PostFilter(),'rewriteSrc');
-        $source = preg_replace_callback('#<(link|img|script|input|a|form|iframe|td)[^<>]*(href|src|action|background)="([^"]*)".*>#Umsi', $callback, $source);
-        return $source;
+        $callback = [Shopware()->Plugins()->Core()->PostFilter(), 'rewriteSrc'];
+
+        return preg_replace_callback('#<(link|img|script|input|a|form|iframe|td)[^<>]*(href|src|action|background)="([^"]*)".*>#Umsi', $callback, $source);
     }
 
     /**
      * Removes the unneeded metadata in the alternative view.
      *
-     * @param unknown_type $source
-     * @return unknown
+     * @param string $source
+     *
+     * @return string
      */
     public function altFilter($source)
     {
         $source = preg_replace('#<a.+href="(.*)".*>#Umsi', '$1', $source);
-        $source = str_replace(array('<br />', '</p>', '&nbsp;'), array("\n", "\n", ' '), $source);
+        $source = str_replace(['<br />', '</p>', '&nbsp;'], ["\n", "\n", ' '], $source);
         $source = trim(strip_tags(preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/s', '', $source)));
-        $source = html_entity_decode($source);
-        return $source;
+
+        return html_entity_decode($source);
     }
 
     /**
      * Adds a parameter to the internal tracking urls.
      *
      * @param string $source
-     * @param int $mailingID
+     * @param int    $mailingID
+     *
      * @return string
      */
     public function trackFilter($source, $mailingID)
     {
-        $track = 'sPartner=sCampaign'.(int) $mailingID;
+        $track = 'sPartner=sCampaign' . (int) $mailingID;
         $host = preg_quote(Shopware()->Config()->BasePath, '#');
-        $pattern = '#href="(https?://'.$host.'[^<]*[?][^<]+)"#Umsi';
-        $source = preg_replace($pattern, 'href="$1&'.$track.'"', $source);
-        $pattern = '#href="(https?://'.$host.'[^?<]*)"#Umsi';
-        $source = preg_replace($pattern, 'href="$1?'.$track.'"', $source);
-        return $source;
+        $pattern = '#href="(https?://' . $host . '[^<]*[?][^<]+)"#Umsi';
+        $source = preg_replace($pattern, 'href="$1&' . $track . '"', $source);
+        $pattern = '#href="(https?://' . $host . '[^?<]*)"#Umsi';
+
+        return preg_replace($pattern, 'href="$1?' . $track . '"', $source);
     }
 
     /**
      * Creates a hash based on the passed data.
      *
-     * @param array $parts
      * @return string
      */
     public function createHash()
     {
         // todo@all Create new method to get same secret hashes for values
-        $license = "";
+        $license = '';
         //($license = Shopware()->License()->getLicense('sCORE')) || ($license = Shopware()->License()->getLicense('sCOMMUNITY'));
         $parts = func_get_args();
         $parts[] = $license;
-        $hash = md5(implode('|', $parts));
-        return $hash;
+
+        return md5(implode('|', $parts));
+    }
+
+    /**
+     * Returns plugin bootstrap if plugin exits, is enabled, and active.
+     * Otherwise return null.
+     *
+     * @param string $pluginName
+     *
+     * @return Enlight_Plugin_Bootstrap|null
+     */
+    private function getPluginBootstrap($pluginName)
+    {
+        /** @var Shopware_Components_Plugin_Namespace $namespace */
+        $namespace = Shopware()->Plugins()->Core();
+        $pluginBootstrap = $namespace->get($pluginName);
+
+        if (!$pluginBootstrap instanceof Enlight_Plugin_Bootstrap) {
+            return null;
+        }
+
+        /** @var $plugin \Shopware\Models\Plugin\Plugin */
+        $plugin = Shopware()->Models()->find('\Shopware\Models\Plugin\Plugin', $pluginBootstrap->getId());
+        if (!$plugin) {
+            return null;
+        }
+
+        if (!$plugin->getActive() || !$plugin->getInstalled()) {
+            return null;
+        }
+
+        return $pluginBootstrap;
     }
 }

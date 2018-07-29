@@ -30,15 +30,17 @@ class XmlConfigDefinitionReader
 {
     /**
      * @param $file string
-     * @return array
+     *
      * @throws \Exception
+     *
+     * @return array
      */
     public function read($file)
     {
         try {
-            $dom = XmlUtils::loadFile($file, __DIR__.'/schema/config.xsd');
+            $dom = XmlUtils::loadFile($file, __DIR__ . '/schema/config.xsd');
         } catch (\Exception $e) {
-            throw new \InvalidArgumentException(sprintf('Unable to parse file "%s".', $file), $e->getCode(), $e);
+            throw new \InvalidArgumentException(sprintf('Unable to parse file "%s". Message: %s', $file, $e->getMessage()), $e->getCode(), $e);
         }
 
         return $this->parseForm($dom);
@@ -46,6 +48,7 @@ class XmlConfigDefinitionReader
 
     /**
      * @param \DOMDocument $xml
+     *
      * @return array
      */
     private function parseForm(\DOMDocument $xml)
@@ -60,7 +63,7 @@ class XmlConfigDefinitionReader
         }
 
         foreach ($xpath->query('//config/description') as $description) {
-            $lang = ($description->getAttribute('lang')) ? $description->getAttribute('lang') : 'en';
+            $lang = $description->getAttribute('lang') ?: 'en';
             $form['description'][$lang] = $description->nodeValue;
         }
 
@@ -70,7 +73,7 @@ class XmlConfigDefinitionReader
 
         $elements = [];
 
-        /** @var \DOMElement $entry */
+        /* @var \DOMElement $entry */
         foreach ($elemements as $elemement) {
             $elements[] = $this->parseElement($elemement);
         }
@@ -90,7 +93,7 @@ class XmlConfigDefinitionReader
      */
     private function getChildren(\DOMNode $node, $name)
     {
-        $children = array();
+        $children = [];
         foreach ($node->childNodes as $child) {
             if ($child instanceof \DOMElement && $child->localName === $name) {
                 $children[] = $child;
@@ -102,16 +105,17 @@ class XmlConfigDefinitionReader
 
     /**
      * @param \DOMElement $entry
+     *
      * @return array
      */
     private function parseElement(\DOMElement $entry)
     {
         $element = [];
 
-        $isRequired = ($entry->getAttribute('required')) ? XmlUtils::phpize($entry->getAttribute('required')) : false;
-        $type = ($entry->getAttribute('type')) ? $entry->getAttribute('type') : 'text';
+        $isRequired = $entry->getAttribute('required') ? XmlUtils::phpize($entry->getAttribute('required')) : false;
+        $type = $entry->getAttribute('type') ?: 'text';
 
-        $scope = ($entry->getAttribute('scope')) ? $entry->getAttribute('scope') : 'locale';
+        $scope = $entry->getAttribute('scope') ?: 'locale';
         if ($scope === 'locale') {
             $scope = 0;
         } elseif ($scope === 'shop') {
@@ -143,12 +147,12 @@ class XmlConfigDefinitionReader
         }
 
         foreach ($this->getChildren($entry, 'description') as $label) {
-            $lang = ($label->getAttribute('lang')) ? $label->getAttribute('lang') : 'en';
+            $lang = $label->getAttribute('lang') ?: 'en';
             $element['description'][$lang] = $label->nodeValue;
         }
 
         foreach ($this->getChildren($entry, 'label') as $label) {
-            $lang = ($label->getAttribute('lang')) ? $label->getAttribute('lang') : 'en';
+            $lang = $label->getAttribute('lang') ?: 'en';
             $element['label'][$lang] = $label->nodeValue;
         }
 
@@ -167,17 +171,22 @@ class XmlConfigDefinitionReader
 
     /**
      * Reformats the xml store option nodes to a translatable array
+     *
      * @param \DOMElement[] $options
+     *
      * @return array[]
      */
     private function extractStoreData($options)
     {
         return array_map(function ($item) {
-            $value = $this->getChildren($item, 'value')[0]->nodeValue;
+            $value = XmlUtils::phpize($this->getChildren($item, 'value')[0]->nodeValue);
             /** @var \DOMElement $label */
             $labels = [];
             foreach ($this->getChildren($item, 'label') as $label) {
                 $lang = $label->getAttribute('lang') ?: 'en_GB';
+
+                // XSD Requires en-GB, Zend uses en_GB
+                $lang = str_replace('-', '_', $lang);
 
                 $mapping = ['de' => 'de_DE', 'en' => 'en_GB'];
                 if (array_key_exists($lang, $mapping)) {
@@ -185,6 +194,7 @@ class XmlConfigDefinitionReader
                 }
                 $labels[$lang] = $label->nodeValue;
             }
+
             return [$value, $labels];
         }, $options);
     }

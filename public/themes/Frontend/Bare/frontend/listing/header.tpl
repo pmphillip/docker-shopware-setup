@@ -44,9 +44,21 @@
 {* Canonical link *}
 {block name='frontend_index_header_canonical'}
     {* Count of available product pages *}
-    {$pages = ceil($sNumberArticles / $criteria->getLimit())}
+    {$pages = 1}
 
-    {if {config name=seoIndexPaginationLinks} && $showListing && $pages > 1}
+    {if $criteria}
+        {$pages = ceil($sNumberArticles / $criteria->getLimit())}
+    {/if}
+
+    {if $SeoMetaRobots|strpos:'noindex' === false}
+        <link rel="canonical" href="{url params = $sCategoryContent.canonicalParams}"/>
+    {/if}
+
+    {if {config name=seoIndexPaginationLinks}}
+        {if empty($sPage)}
+            {$sPage = 0}
+        {/if}
+
         {* Previous rel tag *}
         {if $sPage > 1}
             {$sCategoryContent.canonicalParams.sPage = $sPage - 1}
@@ -58,8 +70,6 @@
             {$sCategoryContent.canonicalParams.sPage = $sPage + 1}
             <link rel="next" href="{url params = $sCategoryContent.canonicalParams}">
         {/if}
-    {elseif !{config name=seoIndexPaginationLinks} || !$showListing}
-        <link rel="canonical" href="{url params = $sCategoryContent.canonicalParams}" />
     {/if}
 {/block}
 
@@ -76,11 +86,4 @@
 
 {* RSS and Atom feeds *}
 {block name="frontend_index_header_feeds"}
-{/block}
-
-{* Google optimized crawling *}
-{block name='frontend_index_header_meta_tags' append}
-    {if $hasEmotion && !$hasEscapedFragment}
-        <meta name="fragment" content="!">
-    {/if}
 {/block}

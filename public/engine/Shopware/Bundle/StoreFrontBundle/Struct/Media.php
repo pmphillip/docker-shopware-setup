@@ -26,10 +26,10 @@ namespace Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class Media extends Extendable implements \JsonSerializable
+class Media extends Extendable
 {
     const TYPE_IMAGE = 'IMAGE';
 
@@ -40,7 +40,8 @@ class Media extends Extendable implements \JsonSerializable
 
     /**
      * Name of the media file
-     * @var string $name
+     *
+     * @var string
      */
     protected $name;
 
@@ -50,7 +51,7 @@ class Media extends Extendable implements \JsonSerializable
     protected $description;
 
     /**
-     * @var boolean
+     * @var bool
      */
     protected $preview;
 
@@ -71,6 +72,7 @@ class Media extends Extendable implements \JsonSerializable
 
     /**
      * Contains the different thumbnail sizes.
+     *
      * @var array
      */
     protected $thumbnails = [];
@@ -84,6 +86,13 @@ class Media extends Extendable implements \JsonSerializable
      * @var int
      */
     protected $height;
+
+    /**
+     * Contains the virtual path
+     *
+     * @var string
+     */
+    protected $path;
 
     /**
      * @param int $id
@@ -118,7 +127,7 @@ class Media extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @param boolean $preview
+     * @param bool $preview
      */
     public function setPreview($preview)
     {
@@ -126,7 +135,7 @@ class Media extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isPreview()
     {
@@ -207,6 +216,7 @@ class Media extends Extendable implements \JsonSerializable
 
     /**
      * @param $index
+     *
      * @return Thumbnail
      */
     public function getThumbnail($index)
@@ -216,6 +226,7 @@ class Media extends Extendable implements \JsonSerializable
 
     /**
      * @param Thumbnail[] $thumbnails
+     *
      * @return $this
      */
     public function setThumbnails(array $thumbnails)
@@ -226,7 +237,7 @@ class Media extends Extendable implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {
@@ -263,5 +274,21 @@ class Media extends Extendable implements \JsonSerializable
     public function setHeight($height)
     {
         $this->height = $height;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    /**
+     * @param string $path
+     */
+    public function setPath($path)
+    {
+        $this->path = $path;
     }
 }

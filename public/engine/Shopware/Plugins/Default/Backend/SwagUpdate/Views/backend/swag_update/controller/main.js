@@ -21,8 +21,8 @@
  * our trademarks remain entirely with us.
  */
 
-//{namespace name=backend/swag_update/main}
-//{block name="backend/swag_update/controller/main"}
+// {namespace name=backend/swag_update/main}
+// {block name="backend/swag_update/controller/main"}
 
 Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
     extend: 'Enlight.app.Controller',
@@ -40,7 +40,7 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
                     return;
                 }
 
-                //check if an update is available
+                // check if an update is available
                 if (me.changelogStore.getCount() <= 0) {
                     me.mainWindow = me.getView('NoUpdate').create().show();
                 } else {
@@ -58,6 +58,8 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
                             me.mainWindow.tabPanel.items.items[2],
                             me.getHighestErrorLevel(me.pluginsStore)
                         );
+
+                        me.onPluginStoreLoaded();
                     });
 
                     me.requirementsStore.on('load', function() {
@@ -75,10 +77,95 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
         me.control({
             'update-main-window': {
                 startUpdate: me.onStartEvent,
-                validateUpdate: me.onValidateUpdate
+                validateUpdate: me.onValidateUpdate,
+                addPluginTooltips: me.addQuickTips,
+                showPluginUpdateDetails: me.onShowPluginUpdateDetails
             },
             'update-ftp': {
                 saveFtp: me.onSaveFtp
+            }
+        });
+    },
+
+    /**
+     * @param { Ext.grid.Panel } grid
+     * @param { number } index
+     */
+    onShowPluginUpdateDetails: function(grid, index) {
+        var record = grid.getStore().getAt(index);
+
+        Shopware.app.Application.addSubApplication({
+            name: 'Shopware.apps.PluginManager'
+        },
+            undefined,
+            function() {
+                Ext.Function.defer(function() {
+                    Shopware.app.Application.fireEvent('display-installed-plugins');
+
+                    Ext.create('Shopware.apps.PluginManager.store.LocalPlugin').load({
+                        callback: function() {
+                            var plugin = this.findRecord('technicalName', record.get('technicalName'));
+                            Shopware.app.Application.fireEvent('display-plugin', plugin);
+                        }
+                    });
+                }, 2000);
+            }
+        );
+    },
+
+    onPluginStoreLoaded: function() {
+        var me = this,
+            updatablePlugins = 0,
+            updatablePluginsAfterUpgrade = 0;
+
+        me.pluginsStore.each(function(plugin) {
+            if (plugin.get('updatable')) {
+                updatablePlugins++;
+            }
+
+            if (plugin.get('updatableAfterUpgrade')) {
+                updatablePluginsAfterUpgrade++;
+            }
+        });
+
+        if (updatablePlugins === 0 && updatablePluginsAfterUpgrade === 0) {
+            return;
+        }
+
+        if (updatablePlugins) {
+            me.changeTabIcon(me.mainWindow.down('#update-plugin-tab'), 10);
+            me.mainWindow.showHintContainer(updatablePlugins);
+            me.mainWindow.hintContainer.update();
+        }
+
+        me.addQuickTips();
+    },
+
+    addQuickTips: function() {
+        var me = this;
+
+        Ext.tip.QuickTipManager.init();
+        me.mainWindow.pluginsGrid.getStore().each(function(plugin) {
+            if (plugin.get('updatable') === true) {
+                Ext.tip.QuickTipManager.register({
+                    target: Ext.get(plugin.get('technicalName')),
+                    text: '{s name="plugin/update/quick_tip"}{/s}',
+                    width: 180,
+                    dismissDelay: 10000
+                });
+            } else if (plugin.get('updatableAfterUpgrade') === true) {
+                var node = Ext.get(me.mainWindow.pluginsGrid.getView().getNode(plugin));
+
+                if (!node) {
+                    return;
+                }
+
+                Ext.tip.QuickTipManager.register({
+                    target: node.down('.x-action-col-cell'),
+                    text: '{s name="plugin/update/update_after_upgrade"}{/s}',
+                    width: 180,
+                    dismissDelay: 10000
+                });
             }
         });
     },
@@ -124,7 +211,6 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
                             title: '{s name="update_title"}Update{/s}',
                             text: data.error
                         });
-
                     } else {
                         Shopware.Notification.createStickyGrowlMessage({
                             title: '{s name="update_title"}Update{/s}',
@@ -180,11 +266,15 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
     onStartEvent: function(win) {
         var me = this;
 
+        win.setLoading('{s name=check_file_permission/message}Preparing...{/s}');
+
         Ext.Ajax.request({
             url: '{url controller=SwagUpdate action=isUpdateAllowed}',
             async: true,
             timeout: 180000,
             success: function(response) {
+                win.setLoading(false);
+
                 if (!response || !response.responseText) {
                     return;
                 }
@@ -192,7 +282,6 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
                 var result = Ext.decode(response.responseText);
 
                 if (!result.success) {
-
                     Shopware.Notification.createStickyGrowlMessage({
                         title: '{s name="update_not_allowed"}Update not allowed{/s}',
                         text: result.error
@@ -202,17 +291,16 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
                 }
 
                 if (result.ftpRequired) {
-                    me.getView('Ftp').create().show();
+                    me.getView('Ftp').create({ wrongPermissionCount: result.wrongPermissionCount }).show();
                 } else {
                     me.getView('Progress').create().show();
                 }
             }
         });
-
     },
 
     getRecordsWithErrorLevel: function(store, errorLevel) {
-        var me = this, records = [];
+        var records = [];
 
         store.each(function(record) {
             if (record.get('errorLevel') == errorLevel) {
@@ -224,7 +312,7 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
     },
 
     getHighestErrorLevel: function(store) {
-        var me = this, level = 0;
+        var level = 0;
 
         store.each(function(record) {
             if (record.get('errorLevel') > level) {
@@ -237,4 +325,4 @@ Ext.define('Shopware.apps.SwagUpdate.controller.Main', {
 
 });
 
-//{/block}
+// {/block}

@@ -25,26 +25,45 @@
 namespace Shopware\Bundle\SearchBundleDBAL\ConditionHandler;
 
 use Shopware\Bundle\SearchBundle\Condition\ImmediateDeliveryCondition;
+use Shopware\Bundle\SearchBundle\Condition\VariantCondition;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
+use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundleDBAL\ConditionHandlerInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
+use Shopware\Bundle\SearchBundleDBAL\CriteriaAwareInterface;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilder;
+use Shopware\Bundle\SearchBundleDBAL\VariantHelperInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ImmediateDeliveryConditionHandler implements ConditionHandlerInterface
+class ImmediateDeliveryConditionHandler implements ConditionHandlerInterface, CriteriaAwareInterface
 {
-    const STATE_INCLUDES_ALL_VARIANTS = 'all_variants';
+    const STATE_INCLUDES_IMMEDIATE_DELIVERY_VARIANTS = 'ImmediateDeliveryVariants';
+
+    /**
+     * @var VariantHelperInterface
+     */
+    private $variantHelper;
+
+    /**
+     * @var Criteria
+     */
+    private $criteria;
+
+    public function __construct(VariantHelperInterface $variantHelper)
+    {
+        $this->variantHelper = $variantHelper;
+    }
 
     /**
      * {@inheritdoc}
      */
     public function supportsCondition(ConditionInterface $condition)
     {
-        return ($condition instanceof ImmediateDeliveryCondition);
+        return $condition instanceof ImmediateDeliveryCondition;
     }
 
     /**
@@ -55,15 +74,27 @@ class ImmediateDeliveryConditionHandler implements ConditionHandlerInterface
         QueryBuilder $query,
         ShopContextInterface $context
     ) {
-        $query->innerJoin(
-            'product',
-            's_articles_details',
-            'allVariants',
-            'allVariants.articleID = product.id
-             AND allVariants.active = 1
-             AND allVariants.instock >= allVariants.minpurchase'
-        );
+        $conditions = $this->criteria->getConditionsByClass(VariantCondition::class);
+        $conditions = array_filter($conditions, function (VariantCondition $condition) {
+            return $condition->expandVariants();
+        });
 
-        $query->addState(self::STATE_INCLUDES_ALL_VARIANTS);
+        if (!$query->hasState(self::STATE_INCLUDES_IMMEDIATE_DELIVERY_VARIANTS)) {
+            if (empty($conditions)) {
+                $this->variantHelper->joinVariants($query);
+                $query->andWhere('allVariants.instock >= allVariants.minpurchase');
+            } else {
+                $query->andWhere('variant.instock >= variant.minpurchase');
+            }
+            $query->addState(self::STATE_INCLUDES_IMMEDIATE_DELIVERY_VARIANTS);
+        }
+    }
+
+    /**
+     * @param Criteria $criteria
+     */
+    public function setCriteria(Criteria $criteria)
+    {
+        $this->criteria = $criteria;
     }
 }

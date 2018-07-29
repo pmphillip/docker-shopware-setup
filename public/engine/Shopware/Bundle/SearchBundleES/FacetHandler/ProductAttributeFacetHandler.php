@@ -29,17 +29,22 @@ use ONGR\ElasticsearchDSL\Aggregation\TermsAggregation;
 use ONGR\ElasticsearchDSL\Aggregation\ValueCountAggregation;
 use ONGR\ElasticsearchDSL\Query\ExistsQuery;
 use ONGR\ElasticsearchDSL\Search;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\AttributeBundle\Service\ConfigurationStruct;
+use Shopware\Bundle\AttributeBundle\Service\CrudService;
+use Shopware\Bundle\AttributeBundle\Service\TypeMapping;
 use Shopware\Bundle\SearchBundle\Condition\ProductAttributeCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundle\Facet\ProductAttributeFacet;
 use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundle\Facet\ProductAttributeFacet;
 use Shopware\Bundle\SearchBundle\FacetResult\BooleanFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\RadioFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListItem;
+use Shopware\Bundle\SearchBundle\FacetResultInterface;
 use Shopware\Bundle\SearchBundle\ProductNumberSearchResult;
+use Shopware\Bundle\SearchBundle\TemplateSwitchable;
+use Shopware\Bundle\SearchBundleES\HandlerInterface;
 use Shopware\Bundle\SearchBundleES\ResultHydratorInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
@@ -53,11 +58,26 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
     private $criteriaParts = [];
 
     /**
+     * @var CrudService
+     */
+    private $crudService;
+
+    /**
+     * ProductAttributeFacetHandler constructor.
+     *
+     * @param CrudService $crudService
+     */
+    public function __construct(CrudService $crudService)
+    {
+        $this->crudService = $crudService;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof ProductAttributeFacet);
+        return $criteriaPart instanceof ProductAttributeFacet;
     }
 
     /**
@@ -74,14 +94,14 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
         $this->criteriaParts[] = $criteriaPart;
 
         switch ($criteriaPart->getMode()) {
-            case (ProductAttributeFacet::MODE_VALUE_LIST_RESULT):
-            case (ProductAttributeFacet::MODE_RADIO_LIST_RESULT):
+            case ProductAttributeFacet::MODE_VALUE_LIST_RESULT:
+            case ProductAttributeFacet::MODE_RADIO_LIST_RESULT:
                 $aggregation = new TermsAggregation($criteriaPart->getName());
                 $aggregation->setField($field);
                 $aggregation->addParameter('size', self::AGGREGATION_SIZE);
                 break;
 
-            case (ProductAttributeFacet::MODE_BOOLEAN_RESULT):
+            case ProductAttributeFacet::MODE_BOOLEAN_RESULT:
                 $count = new ValueCountAggregation($criteriaPart->getName() . '_count');
                 $count->setField($field);
 
@@ -90,7 +110,7 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
                 $aggregation->addAggregation($count);
                 break;
 
-            case (ProductAttributeFacet::MODE_RANGE_RESULT):
+            case ProductAttributeFacet::MODE_RANGE_RESULT:
                 $aggregation = new TermsAggregation($criteriaPart->getName());
                 $aggregation->setField($field);
                 break;
@@ -122,24 +142,106 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
                 continue;
             }
 
-            switch ($criteriaPart->getMode()) {
-                case (ProductAttributeFacet::MODE_VALUE_LIST_RESULT):
-                case (ProductAttributeFacet::MODE_RADIO_LIST_RESULT):
-                    $criteriaPartResult = $this->createItemListResult($criteriaPart, $aggregations[$key], $criteria);
-                    break;
-                case (ProductAttributeFacet::MODE_BOOLEAN_RESULT):
-                    $criteriaPartResult = $this->createBooleanResult($criteriaPart, $aggregations[$key], $criteria);
-                    break;
-                case (ProductAttributeFacet::MODE_RANGE_RESULT):
-                    $criteriaPartResult = $this->createRangeResult($criteriaPart, $aggregations[$key], $criteria);
-                    break;
-                default:
-                    $criteriaPartResult = null;
+            /** @var ConfigurationStruct $attribute */
+            $attribute = $this->crudService->get('s_articles_attributes', $criteriaPart->getField());
+
+            $type = $attribute ? $attribute->getColumnType() : null;
+
+            if (in_array($type, [TypeMapping::TYPE_DATE, TypeMapping::TYPE_DATETIME])) {
+                $aggregations[$key] = $this->formatDates($aggregations[$key]);
             }
 
-            if ($criteriaPartResult) {
-                $result->addFacet($criteriaPartResult);
+            $criteriaPartResult = null;
+            switch ($criteriaPart->getMode()) {
+                case ProductAttributeFacet::MODE_VALUE_LIST_RESULT:
+                case ProductAttributeFacet::MODE_RADIO_LIST_RESULT:
+                    $criteriaPartResult = $this->createItemListResult($criteriaPart, $aggregations[$key], $criteria);
+                    break;
+                case ProductAttributeFacet::MODE_BOOLEAN_RESULT:
+                    $criteriaPartResult = $this->createBooleanResult($criteriaPart, $aggregations[$key], $criteria);
+                    break;
+                case ProductAttributeFacet::MODE_RANGE_RESULT:
+                    $criteriaPartResult = $this->createRangeResult($criteriaPart, $aggregations[$key], $criteria);
+
+                    if ($criteriaPartResult->getMax() === $criteriaPartResult->getMin()) {
+                        $criteriaPartResult = null;
+                    }
+
+                    break;
+                default:
+                    break;
             }
+            if ($criteriaPartResult === null) {
+                continue;
+            }
+
+            $this->switchTemplate($type, $criteriaPartResult, $criteriaPart);
+
+            $result->addFacet($criteriaPartResult);
+        }
+    }
+
+    /**
+     * @param string                $type
+     * @param FacetResultInterface  $result
+     * @param ProductAttributeFacet $facet
+     *
+     * @return FacetResultInterface
+     */
+    private function switchTemplate($type, FacetResultInterface $result, ProductAttributeFacet $facet)
+    {
+        if ($result === null) {
+            return $result;
+        }
+
+        if (!$result instanceof TemplateSwitchable) {
+            return $result;
+        }
+
+        if ($facet->getTemplate()) {
+            $result->setTemplate($facet->getTemplate());
+
+            return $result;
+        }
+
+        $result->setTemplate(
+            $this->getTypeTemplate($type, $facet->getMode(), $result->getTemplate())
+        );
+
+        return $result;
+    }
+
+    /**
+     * @param string $type
+     * @param string $mode
+     * @param string $defaultTemplate
+     *
+     * @return string
+     */
+    private function getTypeTemplate($type, $mode, $defaultTemplate)
+    {
+        switch (true) {
+            case $type === TypeMapping::TYPE_DATE && $mode === ProductAttributeFacet::MODE_RANGE_RESULT:
+
+                return 'frontend/listing/filter/facet-date-range.tpl';
+            case $type === TypeMapping::TYPE_DATE && $mode === ProductAttributeFacet::MODE_VALUE_LIST_RESULT:
+
+                return 'frontend/listing/filter/facet-date-multi.tpl';
+            case $type === TypeMapping::TYPE_DATE && $mode !== ProductAttributeFacet::MODE_BOOLEAN_RESULT:
+
+                return 'frontend/listing/filter/facet-date.tpl';
+            case $type === TypeMapping::TYPE_DATETIME && $mode === ProductAttributeFacet::MODE_RANGE_RESULT:
+
+                return 'frontend/listing/filter/facet-datetime-range.tpl';
+            case $type === TypeMapping::TYPE_DATETIME && $mode === ProductAttributeFacet::MODE_VALUE_LIST_RESULT:
+
+                return 'frontend/listing/filter/facet-datetime-multi.tpl';
+            case $type === TypeMapping::TYPE_DATETIME && $mode !== ProductAttributeFacet::MODE_BOOLEAN_RESULT:
+
+                return 'frontend/listing/filter/facet-datetime.tpl';
+            default:
+
+                return $defaultTemplate;
         }
     }
 
@@ -147,6 +249,7 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
      * @param ProductAttributeFacet $criteriaPart
      * @param $data
      * @param Criteria $criteria
+     *
      * @return null|RadioFacetResult|ValueListFacetResult
      */
     private function createItemListResult(
@@ -161,7 +264,7 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
 
         $actives = [];
 
-        /**@var $condition ProductAttributeCondition*/
+        /** @var $condition ProductAttributeCondition */
         if ($condition = $criteria->getCondition($criteriaPart->getName())) {
             $actives = $condition->getValue();
         }
@@ -171,42 +274,29 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
         }, $values);
 
         if ($criteriaPart->getMode() == ProductAttributeFacet::MODE_RADIO_LIST_RESULT) {
-            $template = $criteriaPart->getTemplate();
-            if (!$template) {
-                $template = 'frontend/listing/filter/facet-radio.tpl';
-            }
-
             return new RadioFacetResult(
                 $criteriaPart->getName(),
                 $criteria->hasCondition($criteriaPart->getName()),
                 $criteriaPart->getLabel(),
                 $items,
-                $criteriaPart->getFormFieldName(),
-                [],
-                $template
-            );
-        } else {
-            $template = $criteriaPart->getTemplate();
-            if (!$template) {
-                $template = 'frontend/listing/filter/facet-value-list.tpl';
-            }
-
-            return new ValueListFacetResult(
-                $criteriaPart->getName(),
-                $criteria->hasCondition($criteriaPart->getName()),
-                $criteriaPart->getLabel(),
-                $items,
-                $criteriaPart->getFormFieldName(),
-                [],
-                $template
+                $criteriaPart->getFormFieldName()
             );
         }
+
+        return new ValueListFacetResult(
+            $criteriaPart->getName(),
+            $criteria->hasCondition($criteriaPart->getName()),
+            $criteriaPart->getLabel(),
+            $items,
+            $criteriaPart->getFormFieldName()
+        );
     }
 
     /**
      * @param ProductAttributeFacet $criteriaPart
      * @param $data
      * @param Criteria $criteria
+     *
      * @return null|BooleanFacetResult
      */
     private function createBooleanResult(ProductAttributeFacet $criteriaPart, $data, Criteria $criteria)
@@ -218,18 +308,11 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
             return null;
         }
 
-        $template = $criteriaPart->getTemplate();
-        if (!$template) {
-            $template = 'frontend/listing/filter/facet-boolean.tpl';
-        }
-
         return new BooleanFacetResult(
             $criteriaPart->getName(),
             $criteriaPart->getFormFieldName(),
             $criteria->hasCondition($criteriaPart->getName()),
-            $criteriaPart->getLabel(),
-            [],
-            $template
+            $criteriaPart->getLabel()
         );
     }
 
@@ -237,6 +320,7 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
      * @param ProductAttributeFacet $criteriaPart
      * @param $data
      * @param Criteria $criteria
+     *
      * @return RangeFacetResult
      */
     private function createRangeResult(ProductAttributeFacet $criteriaPart, $data, Criteria $criteria)
@@ -245,15 +329,10 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
         $min = min($values);
         $max = max($values);
 
-        $template = $criteriaPart->getTemplate();
-        if (!$template) {
-            $template = 'frontend/listing/filter/facet-range.tpl';
-        }
-
         $activeMin = $min;
         $activeMax = $max;
 
-        /**@var $condition ProductAttributeCondition*/
+        /** @var $condition ProductAttributeCondition */
         if ($condition = $criteria->getCondition($criteriaPart->getName())) {
             $data = $condition->getValue();
             $activeMin = $data['min'];
@@ -271,7 +350,22 @@ class ProductAttributeFacetHandler implements HandlerInterface, ResultHydratorIn
             'min' . $criteriaPart->getFormFieldName(),
             'max' . $criteriaPart->getFormFieldName(),
             [],
-            $template
+            $criteriaPart->getSuffix(),
+            $criteriaPart->getDigits()
         );
+    }
+
+    /**
+     * @param array $aggregation
+     */
+    private function formatDates(array $aggregation)
+    {
+        $aggregation['buckets'] = array_map(function ($bucket) {
+            $bucket['key'] = $bucket['key_as_string'];
+
+            return $bucket;
+        }, $aggregation['buckets']);
+
+        return $aggregation;
     }
 }

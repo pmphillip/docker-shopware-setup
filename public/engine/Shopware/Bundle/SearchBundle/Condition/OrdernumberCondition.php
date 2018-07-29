@@ -28,23 +28,15 @@ use Shopware\Bundle\SearchBundle\ConditionInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Condition
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
-class OrdernumberCondition implements ConditionInterface
+class OrdernumberCondition implements ConditionInterface, \JsonSerializable
 {
     /**
      * @var string[]
      */
-    private $ordernumbers;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'ordernumber';
-    }
+    protected $ordernumbers;
 
     /**
      * @param string[] $ordernumbers
@@ -55,10 +47,26 @@ class OrdernumberCondition implements ConditionInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function getName()
+    {
+        return 'ordernumber';
+    }
+
+    /**
      * @return string[]
      */
     public function getOrdernumbers()
     {
         return $this->ordernumbers;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

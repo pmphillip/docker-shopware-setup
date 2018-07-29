@@ -29,12 +29,6 @@ class InlineFragmentRenderer extends RoutableFragmentRenderer
     private $kernel;
     private $dispatcher;
 
-    /**
-     * Constructor.
-     *
-     * @param HttpKernelInterface      $kernel     A HttpKernelInterface instance
-     * @param EventDispatcherInterface $dispatcher A EventDispatcherInterface instance
-     */
     public function __construct(HttpKernelInterface $kernel, EventDispatcherInterface $dispatcher = null)
     {
         $this->kernel = $kernel;
@@ -129,6 +123,8 @@ class InlineFragmentRenderer extends RoutableFragmentRenderer
         }
 
         $server['REMOTE_ADDR'] = '127.0.0.1';
+        unset($server['HTTP_IF_MODIFIED_SINCE']);
+        unset($server['HTTP_IF_NONE_MATCH']);
 
         $subRequest = Request::create($uri, 'get', array(), $cookies, array(), $server);
         if ($request->headers->has('Surrogate-Capability')) {

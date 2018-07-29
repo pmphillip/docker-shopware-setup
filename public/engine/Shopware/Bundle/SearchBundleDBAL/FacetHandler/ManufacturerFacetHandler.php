@@ -24,25 +24,26 @@
 
 namespace Shopware\Bundle\SearchBundleDBAL\FacetHandler;
 
+use Shopware\Bundle\SearchBundle\Condition;
 use Shopware\Bundle\SearchBundle\Criteria;
+use Shopware\Bundle\SearchBundle\Facet;
+use Shopware\Bundle\SearchBundle\FacetInterface;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListItem;
-use Shopware\Bundle\SearchBundle\Facet;
-use Shopware\Bundle\SearchBundle\Condition;
-use Shopware\Bundle\SearchBundle\FacetInterface;
+use Shopware\Bundle\SearchBundle\FacetResultInterface;
+use Shopware\Bundle\SearchBundleDBAL\PartialFacetHandlerInterface;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilderFactoryInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
-use Shopware\Bundle\SearchBundleDBAL\FacetHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\ManufacturerServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product\Manufacturer;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Components\QueryAliasMapper;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\FacetHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ManufacturerFacetHandler implements FacetHandlerInterface
+class ManufacturerFacetHandler implements PartialFacetHandlerInterface
 {
     /**
      * @var ManufacturerServiceInterface
@@ -65,10 +66,10 @@ class ManufacturerFacetHandler implements FacetHandlerInterface
     private $fieldName;
 
     /**
-     * @param ManufacturerServiceInterface $manufacturerService
-     * @param QueryBuilderFactoryInterface $queryBuilderFactory
+     * @param ManufacturerServiceInterface         $manufacturerService
+     * @param QueryBuilderFactoryInterface         $queryBuilderFactory
      * @param \Shopware_Components_Snippet_Manager $snippetManager
-     * @param QueryAliasMapper $queryAliasMapper
+     * @param QueryAliasMapper                     $queryAliasMapper
      */
     public function __construct(
         ManufacturerServiceInterface $manufacturerService,
@@ -86,29 +87,27 @@ class ManufacturerFacetHandler implements FacetHandlerInterface
     }
 
     /**
-     * @param FacetInterface|Facet\PriceFacet $facet
-     * @param Criteria $criteria
+     * @param FacetInterface       $facet
+     * @param Criteria             $reverted
+     * @param Criteria             $criteria
      * @param ShopContextInterface $context
-     * @return ValueListFacetResult
+     *
+     * @return FacetResultInterface|null
      */
-    public function generateFacet(
+    public function generatePartialFacet(
         FacetInterface $facet,
+        Criteria $reverted,
         Criteria $criteria,
         ShopContextInterface $context
     ) {
-        $queryCriteria = clone $criteria;
-        $queryCriteria->resetConditions();
-        $queryCriteria->resetSorting();
-
-        $query = $this->queryBuilderFactory->createQuery($queryCriteria, $context);
-
+        $query = $this->queryBuilderFactory->createQuery($reverted, $context);
         $query->resetQueryPart('groupBy');
         $query->resetQueryPart('orderBy');
 
         $query->groupBy('product.id');
         $query->select('DISTINCT product.supplierID as id');
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $ids = $statement->fetchAll(\PDO::FETCH_COLUMN);
@@ -122,15 +121,25 @@ class ManufacturerFacetHandler implements FacetHandlerInterface
 
         $activeManufacturers = $this->getActiveIds($criteria);
 
-        return $this->createFacetResult($manufacturers, $activeManufacturers);
+        return $this->createFacetResult($facet, $manufacturers, $activeManufacturers);
     }
 
     /**
-     * @param Manufacturer[] $manufacturers
-     * @param int[] $activeIds
+     * {@inheritdoc}
+     */
+    public function supportsFacet(FacetInterface $facet)
+    {
+        return $facet instanceof Facet\ManufacturerFacet;
+    }
+
+    /**
+     * @param Facet\ManufacturerFacet $facet
+     * @param Manufacturer[]          $manufacturers
+     * @param int[]                   $activeIds
+     *
      * @return ValueListFacetResult
      */
-    private function createFacetResult($manufacturers, $activeIds)
+    private function createFacetResult(Facet\ManufacturerFacet $facet, $manufacturers, $activeIds)
     {
         $listItems = [];
 
@@ -149,10 +158,16 @@ class ManufacturerFacetHandler implements FacetHandlerInterface
             return strcasecmp($a->getLabel(), $b->getLabel());
         });
 
+        if (!empty($facet->getLabel())) {
+            $label = $facet->getLabel();
+        } else {
+            $label = $this->snippetNamespace->get('manufacturer', 'Manufacturer');
+        }
+
         return new ValueListFacetResult(
             'manufacturer',
             !empty($activeIds),
-            $this->snippetNamespace->get('manufacturer', 'Manufacturer'),
+            $label,
             $listItems,
             $this->fieldName
         );
@@ -160,6 +175,7 @@ class ManufacturerFacetHandler implements FacetHandlerInterface
 
     /**
      * @param Criteria $criteria
+     *
      * @return int[]
      */
     private function getActiveIds($criteria)
@@ -168,17 +184,9 @@ class ManufacturerFacetHandler implements FacetHandlerInterface
             return [];
         }
 
-        /**@var $condition Condition\ManufacturerCondition*/
+        /** @var $condition Condition\ManufacturerCondition */
         $condition = $criteria->getCondition('manufacturer');
 
         return $condition->getManufacturerIds();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsFacet(FacetInterface $facet)
-    {
-        return ($facet instanceof Facet\ManufacturerFacet);
     }
 }

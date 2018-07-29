@@ -21,10 +21,8 @@
  * trademark license. Therefore any rights, title and interest in
  * our trademarks remain entirely with us.
  */
-
 use Psr\Log\LoggerInterface;
 use Shopware\Components\CSRFWhitelistAware;
-use Shopware\Components\Random;
 use ShopwarePlugins\SwagUpdate\Components\Checks\EmotionTemplateCheck;
 use ShopwarePlugins\SwagUpdate\Components\Checks\IonCubeLoaderCheck;
 use ShopwarePlugins\SwagUpdate\Components\Checks\LicenseCheck;
@@ -36,8 +34,10 @@ use ShopwarePlugins\SwagUpdate\Components\Checks\WritableCheck;
 use ShopwarePlugins\SwagUpdate\Components\ExtJsResultMapper;
 use ShopwarePlugins\SwagUpdate\Components\FeedbackCollector;
 use ShopwarePlugins\SwagUpdate\Components\Steps\DownloadStep;
+use ShopwarePlugins\SwagUpdate\Components\Steps\ErrorResult;
 use ShopwarePlugins\SwagUpdate\Components\Steps\FinishResult;
 use ShopwarePlugins\SwagUpdate\Components\Steps\UnpackStep;
+use ShopwarePlugins\SwagUpdate\Components\Steps\ValidResult;
 use ShopwarePlugins\SwagUpdate\Components\Struct\Version;
 use ShopwarePlugins\SwagUpdate\Components\UpdateCheck;
 use ShopwarePlugins\SwagUpdate\Components\Validation;
@@ -45,7 +45,7 @@ use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * @category  Shopware
- * @package   Shopware\Controllers\Backend\SwagUpdate
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backend_ExtJs implements CSRFWhitelistAware
@@ -64,40 +64,40 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
             $logger = $this->get('corelogger');
             $logger->error($e);
 
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => false,
-                'data'    => array()
-            ));
+                'data' => [],
+            ]);
 
             return;
         }
 
         if (!$data instanceof Version || !$data->isNewer) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => true,
-                'data' => array()
-            ));
+                'data' => [],
+            ]);
 
             return;
         }
 
         $user = Shopware()->Container()->get('Auth')->getIdentity();
         $userLang = $this->getUserLanguage($user);
-        $languagePriorities = array(
+        $languagePriorities = [
             $userLang,
             'en',
             'de',
-        );
+        ];
 
         $changeLog = $this->getLocalizedChangeLog($data, $languagePriorities);
 
-        $this->View()->assign(array(
+        $this->View()->assign([
             'success' => true,
-            'data' => array(
+            'data' => [
                 'version' => $data->version,
                 'changelog' => $changeLog['changelog'],
-            )
-        ));
+            ],
+        ]);
     }
 
     public function requirementsAction()
@@ -105,9 +105,9 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $data = $this->getCachedVersion();
 
         if (!isset($data->checks)) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => true,
-            ));
+            ]);
 
             return;
         }
@@ -119,7 +119,7 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
 
         $fileSystem = new \ShopwarePlugins\SwagUpdate\Components\FileSystem();
         $conn = $this->get('dbal_connection');
-        $checks = array(
+        $checks = [
             new RegexCheck($namespace, $userLang),
             new MySQLVersionCheck($conn, $namespace),
             new PHPVersionCheck($namespace),
@@ -127,14 +127,14 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
             new PHPExtensionCheck($namespace),
             new WritableCheck($fileSystem, $namespace),
             new IonCubeLoaderCheck($namespace),
-            new LicenseCheck($conn, $this->container->getParameter('shopware.store.apiEndpoint'), $this->getShopwareVersion(), $namespace)
-        );
+            new LicenseCheck($conn, $this->container->getParameter('shopware.store.apiEndpoint'), $this->getShopwareVersion(), $namespace),
+        ];
         $validation = new Validation($namespace, $checks);
 
-        $this->View()->assign(array(
+        $this->View()->assign([
             'success' => true,
-            'data' => $validation->checkRequirements($data->checks)
-        ));
+            'data' => $validation->checkRequirements($data->checks),
+        ]);
     }
 
     public function pluginsAction()
@@ -146,12 +146,10 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $pluginCheck = new \ShopwarePlugins\SwagUpdate\Components\PluginCheck($this->container);
         $result = $pluginCheck->checkInstalledPluginsAvailableForNewVersion($version);
 
-        $this->View()->assign(array(
+        $this->View()->assign([
             'success' => true,
-            'data'    => $result
-        ));
-
-        return;
+            'data' => $result,
+        ]);
     }
 
     /**
@@ -172,69 +170,77 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $result = $fs->checkDirectoryPermissions(Shopware()->DocPath(), true);
 
         if (!empty($result)) {
-            $this->View()->assign(array(
+            $wrongPermissionCount = count($result);
+
+            $this->container->get('corelogger')->error(
+                sprintf('SwagUpdate: There are %d files without write permission. FTP credentials are needed.', $wrongPermissionCount),
+                $result
+            );
+
+            $this->View()->assign([
                 'success' => true,
-                'ftpRequired' => true
-            ));
+                'ftpRequired' => true,
+                'wrongPermissionCount' => $wrongPermissionCount,
+            ]);
 
             return;
         }
 
-        $this->View()->assign(array(
+        $this->View()->assign([
             'success' => true,
-            'ftpRequired' => false
-        ));
+            'ftpRequired' => false,
+        ]);
     }
 
     public function saveFtpAction()
     {
-        $ftpParams = array(
-            'user'     => $this->Request()->getParam('user'),
+        $ftpParams = [
+            'user' => $this->Request()->getParam('user'),
             'password' => $this->Request()->getParam('password'),
-            'path'     => $this->Request()->getParam('path'),
-            'server'   => $this->Request()->getParam('server'),
-        );
+            'path' => $this->Request()->getParam('path'),
+            'server' => $this->Request()->getParam('server'),
+        ];
 
         $basepath = rtrim($ftpParams['path'], '/');
         $testFile = $basepath . '/shopware.php';
 
         $localFh = fopen($testFile, 'rb');
-        $remoteFh = fopen("php://memory", "w+");
+        $remoteFh = fopen('php://memory', 'w+');
 
         if (false === $connection = ftp_connect($ftpParams['server'], 21, 5)) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => false,
-                'error'   => 'Could not connect to server'
-            ));
+                'error' => 'Could not connect to server',
+            ]);
 
             return;
         }
 
         if (!ftp_login($connection, $ftpParams['user'], $ftpParams['password'])) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => false,
-                'error'   => 'Could not login into server'
-            ));
+                'error' => 'Could not login into server',
+            ]);
             ftp_close($connection);
 
             return;
         }
 
         if (!ftp_fget($connection, $remoteFh, $testFile, FTP_ASCII, 0)) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => false,
-                'error'   => 'Could not read files from connection.'
-            ));
+                'error' => 'Could not read files from connection.',
+            ]);
             ftp_close($connection);
 
             return;
         }
 
         if (!$this->checkIdententical($localFh, $remoteFh)) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => false,
-                'error'   => 'Files are not identical.'
-            ));
+                'error' => 'Files are not identical.',
+            ]);
             ftp_close($connection);
 
             return;
@@ -246,9 +252,9 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $session = Shopware()->BackendSession();
         $session->offsetSet('update_ftp', $ftpParams);
 
-        $this->View()->assign(array(
+        $this->View()->assign([
             'success' => true,
-        ));
+        ]);
     }
 
     /**
@@ -261,9 +267,10 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         if ($config['update-send-feedback']) {
             $apiEndpoint = $config['update-feedback-api-endpoint'];
             $rootDir = Shopware()->Container()->getParameter('kernel.root_dir');
-            $publicKey   = trim(file_get_contents($rootDir . '/engine/Shopware/Components/HttpClient/public.key'));
+            $publicKey = trim(file_get_contents($rootDir . '/engine/Shopware/Components/HttpClient/public.key'));
+            $shopwareRelease = $this->container->get('shopware.release');
 
-            $collector = new FeedbackCollector($apiEndpoint, $publicKey, $this->getUnique());
+            $collector = new FeedbackCollector($apiEndpoint, $publicKey, $this->getUnique(), $shopwareRelease);
 
             try {
                 $collector->sendData();
@@ -275,29 +282,29 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $data = $this->fetchUpdateVersion();
 
         if ($data instanceof Version && $data->isNewer) {
-            $this->View()->assign(array(
+            $this->View()->assign([
                 'success' => true,
-                'data' => array(
+                'data' => [
                     'success' => true,
-                    'name'    => $data->version
-                )
-            ));
+                    'name' => $data->version,
+                ],
+            ]);
         }
     }
 
     public function startUpdateAction()
     {
         $clientIp = $this->Request()->getClientIp();
-        $base     = $this->Request()->getBaseUrl();
-        $user     = Shopware()->Container()->get('Auth')->getIdentity();
+        $base = $this->Request()->getBaseUrl();
+        $user = Shopware()->Container()->get('Auth')->getIdentity();
 
         /** @var $locale \Shopware\Models\Shop\Locale */
         $locale = $user->locale;
 
-        $payload = array(
+        $payload = [
             'clientIp' => $clientIp,
-            'locale'   => $locale->getLocale(),
-        );
+            'locale' => $locale->getLocale(),
+        ];
 
         $version = $this->getCachedVersion();
         $payload['version'] = $version->version;
@@ -309,8 +316,10 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         }
 
         $payload = json_encode($payload);
-        if (!file_put_contents(Shopware()->DocPath() . '/files/update/update.json', $payload)) {
-            throw new \Exception("Could not write update.json");
+        $projectDir = $this->container->getParameter('shopware.app.rootdir');
+
+        if (!file_put_contents($projectDir . 'files/update/update.json', $payload)) {
+            throw new \Exception('Could not write update.json');
         }
 
         $this->redirect($base . '/recovery/update/index.php');
@@ -318,15 +327,15 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
 
     public function downloadAction()
     {
-        $offset = $this->Request()->get('offset', 0);
+        $offset = (int) $this->Request()->get('offset', 0);
 
         /** @var Version $version */
         $version = $this->getCachedVersion();
 
         try {
-            $destination  = $this->createDestinationFromVersion($version);
+            $destination = $this->createDestinationFromVersion($version);
             $downloadStep = new DownloadStep($version, $destination);
-            $result       = $downloadStep->run($offset);
+            $result = $downloadStep->run($offset);
             $this->view->assign($this->mapResult($result));
         } catch (Exception $e) {
             $this->Response()->setHttpResponseCode(500);
@@ -348,8 +357,8 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
 
         $unpackStep = new UnpackStep($source, $fileDir);
 
-        $offset = $this->Request()->get('offset', 0);
-        if ($offset == 0) {
+        $offset = (int) $this->Request()->get('offset', 0);
+        if ($offset === 0) {
             $fs->remove($updateDir);
         }
 
@@ -363,11 +372,41 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
     }
 
     /**
+     * Returns a list with actions which should not be validated for CSRF protection
+     *
+     * @return string[]
+     */
+    public function getWhitelistedCSRFActions()
+    {
+        return [
+            'startUpdate',
+        ];
+    }
+
+    /**
+     * @param string $path the path of the directory to be iterated over
+     *
+     * @return \RecursiveIteratorIterator
+     */
+    protected function createRecursiveFileIterator($path)
+    {
+        $directoryIterator = new \RecursiveDirectoryIterator(
+            $path,
+            \RecursiveDirectoryIterator::SKIP_DOTS
+        );
+
+        return new \RecursiveIteratorIterator(
+            $directoryIterator,
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+    }
+
+    /**
      * @param string $fileDir
      */
     private function replaceRecoveryFiles($fileDir)
     {
-        $recoveryDir = $fileDir  . '/recovery';
+        $recoveryDir = $fileDir . '/recovery';
         if (!is_dir($recoveryDir)) {
             return;
         }
@@ -385,23 +424,6 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
             $fs->mkdir($destinationDirectory);
             $fs->rename($sourceFile, $destinationFile, true);
         }
-    }
-
-    /**
-     * @param  string                     $path The path of the directory to be iterated over.
-     * @return \RecursiveIteratorIterator
-     */
-    protected function createRecursiveFileIterator($path)
-    {
-        $directoryIterator = new \RecursiveDirectoryIterator(
-            $path,
-            \RecursiveDirectoryIterator::SKIP_DOTS
-        );
-
-        return new \RecursiveIteratorIterator(
-            $directoryIterator,
-            \RecursiveIteratorIterator::LEAVES_ONLY
-        );
     }
 
     /**
@@ -447,7 +469,7 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
      */
     private function getUnique()
     {
-        /** @var UniqueIdGeneratorInterface $uniqueIdGenerator */
+        /** @var Shopware\Bundle\PluginInstallerBundle\Service\UniqueIdGeneratorInterface $uniqueIdGenerator */
         $uniqueIdGenerator = $this->container->get('shopware_plugininstaller.unique_id_generator');
 
         return $uniqueIdGenerator->getUniqueId();
@@ -471,8 +493,8 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         if (!empty($pluginConfig['update-fake-version'])) {
             $shopwareVersion = $pluginConfig['update-fake-version'];
         } else {
-            $shopwareVersion = Shopware::VERSION;
-            $versionText = \Shopware::VERSION_TEXT;
+            $shopwareVersion = $this->container->getParameter('shopware.release.version');
+            $versionText = $this->container->getParameter('shopware.release.version_text');
             if (!empty($versionText)) {
                 $shopwareVersion .= '-' . $versionText;
             }
@@ -503,9 +525,9 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $shopwareVersion = $this->getShopwareVersion();
 
         $pluginConfig = $this->getPluginConfig();
-        $params = array(
-            'code' => $pluginConfig['update-code']
-        );
+        $params = [
+            'code' => $pluginConfig['update-code'],
+        ];
 
         /** @var UpdateCheck $update */
         $update = $this->get('SwagUpdateUpdateCheck');
@@ -513,7 +535,7 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
 
         /** @var \Zend_Cache_Core $cache */
         $cache = $this->get('cache');
-        $cache->save($result, self::CACHE_KEY, array(), 60);
+        $cache->save($result, self::CACHE_KEY, [], 60);
 
         return $result;
     }
@@ -526,15 +548,15 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
     private function createDestinationFromVersion(Version $version)
     {
         $filename = 'update_' . $version->sha1 . '.zip';
-        $destination = Shopware()->DocPath('files') . $filename;
 
-        return $destination;
+        return $this->container->getParameter('shopware.app.rootdir') . $filename;
     }
 
     /**
      * Map result object to extjs array format
      *
-     * @param $result
+     * @param ValidResult|FinishResult|ErrorResult $result
+     *
      * @return array
      */
     private function mapResult($result)
@@ -545,8 +567,9 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
     }
 
     /**
-     * @param  Version $version
-     * @param  array   $languages
+     * @param Version $version
+     * @param array   $languages
+     *
      * @return string
      */
     private function getLocalizedChangeLog(Version $version, $languages)
@@ -561,7 +584,8 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
     }
 
     /**
-     * @param  stdClass $user
+     * @param stdClass $user
+     *
      * @return string
      */
     private function getUserLanguage(stdClass $user)
@@ -571,17 +595,5 @@ class Shopware_Controllers_Backend_SwagUpdate extends Shopware_Controllers_Backe
         $locale = strtolower($locale->getLocale());
 
         return substr($locale, 0, 2);
-    }
-
-    /**
-     * Returns a list with actions which should not be validated for CSRF protection
-     *
-     * @return string[]
-     */
-    public function getWhitelistedCSRFActions()
-    {
-        return [
-            'startUpdate'
-        ];
     }
 }

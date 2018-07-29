@@ -42,10 +42,10 @@ Ext.define('Shopware.apps.MediaManager.view.main.Window', {
     cls: Ext.baseCSSPrefix + 'media-manager-window',
     alias: 'widget.mediamanager-main-window',
     border: false,
-    autoShow: true,
+    autoShow: false,
     layout: 'border',
     height: '90%',
-    width: 1024,
+    width: 1124,
 
     /**
      * Initializes the component and builds up the main interface

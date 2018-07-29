@@ -1,5 +1,5 @@
 {
-    "Version": "2.1.12.94",
+    "Version": "2.1.32.59",
     "Names": {
         "AED": [
             "AED",
@@ -27,7 +27,7 @@
         ],
         "ARS": [
             "ARS",
-            "Pezoja argjentinase"
+            "Pesoja argjentinase"
         ],
         "AUD": [
             "A$",
@@ -67,7 +67,7 @@
         ],
         "BMD": [
             "BMD",
-            "Dollari e Bermudeve"
+            "Dollari i Bermudeve"
         ],
         "BND": [
             "BND",
@@ -91,11 +91,15 @@
         ],
         "BWP": [
             "BWP",
-            "Pula botsvane"
+            "Pula botsuane"
+        ],
+        "BYN": [
+            "BYN",
+            "Rubla bjelloruse"
         ],
         "BYR": [
             "BYR",
-            "Rubla bjelloruse"
+            "Rubla bjelloruse (2000–2016)"
         ],
         "BZD": [
             "BZD",
@@ -115,7 +119,7 @@
         ],
         "CLP": [
             "CLP",
-            "Pezoja kiliane"
+            "Pesoja kiliane"
         ],
         "CNY": [
             "CN¥",
@@ -123,7 +127,7 @@
         ],
         "COP": [
             "COP",
-            "Pezoja kolumbiane"
+            "Pesoja kolumbiane"
         ],
         "CRC": [
             "CRC",
@@ -131,11 +135,11 @@
         ],
         "CUC": [
             "CUC",
-            "Pezoja kubane e shkëmbyeshme"
+            "Pesoja kubaneze e shkëmbyeshme"
         ],
         "CUP": [
             "CUP",
-            "Pezoja kubane"
+            "Pesoja kubaneze"
         ],
         "CVE": [
             "CVE",
@@ -155,7 +159,7 @@
         ],
         "DOP": [
             "DOP",
-            "Pezoja dominikane"
+            "Pesoja dominikane"
         ],
         "DZD": [
             "DZD",
@@ -183,7 +187,7 @@
         ],
         "FKP": [
             "FKP",
-            "Stërlina e Ishujve Folkland"
+            "Stërlina e Ishujve Falkland"
         ],
         "GBP": [
             "£",
@@ -319,7 +323,7 @@
         ],
         "LKR": [
             "LKR",
-            "Rupia e Sri Lankës"
+            "Rupia e Sri-Lankës"
         ],
         "LRD": [
             "LRD",
@@ -383,7 +387,7 @@
         ],
         "MXN": [
             "MX$",
-            "Pezoja meksikane"
+            "Pesoja meksikane"
         ],
         "MYR": [
             "MYR",
@@ -427,7 +431,7 @@
         ],
         "PEN": [
             "PEN",
-            "Sola nuevo-peruane"
+            "Sola peruane"
         ],
         "PGK": [
             "PGK",
@@ -435,7 +439,7 @@
         ],
         "PHP": [
             "PHP",
-            "Pezoja filipinase"
+            "Pesoja filipinase"
         ],
         "PKR": [
             "PKR",
@@ -475,11 +479,11 @@
         ],
         "SBD": [
             "SBD",
-            "Dollari i Ishujve Solomon"
+            "Dollari i Ishujve Solomonë"
         ],
         "SCR": [
             "SCR",
-            "Rupia e Ishujve Sejçelë"
+            "Rupia e Ishujve Sishelë"
         ],
         "SDG": [
             "SDG",
@@ -495,11 +499,11 @@
         ],
         "SHP": [
             "SHP",
-            "Stërlina e Ishullit të Shën Helenës"
+            "Stërlina e Ishullit të Shën-Helenës"
         ],
         "SLL": [
             "SLL",
-            "Leoni i Sierra Leones"
+            "Leoni i Sierra-Leones"
         ],
         "SOS": [
             "SOS",
@@ -515,7 +519,7 @@
         ],
         "STD": [
             "STD",
-            "Dobra e Sao Tomes dhe Prinsipes"
+            "Dobra e Sao-Tomes dhe Prinsipes"
         ],
         "SYP": [
             "SYP",
@@ -523,7 +527,7 @@
         ],
         "SZL": [
             "SZL",
-            "Lilangeni i Svazilandit"
+            "Lilangeni i Suazilandës"
         ],
         "THB": [
             "฿",
@@ -575,7 +579,7 @@
         ],
         "UYU": [
             "UYU",
-            "Pezoja uruguaiane"
+            "Pesoja uruguaiane"
         ],
         "UZS": [
             "UZS",
@@ -619,7 +623,7 @@
         ],
         "ZAR": [
             "ZAR",
-            "Randa afrikano-jugore"
+            "Randi afrikano-jugor"
         ],
         "ZMW": [
             "ZMW",

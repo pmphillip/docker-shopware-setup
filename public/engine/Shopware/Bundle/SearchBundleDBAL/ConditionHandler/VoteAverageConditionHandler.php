@@ -32,20 +32,34 @@ use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class VoteAverageConditionHandler implements ConditionHandlerInterface
 {
     /**
+     * @var \Shopware_Components_Config
+     */
+    private $config;
+
+    /**
+     * @param \Shopware_Components_Config $config
+     */
+    public function __construct(\Shopware_Components_Config $config)
+    {
+        $this->config = $config;
+    }
+
+    /**
      * Checks if the passed condition can be handled by this class.
      *
      * @param ConditionInterface $condition
+     *
      * @return bool
      */
     public function supportsCondition(ConditionInterface $condition)
     {
-        return ($condition instanceof VoteAverageCondition);
+        return $condition instanceof VoteAverageCondition;
     }
 
     /**
@@ -56,22 +70,28 @@ class VoteAverageConditionHandler implements ConditionHandlerInterface
         QueryBuilder $query,
         ShopContextInterface $context
     ) {
+        $shopCondition = '';
+        if ($this->config->get('displayOnlySubShopVotes')) {
+            $shopCondition = ' AND (vote.shop_id = :voteAverageShopId OR vote.shop_id IS NULL)';
+            $query->setParameter(':voteAverageShopId', $context->getShop()->getId());
+        }
+
         $table = '
 SELECT SUM(vote.points) / COUNT(vote.id) AS average, vote.articleID AS product_id
 FROM s_articles_vote vote
+WHERE vote.active = 1 ' . $shopCondition . '
 GROUP BY vote.articleID';
 
         $query->innerJoin(
             'product',
-            '('. $table .')',
+            '(' . $table . ')',
             'voteAverage',
             'voteAverage.product_id = product.id
              AND voteAverage.average >= :average'
         );
 
-        /** @var VoteAverageCondition $condition */
+        /* @var VoteAverageCondition $condition */
         $query->setParameter(':average', (float) $condition->getAverage());
-        $query->addSelect('voteAverage.average');
         $query->addState(VoteAverageCondition::STATE_INCLUDES_VOTE_TABLE);
     }
 }

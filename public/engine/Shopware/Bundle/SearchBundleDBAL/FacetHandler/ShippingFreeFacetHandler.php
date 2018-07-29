@@ -25,20 +25,20 @@
 namespace Shopware\Bundle\SearchBundleDBAL\FacetHandler;
 
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundle\FacetResult\BooleanFacetResult;
-use Shopware\Bundle\SearchBundleDBAL\FacetHandlerInterface;
 use Shopware\Bundle\SearchBundle\Facet;
 use Shopware\Bundle\SearchBundle\FacetInterface;
+use Shopware\Bundle\SearchBundle\FacetResult\BooleanFacetResult;
+use Shopware\Bundle\SearchBundleDBAL\PartialFacetHandlerInterface;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilderFactoryInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Components\QueryAliasMapper;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\FacetHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class ShippingFreeFacetHandler implements FacetHandlerInterface
+class ShippingFreeFacetHandler implements PartialFacetHandlerInterface
 {
     /**
      * @var QueryBuilderFactoryInterface
@@ -56,9 +56,9 @@ class ShippingFreeFacetHandler implements FacetHandlerInterface
     private $fieldName;
 
     /**
-     * @param QueryBuilderFactoryInterface $queryBuilderFactory
+     * @param QueryBuilderFactoryInterface         $queryBuilderFactory
      * @param \Shopware_Components_Snippet_Manager $snippetManager
-     * @param QueryAliasMapper $queryAliasMapper
+     * @param QueryAliasMapper                     $queryAliasMapper
      */
     public function __construct(
         QueryBuilderFactoryInterface $queryBuilderFactory,
@@ -73,25 +73,13 @@ class ShippingFreeFacetHandler implements FacetHandlerInterface
         }
     }
 
-    /**
-     * Generates the facet data for the passed query, criteria and context object.
-     *
-     * @param FacetInterface|Facet\ShippingFreeFacet $facet
-     * @param Criteria $criteria
-     * @param ShopContextInterface $context
-     * @return BooleanFacetResult
-     */
-    public function generateFacet(
+    public function generatePartialFacet(
         FacetInterface $facet,
+        Criteria $reverted,
         Criteria $criteria,
         ShopContextInterface $context
     ) {
-        $queryCriteria = clone $criteria;
-        $queryCriteria->resetConditions();
-        $queryCriteria->resetSorting();
-
-        $query = $this->queryBuilderFactory->createQuery($queryCriteria, $context);
-
+        $query = $this->queryBuilderFactory->createQuery($reverted, $context);
         $query->resetQueryPart('orderBy');
         $query->resetQueryPart('groupBy');
 
@@ -99,7 +87,7 @@ class ShippingFreeFacetHandler implements FacetHandlerInterface
             ->andWhere('variant.shippingfree = 1')
             ->setMaxResults(1);
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $total = $statement->fetch(\PDO::FETCH_COLUMN);
@@ -108,11 +96,18 @@ class ShippingFreeFacetHandler implements FacetHandlerInterface
             return null;
         }
 
+        /** @var Facet\ShippingFreeFacet $facet */
+        if (!empty($facet->getLabel())) {
+            $label = $facet->getLabel();
+        } else {
+            $label = $this->snippetNamespace->get($facet->getName(), 'Shipping free');
+        }
+
         return new BooleanFacetResult(
             $facet->getName(),
             $this->fieldName,
             $criteria->hasCondition($facet->getName()),
-            $this->snippetNamespace->get($facet->getName(), 'Shipping free')
+            $label
         );
     }
 
@@ -121,6 +116,6 @@ class ShippingFreeFacetHandler implements FacetHandlerInterface
      */
     public function supportsFacet(FacetInterface $facet)
     {
-        return ($facet instanceof Facet\ShippingFreeFacet);
+        return $facet instanceof Facet\ShippingFreeFacet;
     }
 }

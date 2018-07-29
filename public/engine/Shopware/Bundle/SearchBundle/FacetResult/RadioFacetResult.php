@@ -25,54 +25,55 @@
 namespace Shopware\Bundle\SearchBundle\FacetResult;
 
 use Shopware\Bundle\SearchBundle\FacetResultInterface;
+use Shopware\Bundle\SearchBundle\TemplateSwitchable;
 use Shopware\Bundle\StoreFrontBundle\Struct\Attribute;
 use Shopware\Bundle\StoreFrontBundle\Struct\Extendable;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\FacetResult
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class RadioFacetResult extends Extendable implements FacetResultInterface
+class RadioFacetResult extends Extendable implements FacetResultInterface, TemplateSwitchable
 {
     /**
      * @var string
      */
-    private $facetName;
+    protected $facetName;
 
     /**
      * @var bool
      */
-    private $active;
+    protected $active;
 
     /**
      * @var string
      */
-    private $label;
+    protected $label;
 
     /**
      * @var string
      */
-    private $fieldName;
+    protected $fieldName;
 
     /**
      * @var ValueListItem[]
      */
-    private $values;
+    protected $values;
 
     /**
      * @var string|null
      */
-    private $template = null;
+    protected $template;
 
     /**
-     * @param string $facetName
-     * @param boolean $active
-     * @param string $label
+     * @param string          $facetName
+     * @param bool            $active
+     * @param string          $label
      * @param ValueListItem[] $values
-     * @param string $fieldName
-     * @param string|null $template
-     * @param Attribute[] $attributes
+     * @param string          $fieldName
+     * @param string|null     $template
+     * @param Attribute[]     $attributes
      */
     public function __construct(
         $facetName,
@@ -109,7 +110,7 @@ class RadioFacetResult extends Extendable implements FacetResultInterface
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isActive()
     {
@@ -133,10 +134,18 @@ class RadioFacetResult extends Extendable implements FacetResultInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getTemplate()
     {
         return $this->template;
+    }
+
+    /**
+     * @param null|string $template
+     */
+    public function setTemplate($template)
+    {
+        $this->template = $template;
     }
 }

@@ -31,7 +31,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Product\PriceGroup;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\StoreFrontBundle\Struct
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 interface ShopContextInterface
@@ -95,6 +95,7 @@ interface ShopContextInterface
      * Returns the active tax rule for the provided tax id.
      *
      * @param int $taxId
+     *
      * @return Tax
      */
     public function getTaxRule($taxId);
@@ -120,4 +121,9 @@ interface ShopContextInterface
      * @return State|null
      */
     public function getState();
+
+    /**
+     * @return int[]
+     */
+    public function getActiveCustomerStreamIds();
 }

@@ -166,7 +166,7 @@
                 products = productsJson ? JSON.parse(productsJson) : [],
                 len = Math.min(opts.productLimit, products.length);
 
-            if (len > 0) {
+            if (len > 1) {
                 me.$el.removeClass('is--hidden');
             }
 
@@ -197,7 +197,8 @@
                     'html': [
                         me.createProductImage(article),
                         me.createProductTitle(article)
-                    ]
+                    ],
+                    'data-ordernumber': article.orderNumber
                 });
 
             $.publish('plugin/swLastSeenProducts/onCreateTemplate', [ me, $template, article ]);
@@ -359,6 +360,14 @@
             });
 
             return queryParams;
+        },
+
+        destroy: function() {
+            var me = this;
+
+            $.unsubscribe(me.getEventName('plugin/swAjaxVariant/onRequestData'));
+
+            me._destroy();
         }
     });
 }(jQuery));

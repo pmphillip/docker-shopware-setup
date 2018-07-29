@@ -30,7 +30,7 @@ use Shopware\Bundle\SearchBundle\CriteriaRequestHandlerInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class SearchBundleDBALSubscriber implements SubscriberInterface
@@ -46,7 +46,7 @@ class SearchBundleDBALSubscriber implements SubscriberInterface
     private $conditionHandlers = [];
 
     /**
-     * @var FacetHandlerInterface[]
+     * @var FacetHandlerInterface[]|PartialFacetHandlerInterface[]
      */
     private $facetHandlers = [];
 
@@ -62,29 +62,19 @@ class SearchBundleDBALSubscriber implements SubscriberInterface
     {
         $this->validateHandlers($handlers);
 
-        $this->sortingHandlers = $this->getHandlersByClass(
-            $handlers,
-            '\Shopware\Bundle\SearchBundleDBAL\SortingHandlerInterface'
-        );
+        $this->sortingHandlers = $this->getHandlersByClass($handlers, SortingHandlerInterface::class);
+        $this->conditionHandlers = $this->getHandlersByClass($handlers, ConditionHandlerInterface::class);
+        $this->criteriaRequestHandlers = $this->getHandlersByClass($handlers, CriteriaRequestHandlerInterface::class);
 
-        $this->conditionHandlers = $this->getHandlersByClass(
-            $handlers,
-            '\Shopware\Bundle\SearchBundleDBAL\ConditionHandlerInterface'
-        );
-
-        $this->facetHandlers = $this->getHandlersByClass(
-            $handlers,
-            '\Shopware\Bundle\SearchBundleDBAL\FacetHandlerInterface'
-        );
-
-        $this->criteriaRequestHandlers = $this->getHandlersByClass(
-            $handlers,
-            '\Shopware\Bundle\SearchBundle\CriteriaRequestHandlerInterface'
-        );
+        $this->facetHandlers = $this->getHandlersByClass($handlers, FacetHandlerInterface::class);
+        $partial = $this->getHandlersByClass($handlers, PartialFacetHandlerInterface::class);
+        foreach ($partial as $handler) {
+            $this->facetHandlers->add($handler);
+        }
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function getSubscribedEvents()
     {
@@ -141,6 +131,7 @@ class SearchBundleDBALSubscriber implements SubscriberInterface
             if ($handler instanceof SortingHandlerInterface
                 || $handler instanceof ConditionHandlerInterface
                 || $handler instanceof FacetHandlerInterface
+                || $handler instanceof PartialFacetHandlerInterface
                 || $handler instanceof CriteriaRequestHandlerInterface
             ) {
                 continue;
@@ -153,8 +144,9 @@ class SearchBundleDBALSubscriber implements SubscriberInterface
     }
 
     /**
-     * @param array $handlers
+     * @param array  $handlers
      * @param string $class
+     *
      * @return ArrayCollection
      */
     private function getHandlersByClass(array $handlers, $class)
@@ -162,7 +154,7 @@ class SearchBundleDBALSubscriber implements SubscriberInterface
         $elements = array_filter(
             $handlers,
             function ($handler) use ($class) {
-                return ($handler instanceof $class);
+                return $handler instanceof $class;
             }
         );
 

@@ -46,7 +46,7 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
     public function createListFromFlippedChoices($choices, $value = null, $triggerDeprecationNotice = true)
     {
         if ($triggerDeprecationNotice) {
-            @trigger_error('The '.__METHOD__.' is deprecated since version 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
+            @trigger_error('The '.__METHOD__.' is deprecated since Symfony 2.7 and will be removed in 3.0.', E_USER_DEPRECATED);
         }
 
         return new ArrayKeyChoiceList($choices, $value);
@@ -89,7 +89,7 @@ class DefaultChoiceListFactory implements ChoiceListFactoryInterface
 
         if (!is_callable($preferredChoices) && !empty($preferredChoices)) {
             $preferredChoices = function ($choice) use ($preferredChoices) {
-                return false !== array_search($choice, $preferredChoices, true);
+                return in_array($choice, $preferredChoices, true);
             };
         }
 

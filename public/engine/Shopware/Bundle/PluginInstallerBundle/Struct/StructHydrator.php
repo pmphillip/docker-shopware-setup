@@ -26,65 +26,12 @@ namespace Shopware\Bundle\PluginInstallerBundle\Struct;
 
 /**
  * Class StructHydrator
- * @package Shopware\Bundle\PluginInstallerBundle\Struct
  */
 class StructHydrator
 {
     /**
      * @param $data
-     * @return BasketPositionStruct[]
-     */
-    private function hydrateBasketPosition($data)
-    {
-        $positions = [];
-        foreach ($data as $row) {
-            $positions[] = new BasketPositionStruct(
-                $row['orderNumber'],
-                $row['priceModel']['price'],
-                $row['priceModel']['type']
-            );
-        }
-        return $positions;
-    }
-
-    /**
-     * @param $data
-     * @return DomainStruct[]
-     */
-    private function hydrateBasketDomains($data)
-    {
-        $domains = [];
-        foreach ($data as $row) {
-            $domains[] = new DomainStruct(
-                $row['domain'],
-                $row['balance'],
-                $row['dispo'],
-                $row['isPartnerShop']
-            );
-        }
-        return $domains;
-    }
-
-    /**
-     * @param $billing
-     * @param $contact
-     * @return AddressStruct
-     */
-    private function hydrateBasketAddress($billing, $contact)
-    {
-        return new AddressStruct(
-            $billing['country']['name'],
-            $billing['zipCode'],
-            $billing['city'],
-            $billing['street'],
-            $billing['email'],
-            $contact['firstName'],
-            $contact['lastName']
-        );
-    }
-
-    /**
-     * @param $data
+     *
      * @return BasketStruct
      */
     public function hydrateBasket($data)
@@ -112,8 +59,9 @@ class StructHydrator
     }
 
     /**
-     * @param array $data
+     * @param array  $data
      * @param string $shopwareId
+     *
      * @return AccessTokenStruct
      */
     public function hydrateAccessToken($data, $shopwareId)
@@ -136,6 +84,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return PluginStruct
      */
     public function hydrateStorePlugin($data)
@@ -152,6 +101,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return PluginStruct
      */
     public function hydrateLocalPlugin($data)
@@ -168,6 +118,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return PluginStruct[] Indexed by plugin code
      */
     public function hydrateStorePlugins($data)
@@ -185,11 +136,13 @@ class StructHydrator
             $key = strtolower($plugin->getTechnicalName());
             $plugins[$key] = $plugin;
         }
+
         return $plugins;
     }
 
     /**
      * @param $data
+     *
      * @return PluginStruct[] Indexed by plugin code
      */
     public function hydrateLocalPlugins($data)
@@ -206,6 +159,7 @@ class StructHydrator
             $key = strtolower($plugin->getTechnicalName());
             $plugins[$key] = $plugin;
         }
+
         return $plugins;
     }
 
@@ -228,6 +182,9 @@ class StructHydrator
             $localPlugin->setAvailableVersion($storePlugin->getVersion());
         }
 
+        $localPlugin->setLink($storePlugin->getLink());
+        $localPlugin->setRedirectToStore($storePlugin->isRedirectToStore());
+        $localPlugin->setLowestPrice($storePlugin->getLowestPrice());
         $localPlugin->setContactForm($storePlugin->getContactForm());
         $localPlugin->setRating($storePlugin->getRating());
         $localPlugin->setUseContactForm($storePlugin->useContactForm());
@@ -262,6 +219,9 @@ class StructHydrator
         $storePlugin->setCapabilityInstall($localPlugin->hasCapabilityInstall());
         $storePlugin->setCapabilitySecureUninstall($localPlugin->hasCapabilitySecureUninstall());
         $storePlugin->setLocalDescription($localPlugin->getLocalDescription());
+        $storePlugin->setLink($localPlugin->getLink());
+        $storePlugin->setRedirectToStore($localPlugin->isRedirectToStore());
+        $storePlugin->setLowestPrice($localPlugin->getLowestPrice());
 
         $storePlugin->setCapabilityUpdate($localPlugin->hasCapabilityUpdate());
 
@@ -284,6 +244,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return CategoryStruct[]
      */
     public function hydrateCategories($data)
@@ -357,6 +318,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return CategoryStruct
      */
     public function hydrateCategory($data)
@@ -374,6 +336,174 @@ class StructHydrator
      * @param PluginStruct $plugin
      * @param $data
      */
+    public function assignLocalData(PluginStruct $plugin, $data)
+    {
+        $plugin->setId((int) $data['id']);
+        $plugin->setTechnicalName($data['name']);
+        $plugin->setLabel($data['label']);
+        $plugin->setActive((bool) $data['active']);
+        $plugin->setVersion($data['version']);
+        $plugin->setCapabilityActivate((bool) $data['capability_enable']);
+        $plugin->setCapabilityUpdate((bool) $data['capability_update']);
+        $plugin->setCapabilityInstall((bool) $data['capability_install']);
+        $plugin->setCapabilitySecureUninstall((bool) $data['capability_secure_uninstall']);
+        $plugin->setLocalUpdateAvailable(($data['update_version'] !== null));
+        $plugin->setLink($data['link']);
+
+        if (array_key_exists('redirectToStore', $data)) {
+            $plugin->setRedirectToStore((bool) $data['redirectToStore']);
+        }
+
+        if (array_key_exists('lowestPriceValue', $data)) {
+            $plugin->setLowestPrice((float) $data['lowestPriceValue']);
+        }
+
+        $plugin->setSource($data['source']);
+        $plugin->setFormId($data['form_id']);
+        $plugin->setLocalIcon($data['iconPath']);
+        $plugin->setLocalDescription($data['description']);
+        $plugin->setInSafeMode((bool) $data['in_safe_mode']);
+
+        if (isset($data['installation_date']) && !empty($data['installation_date'])) {
+            $date = new \DateTime($data['installation_date']);
+            $plugin->setInstallationDate($date);
+        }
+
+        if (isset($data['update_date']) && !empty($data['update_date'])) {
+            $date = new \DateTime($data['update_date']);
+            $plugin->setUpdateDate($date);
+        }
+
+        if (isset($data['author']) && !empty($data['author'])) {
+            $producer = new ProducerStruct();
+            $producer->setName($data['author']);
+            $producer->setWebsite($data['link']);
+            $plugin->setProducer($producer);
+        }
+
+        if (!empty($data['changelog'])) {
+            $plugin->setChangelog($data['changelog']);
+        }
+
+        if (isset($data['__licence_id']) && !empty($data['__licence_id'])) {
+            $licence = new LicenceStruct();
+            $licence->setIconPath($plugin->getIconPath());
+            $licence->setTechnicalName($plugin->getTechnicalName());
+            $licence->setLabel($plugin->getLabel());
+            $licence->setShop($data['__licence_host']);
+
+            if (isset($data['__licence_creation']) && !empty($data['__licence_creation'])) {
+                $date = new \DateTime($data['__licence_creation']);
+                $licence->setCreationDate($date);
+            }
+
+            if (isset($data['__licence_expiration']) && !empty($data['__licence_expiration'])) {
+                $date = new \DateTime($data['__licence_expiration']);
+                $licence->setExpirationDate($date);
+            }
+
+            switch ($data['__licence_type']) {
+                case 2:
+                    $price = new PriceStruct('rent');
+                    break;
+                case 3:
+                    $price = new PriceStruct('test');
+                    break;
+                case 99:
+                    $price = new PriceStruct('unlicensed');
+                    break;
+                default:
+                    $price = new PriceStruct('buy');
+            }
+
+            $licence->setPriceModel($price);
+            $plugin->setLicence($licence);
+        }
+    }
+
+    /**
+     * @param $data
+     *
+     * @return LocaleStruct[]
+     */
+    public function hydrateLocales($data)
+    {
+        $locales = [];
+        foreach ($data as $row) {
+            $locale = new LocaleStruct();
+
+            $locale->setId((int) $row['id']);
+            $locale->setName($row['name']);
+            $locale->setDescription($row['description']);
+
+            $locales[] = $locale;
+        }
+
+        return $locales;
+    }
+
+    /**
+     * @param $data
+     *
+     * @return BasketPositionStruct[]
+     */
+    private function hydrateBasketPosition($data)
+    {
+        $positions = [];
+        foreach ($data as $row) {
+            $positions[] = new BasketPositionStruct(
+                $row['orderNumber'],
+                $row['priceModel']['price'],
+                $row['priceModel']['type']
+            );
+        }
+
+        return $positions;
+    }
+
+    /**
+     * @param $data
+     *
+     * @return DomainStruct[]
+     */
+    private function hydrateBasketDomains($data)
+    {
+        $domains = [];
+        foreach ($data as $row) {
+            $domains[] = new DomainStruct(
+                $row['domain'],
+                $row['balance'],
+                $row['dispo'],
+                $row['isPartnerShop']
+            );
+        }
+
+        return $domains;
+    }
+
+    /**
+     * @param $billing
+     * @param $contact
+     *
+     * @return AddressStruct
+     */
+    private function hydrateBasketAddress($billing, $contact)
+    {
+        return new AddressStruct(
+            $billing['country']['name'],
+            $billing['zipCode'],
+            $billing['city'],
+            $billing['street'],
+            $billing['email'],
+            $contact['firstName'],
+            $contact['lastName']
+        );
+    }
+
+    /**
+     * @param PluginStruct $plugin
+     * @param $data
+     */
     private function assignStoreData(PluginStruct $plugin, $data)
     {
         $plugin->setTechnicalName($data['name']);
@@ -381,9 +511,14 @@ class StructHydrator
         $plugin->setCode($data['code']);
         $plugin->setDescription($data['description']);
         $plugin->setVersion($data['version']);
+        $plugin->setLink($data['link']);
+        $plugin->setRedirectToStore((bool) $data['redirectToStore']);
+        $plugin->setLowestPrice((float) $data['lowestPriceValue']);
+
         if (isset($data['contactForm'])) {
             $plugin->setContactForm($data['contactForm']);
         }
+
         $plugin->setChangelog($data['changelog']);
         $plugin->setInstallationManual($data['installationManual']);
         $plugin->setExampleUrl($data['examplePageUrl']);
@@ -423,81 +558,6 @@ class StructHydrator
         }
     }
 
-    /**
-     * @param PluginStruct $plugin
-     * @param $data
-     */
-    public function assignLocalData(PluginStruct $plugin, $data)
-    {
-        $plugin->setId((int) $data['id']);
-        $plugin->setTechnicalName($data['name']);
-        $plugin->setLabel($data['label']);
-        $plugin->setActive((bool) $data['active']);
-        $plugin->setVersion($data['version']);
-        $plugin->setCapabilityActivate((bool) $data['capability_enable']);
-        $plugin->setCapabilityUpdate((bool) $data['capability_update']);
-        $plugin->setCapabilityInstall((bool) $data['capability_install']);
-        $plugin->setCapabilitySecureUninstall((bool) $data['capability_secure_uninstall']);
-        $plugin->setLocalUpdateAvailable(($data['update_version'] !== null));
-
-        $plugin->setSource($data['source']);
-        $plugin->setFormId($data['form_id']);
-        $plugin->setLocalIcon($data['iconPath']);
-        $plugin->setLocalDescription($data['description']);
-
-        if (isset($data['installation_date']) && !empty($data['installation_date'])) {
-            $date = new \DateTime($data['installation_date']);
-            $plugin->setInstallationDate($date);
-        }
-
-        if (isset($data['update_date']) && !empty($data['update_date'])) {
-            $date = new \DateTime($data['update_date']);
-            $plugin->setUpdateDate($date);
-        }
-
-        if (isset($data['author']) && !empty($data['author'])) {
-            $producer = new ProducerStruct();
-            $producer->setName($data['author']);
-            $producer->setWebsite($data['link']);
-            $plugin->setProducer($producer);
-        }
-
-        if (isset($data['__licence_id']) && !empty($data['__licence_id'])) {
-            $licence = new LicenceStruct();
-            $licence->setIconPath($plugin->getIconPath());
-            $licence->setTechnicalName($plugin->getTechnicalName());
-            $licence->setLabel($plugin->getLabel());
-            $licence->setShop($data['__licence_host']);
-
-            if (isset($data['__licence_creation']) && !empty($data['__licence_creation'])) {
-                $date = new \DateTime($data['__licence_creation']);
-                $licence->setCreationDate($date);
-            }
-
-            if (isset($data['__licence_expiration']) && !empty($data['__licence_expiration'])) {
-                $date = new \DateTime($data['__licence_expiration']);
-                $licence->setExpirationDate($date);
-            }
-
-            switch ($data['__licence_type']) {
-                case 2:
-                    $price = new PriceStruct('rent');
-                    break;
-                case 3:
-                    $price = new PriceStruct('test');
-                    break;
-                case 99:
-                    $price = new PriceStruct('unlicensed');
-                    break;
-                default:
-                    $price = new PriceStruct('buy');
-            }
-
-            $licence->setPriceModel($price);
-            $plugin->setLicence($licence);
-        }
-    }
-
     private function hydrateProducer($data)
     {
         $producer = new ProducerStruct();
@@ -517,6 +577,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return PictureStruct[]
      */
     private function hydratePictures($data)
@@ -535,6 +596,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return PriceStruct[]
      */
     private function hydratePrices($data)
@@ -545,16 +607,16 @@ class StructHydrator
 
             if (isset($row['discr'])) {
                 switch ($row['discr']) {
-                    case "priceModelBuy":
+                    case 'priceModelBuy':
                         $type = 'buy';
                         break;
-                    case "priceModelRent":
+                    case 'priceModelRent':
                         $type = 'rent';
                         break;
-                    case "priceModelTest":
+                    case 'priceModelTest':
                         $type = 'test';
                         break;
-                    case "priceModelFree":
+                    case 'priceModelFree':
                         $type = 'free';
                         break;
 
@@ -589,6 +651,7 @@ class StructHydrator
 
     /**
      * @param $data
+     *
      * @return CommentStruct[]
      */
     private function hydrateComments($data)
@@ -608,25 +671,7 @@ class StructHydrator
             }
             $comments[] = $comment;
         }
+
         return $comments;
-    }
-
-    /**
-     * @param $data
-     * @return LocaleStruct[]
-     */
-    public function hydrateLocales($data)
-    {
-        $locales = [];
-        foreach ($data as $row) {
-            $locale = new LocaleStruct();
-
-            $locale->setId((int) $row['id']);
-            $locale->setName($row['name']);
-            $locale->setDescription($row['description']);
-
-            $locales[] = $locale;
-        }
-        return $locales;
     }
 }

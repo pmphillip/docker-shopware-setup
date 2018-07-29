@@ -27,9 +27,9 @@ The styling includes the collapsed and expanded styling and the panel component 
     .unitize(margin-bottom, 10);
     .border-radius();
     .white-gradient();
-	.user-select(none);
-	.touch-callout(none);
-	.tap-highlight-color(rgba(0, 0, 0, 0));
+    .user-select(none);
+    .touch-callout(none);
+    .tap-highlight-color(rgba(0, 0, 0, 0));
     display: block;
     position: relative;
     border: 1px solid @border-color;
@@ -41,6 +41,27 @@ The styling includes the collapsed and expanded styling and the panel component 
         .filter-panel--icon,
         .filter-panel--title {
             color: @brand-primary;
+        }
+    }
+
+    &.is--disabled {
+        .white-gradient();
+        opacity: 0.5;
+        border: 1px solid @border-color;
+        color: @text-color;
+
+        &:hover {
+            border: 1px solid @border-color;
+            color: @text-color;
+
+            .filter-panel--icon,
+            .filter-panel--title {
+                color: @text-color;
+            }
+        }
+
+        .filter-panel--title {
+            color: @text-color;
         }
     }
 
@@ -65,6 +86,30 @@ The styling includes the collapsed and expanded styling and the panel component 
             content: @sw-icon-arrow-up;
         }
     }
+
+    .flatpickr-wrapper {
+        position: relative;
+        display: block;
+
+        .flatpickr-calendar.static {
+            .unitize(top, 45);
+            display: block;
+            width: 100%;
+
+            .flatpickr-rContainer {
+                display: block;
+            }
+
+            .flatpickr-innerContainer {
+                display: block;
+                width: 100%;
+
+                .flatpickr-days {
+                    width: 100%;
+                }
+            }
+        }
+    }
 }
 
 .filter-panel--flyout {
@@ -85,9 +130,9 @@ The styling includes the collapsed and expanded styling and the panel component 
     .touch-callout(none);
     .tap-highlight-color(rgba(0, 0, 0, 0));
     display: block;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     cursor: pointer;
 }
 
@@ -116,6 +161,8 @@ The styling includes the collapsed and expanded styling and the panel component 
 .filter-panel--content {
     .unitize-padding(10, 10);
     display: block;
+
+
 }
 
 .filter-panel--option-list {
@@ -123,56 +170,68 @@ The styling includes the collapsed and expanded styling and the panel component 
     list-style: none;
 
     &.sub-level {
-    	.unitize-margin(0, 0, 0, 8);
-    	.unitize-padding(0, 0, 0, 18);
-    	border-left: 1px solid @border-color;
+        .unitize-margin(0, 0, 0, 8);
+        .unitize-padding(0, 0, 0, 18);
+        border-left: 1px solid @border-color;
     }
 }
 
 .filter-panel--option {
     display: block;
     position: relative;
-
-    .option--container:hover {
-		.filter-panel--label {
-			color: @brand-primary;
-		}
-		.filter-panel--checkbox {
-			border-color: @brand-primary;
-		}
-    }
 }
 
 .value-tree--option {
-	.unitize-margin(0, 0, 10, 0);
+    .unitize-margin(0, 0, 10, 0);
 
-	.sub-level & {
-		margin: 0;
-	}
+    .sub-level & {
+        margin: 0;
+    }
 }
 
 .filter-panel--label {
     .unitize-padding(4, 0, 4, 30);
     .unitize(line-height, 18);
-	.user-select(none);
-	.touch-callout(none);
-	.tap-highlight-color(rgba(0, 0, 0, 0));
+    .user-select(none);
+    .touch-callout(none);
+    .tap-highlight-color(rgba(0, 0, 0, 0));
     display: block;
     cursor: pointer;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.filter-panel--checkbox {
+.filter-panel--range-info {
+    .unitize-padding(10, 0, 5, 0);
+    text-align: center;
+
+    .range-info--label {
+        color: @text-color-dark;
+        font-weight: @font-bold-weight;
+    }
+}
+
+.filter--date {
+    .input-type--date {
+        .filter-panel--input {
+            display: block;
+            width: 100%;
+        }
+    }
+}
+
+.filter-panel--checkbox,
+.filter-panel--radio {
     .unitize-width(16);
     .unitize-height(16);
     .unitize-padding(1, 1);
     .border-radius();
     display: inline-block;
-    position: relative;
     border: 1px solid @border-color;
     cursor: pointer;
+    position: relative;
+    vertical-align: top;
 
     &:hover {
         border-color: @brand-primary;
@@ -184,12 +243,14 @@ The styling includes the collapsed and expanded styling and the panel component 
         width: 100%;
         height: 100%;
         position: absolute;
-        top: 0; left: 0;
+        top: 0;
+        left: 0;
         border: 0 none;
         background: none;
         cursor: pointer;
         z-index: @zindex-filter-panel-checkbox;
 
+        &:checked ~ .input--state,
         &:checked ~ .checkbox--state {
             .primary-gradient();
 
@@ -200,7 +261,7 @@ The styling includes the collapsed and expanded styling and the panel component 
                 .unitize(font-size, 7);
                 display: block;
                 font-family: @sw-icon-fontname;
-                font-weight: normal;
+                font-weight: @font-base-weight;
                 text-align: center;
                 color: #fff;
                 content: @sw-icon-check;
@@ -209,19 +270,22 @@ The styling includes the collapsed and expanded styling and the panel component 
 
         &:checked ~ .filter-panel--label {
             color: @brand-primary;
-            font-weight: 600;
+            font-weight: @font-bold-weight;
         }
 
+        &:disabled ~ .input--state,
         &:disabled ~ .checkbox--state {
             background: @body-bg;
         }
 
         &:disabled ~ .filter-panel--label {
-            color: @text-color;
+            color: lighten(@text-color, 15%);
         }
     }
 
-    .checkbox--state {
+    .input--state,
+    .checkbox--state,
+    .radio--state {
         .border-radius();
         display: block;
         width: 100%;
@@ -229,69 +293,55 @@ The styling includes the collapsed and expanded styling and the panel component 
         position: relative;
         z-index: @zindex-filter-panel-checkbox-state;
     }
+
+    &.filter-panel--radio {
+        .border-radius(11px);
+    }
+
+    input[type="radio"] {
+        .opacity(0);
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        border: 0 none;
+        background: none;
+        cursor: pointer;
+        z-index: @zindex-filter-panel-radio;
+
+        &:checked ~ .input--state,
+        &:checked ~ .radio--state {
+            .primary-gradient();
+        }
+
+        &:checked ~ .filter-panel--label {
+            color: @brand-primary;
+            font-weight: @font-bold-weight;
+        }
+
+        &:disabled .input--state,
+        &:disabled .radio--state {
+            background: @body-bg;
+        }
+
+        &:disabled .filter-panel--label {
+            color: @text-color;
+        }
+
+        & + .input--state,
+        & + .radio--state {
+            .border-radius(11px);
+        }
+    }
 }
 
-.filter-panel--radio {
-	.unitize-width(16);
-	.unitize-height(16);
-	.unitize-padding(1, 1);
-	.border-radius(11px);
-	display: inline-block;
-	position: relative;
-	border: 1px solid @border-color;
-	cursor: pointer;
-
-	&:hover {
-		border-color: @brand-primary;
-	}
-
-	input[type="radio"] {
-		.opacity(0);
-		display: block;
-		width: 100%;
-		height: 100%;
-		position: absolute;
-		top: 0; left: 0;
-		border: 0 none;
-		background: none;
-		cursor: pointer;
-		z-index: @zindex-filter-panel-radio;
-
-		&:checked ~ .radio--state {
-			.primary-gradient();
-		}
-
-		&:checked ~ .filter-panel--label {
-			color: @brand-primary;
-			font-weight: 600;
-		}
-
-		&:disabled .radio--state {
-			background: @body-bg;
-		}
-
-		&:disabled .filter-panel--label {
-			color: @text-color;
-		}
-	}
-
-	.radio--state {
-		.border-radius(11px);
-		display: block;
-		width: 100%;
-		height: 100%;
-		position: relative;
-		z-index: @zindex-filter-panel-radio-state;
-	}
-}
-
-.filter-panel--media-list {
+.input-type--media {
     .clearfix();
-    list-style: none;
-    margin-left: -2%;
 }
 
-.filter-panel--media-option {
+.input-type--media .option--container {
     .unitize-height(45);
     .unitize(max-width, 45);
     width: 18%;
@@ -300,23 +350,33 @@ The styling includes the collapsed and expanded styling and the panel component 
     position: relative;
     float: left;
 
-    input[type="checkbox"] {
+    .filter-panel--label {
+        padding: 0;
+    }
+
+    input.is--disabled ~ label {
+        opacity: 0.2;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
         .opacity(0);
         display: block;
         width: 100%;
         height: 100%;
         position: absolute;
-        top: 0; left: 0;
+        top: 0;
+        left: 0;
         border: 0 none;
         background: none;
         cursor: pointer;
         z-index: @zindex-filter-panel-media-checkbox;
 
-        &:hover ~ .filter-panel--media-label {
+        &:hover ~ .filter-panel--label {
             border-color: @brand-primary;
         }
 
-        &:checked ~ .filter-panel--media-label {
+        &:checked ~ .filter-panel--label {
             border-color: @brand-primary;
 
             &:after {
@@ -331,103 +391,117 @@ The styling includes the collapsed and expanded styling and the panel component 
                 display: block;
                 position: absolute;
                 font-family: @sw-icon-fontname;
-                font-weight: normal;
+                font-weight: @font-base-weight;
                 text-align: center;
                 color: #fff;
                 content: @sw-icon-check;
             }
         }
 
-        &:disabled .filter-panel--media-label {
-            .opacity(0.5);
+        &:disabled .filter-panel--label {
+            .opacity(0.2);
         }
     }
 }
 
-.filter-panel--media-label {
-    .unitize-padding(2, 2);
-    .unitize(line-height, 36);
-    .border-radius();
-    width: 100%;
-    height: 100%;
-    display: block;
-    position: relative;
-    text-align: center;
-    border: 1px solid @border-color;
+.filter--multi-selection,
+.filter--value,
+.filter--value-tree {
 
-    .filter-panel--media-image {
-        display: inline-block;
-        vertical-align: middle;
+    .option--container:hover {
+        .filter-panel--label {
+            color: @brand-primary;
+        }
+        .filter-panel--input {
+            border-color: @brand-primary;
+        }
     }
-}
 
-.filter-panel--range-info {
-    .unitize-padding(10, 0, 5, 0);
-    text-align: center;
+    .option--container:hover {
+        .filter-panel--input.is--disabled {
+            border-color: @border-color;
+        }
+    }
 
-    .range-info--label {
-        color: @text-color-dark;
-        font-weight: 600;
+    .filter-panel--checkbox,
+    .filter-panel--radio {
+        .unitize(top, 5);
+        .unitize(left, 0);
+        position: absolute;
+
+        &.is--disabled {
+            & ~ .filter-panel--label {
+                color: @gray-dark;
+            }
+
+            &:hover {
+                border-color: @border-color;
+            }
+        }
     }
 }
 
 .filter-panel--star-rating {
     .clearfix();
-    .unitize-width(150);
-    .unitize-height(30);
+    .unitize-height(90);
     .unitize(margin-bottom, 10);
-    margin-left: auto;
-    margin-right: auto;
     position: relative;
 
-    .rating-star--input {
-        .opacity(0);
-        .unitize-width(30);
-        .unitize-height(30);
-        display: block;
-        position: absolute;
-        top: 0; left: 0;
-        border: 0 none;
-        background: none;
+    .rating-star--outer-container {
+        .clearfix();
+        .unitize-width(220);
+        margin-left: auto;
+        margin-right: auto;
         cursor: pointer;
-        z-index: @zindex-filter-panel-rating-star;
 
-        &#star--1 { .unitize(left, 0); }
-        &#star--2 { .unitize(left, 30); }
-        &#star--3 { .unitize(left, 60); }
-        &#star--4 { .unitize(left, 90); }
-        &#star--5 { .unitize(left, 120); }
+        .icon--star, .icon--star-empty {
+            .unitize(font-size, 18);
+        }
 
-        &:checked ~ .rating-star--label,
-        &#star--reset:checked:disabled ~ .rating-star--label {
-            color: @text-color;
+        .icon--star {
+            color: @rating-star-color;
+        }
+        .icon--star-empty {
+            .transition();
+            color: @gray-dark;
+        }
 
-            &:before {
-                content: @sw-icon-star-empty;
+        .rating-star--suffix {
+            .unitize(margin-left, 5);
+            .transition();
+        }
+
+        &.is--active {
+            .icon--star-empty {
+                color: @text-color;
+            }
+            .rating-star--suffix {
+                font-weight: @font-bold-weight;
             }
         }
-    }
 
-    .rating-star--label {
-        .unitize-width(30);
-        .unitize-height(30);
-        .unitize(line-height, 30);
-        .unitize(font-size, 30);
-        position: absolute;
-        top: 0; left: 0;
-        font-family: @sw-icon-fontname;
-        font-weight: normal;
-        color: @rating-star-color;
-
-        &:before {
-            content: @sw-icon-star;
+        &.is--disabled {
+            opacity: 0.3;
         }
 
-        &.star--1 { .unitize(left, 0); }
-        &.star--2 { .unitize(left, 30); }
-        &.star--3 { .unitize(left, 60); }
-        &.star--4 { .unitize(left, 90); }
-        &.star--5 { .unitize(left, 120); }
+        &:hover .icon--star-empty {
+            color: @text-color;
+        }
+
+        &:hover .rating-star--suffix {
+            color: @brand-primary;
+        }
+
+        &:hover .is--disabled {
+            ~ .icon--star-empty {
+                .transition();
+                color: @gray-dark;
+            }
+
+            ~ .rating-star--suffix {
+                color: @text-color;
+            }
+        }
     }
 }
 
@@ -444,37 +518,18 @@ The styling includes the collapsed and expanded styling and the panel component 
 .filter--value {
     background: #fff;
 
-    &:hover {
-        .filter-panel--checkbox {
-            border-color: @brand-primary;
-        }
+    .filter-panel--input {
+        .unitize(top, 10);
+        .unitize(left, 10);
     }
 
     .filter-panel--title {
-        .unitize(padding-left, 35);
+        .unitize-padding(0, 30, 0, 40);
     }
 
-    .filter-panel--checkbox {
-        .unitize(top, 8);
-        .unitize(left, 10);
-        position: absolute;
+    &.is--disabled .filter-panel--input:hover {
+        border-color: @border-color;
     }
-}
-
-.filter--property {
-    .filter-panel--checkbox {
-        .unitize(top, 5);
-        .unitize(left, 0);
-        position: absolute;
-    }
-}
-
-.filter--radio {
-	.filter-panel--radio {
-		.unitize(top, 5);
-		.unitize(left, 0);
-		position: absolute;
-	}
 }
 
 .filter--range {
@@ -490,15 +545,18 @@ The styling includes the collapsed and expanded styling and the panel component 
 .filter--active {
     .unitize-padding(0, 10);
     .unitize-margin(0, 10, 10, 0);
-    .unitize(line-height, 22);
+    .unitize(line-height, 24);
     .unitize(font-size, 13);
     .border-radius();
     display: inline-block;
     border: 1px solid @border-color;
-    color: @brand-primary;
+    color: @text-color;
     background: #FFF;
     cursor: pointer;
     white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     .filter--active-icon {
         .unitize-margin(0, 10, 0, 0);
@@ -532,16 +590,19 @@ The styling includes the collapsed and expanded styling and the panel component 
     }
 }
 
+.action--filter-options.off-canvas.is--open .filter--active {
+    max-width: 100%;
+}
+
 .filter--actions {
     .unitize-padding(10, 0);
     .unitize(margin-bottom, 10);
-    border-bottom: 1px solid @border-color;
     clear: both;
 }
 
 .filter--btn-apply {
     position: relative;
-    font-weight: 600;
+    font-weight: @font-bold-weight;
     width: 100%;
 
     &.is--icon-right [class^="icon--"] {
@@ -557,7 +618,56 @@ The styling includes the collapsed and expanded styling and the panel component 
     }
 
     .filter--count {
-        font-weight: bold;
+        font-weight: @font-bold-weight;
+    }
+}
+
+.filter--facet-container {
+    .clearfix();
+    .unitize-padding(10, 0, 0, 0);
+}
+
+.action--filter-options.is--active-filter {
+    .filter--active-container {
+        .unitize-padding(15, 0, 5, 0);
+        display: block;
+    }
+}
+
+.filter--active-container {
+    display: none;
+}
+
+.listing--wrapper {
+    width: 100%;
+
+    &.has--sidebar-filter {
+        .listing--paging {
+            clear: both;
+        }
+
+        .action--filter-btn {
+            display: block;
+        }
+
+        .action--sort {
+            .unitize(line-height, 32);
+            .unitize-margin(0, 10, 10, 0);
+            width: 100%;
+
+            .sort--label {
+                display: none;
+            }
+
+            .sort--select {
+                width: 100%;
+                vertical-align: top;
+            }
+        }
+    }
+
+    .filter--actions.filter--actions-top {
+        margin: 0;
     }
 }
 
@@ -571,6 +681,14 @@ The styling includes the collapsed and expanded styling and the panel component 
         &.is--collapsed {
             .unitize-height(38);
         }
+
+        .flatpickr-wrapper {
+            position: static;
+
+            .flatpickr-calendar.static {
+                top: 100%;
+            }
+        }
     }
 
     .is--no-sidebar .filter-panel {
@@ -579,7 +697,8 @@ The styling includes the collapsed and expanded styling and the panel component 
 
     .filter-panel--flyout {
         position: absolute;
-        top: 0; left: 0;
+        top: 0;
+        left: 0;
     }
 
     .filter-panel--content {
@@ -589,7 +708,7 @@ The styling includes the collapsed and expanded styling and the panel component 
     }
 
     .filter--active-container {
-        .unitize-padding(15, 0, 5, 0);
+        padding: 0;
         margin-left: 1%;
         margin-right: 1%;
 
@@ -619,28 +738,43 @@ The styling includes the collapsed and expanded styling and the panel component 
     .filter--btn-apply {
         width: auto;
     }
+
+    .filter--facet-container,
+    .filter--actions-bottom {
+        display: none;
+    }
+
+    .filter--actions.filter--actions-top {
+        display: none;
+    }
+
+    .listing--wrapper.has--sidebar-filter {
+
+        .action--filter-btn {
+            display:none;
+        }
+
+        .action--sort {
+            .sort--select {
+                .unitize(max-width, 200);
+                vertical-align: top;
+            }
+        }
+    }
 }
 
 @media screen and(min-width: @tabletLandscapeViewportWidth) {
-
-    .filter-panel { width: 32%; }
+    .filter-panel {
+        width: 32%;
+    }
 }
 
 @media screen and(min-width: @desktopViewportWidth) {
 
     .filter-panel--star-rating {
-        .unitize-width(100);
-        .unitize-height(20);
-
         .rating-star--input {
             .unitize-width(20);
             .unitize-height(20);
-
-            &#star--1 { .unitize(left, 0); }
-            &#star--2 { .unitize(left, 20); }
-            &#star--3 { .unitize(left, 40); }
-            &#star--4 { .unitize(left, 60); }
-            &#star--5 { .unitize(left, 80); }
         }
 
         .rating-star--label {
@@ -648,12 +782,12 @@ The styling includes the collapsed and expanded styling and the panel component 
             .unitize-height(20);
             .unitize(line-height, 20);
             .unitize(font-size, 20);
-
-            &.star--1 { .unitize(left, 0); }
-            &.star--2 { .unitize(left, 20); }
-            &.star--3 { .unitize(left, 40); }
-            &.star--4 { .unitize(left, 60); }
-            &.star--5 { .unitize(left, 80); }
         }
+    }
+
+    .listing--wrapper.has--sidebar-filter .action--sort .sort--label {
+        .unitize-margin(0, 10, 0, 0);
+        display: inline-block;
+        font-weight: @font-bold-weight;
     }
 }

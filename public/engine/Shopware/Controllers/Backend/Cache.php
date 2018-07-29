@@ -1,7 +1,29 @@
 <?php
+/**
+ * Shopware 5
+ * Copyright (c) shopware AG
+ *
+ * According to our dual licensing model, this program can be used either
+ * under the terms of the GNU Affero General Public License, version 3,
+ * or under a proprietary license.
+ *
+ * The texts of the GNU Affero General Public License with an additional
+ * permission and of our proprietary license can be found at and
+ * in the LICENSE file you have received along with this program.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * "Shopware" is a registered trademark of shopware AG.
+ * The licensing of the program under the AGPLv3 does not imply a
+ * trademark license. Therefore any rights, title and interest in
+ * our trademarks remain entirely with us.
+ */
 
-use Shopware\Components\CacheManager;
 use Doctrine\ORM\AbstractQuery;
+use Shopware\Components\CacheManager;
 
 /**
  * Shopware 5
@@ -28,7 +50,7 @@ use Doctrine\ORM\AbstractQuery;
 
 /**
  * @category  Shopware
- * @package   Shopware\Controllers\Backend
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_ExtJs
@@ -38,6 +60,9 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
      */
     protected $cacheManager;
 
+    /**
+     * {@inheritdoc}
+     */
     public function preDispatch()
     {
         parent::preDispatch();
@@ -45,67 +70,58 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
         $this->cacheManager = $this->get('shopware.cache_manager');
     }
 
-    protected function initAcl()
-    {
-        // read
-        $this->addAclPermission('getInfo', 'read', 'Insufficient Permissions');
-        // update
-        $this->addAclPermission('config', 'update', 'Insufficient Permissions');
-        // clear
-        $this->addAclPermission('clearCache', 'clear', 'Insufficient Permissions');
-        $this->addAclPermission('clearDirect', 'clear', 'Insufficient Permissions');
-    }
-
     /**
      * Cache info action
      */
     public function getInfoAction()
     {
-        $data = array(
+        $data = [
             $this->cacheManager->getConfigCacheInfo(),
             $this->cacheManager->getHttpCacheInfo($this->Request()),
             $this->cacheManager->getTemplateCacheInfo(),
             $this->cacheManager->getThemeCacheInfo(),
             $this->cacheManager->getShopwareProxyCacheInfo(),
             $this->cacheManager->getDoctrineProxyCacheInfo(),
-            $this->cacheManager->getOpCacheCacheInfo()
-        );
+            $this->cacheManager->getOpCacheCacheInfo(),
+        ];
 
-        $this->View()->assign(array(
+        $this->View()->assign([
             'success' => true,
-            'data'    => $data,
-            'total'   => count($data)
-        ));
+            'data' => $data,
+            'total' => count($data),
+        ]);
     }
 
     /**
      * Clear cache action
+     *
+     * @throws \Zend_Cache_Exception
      */
     public function clearCacheAction()
     {
-        $cache = $this->Request()->getPost('cache', array());
+        $cache = $this->Request()->getPost('cache', []);
 
         $cacheInstance = $this->cacheManager->getCoreCache();
 
         $capabilities = $cacheInstance->getBackend()->getCapabilities();
 
         if (empty($capabilities['tags'])) {
-            if ($cache['config'] == 'on' || $cache['template'] == 'on') {
+            if ($cache['config'] === 'on' || $cache['template'] === 'on') {
                 $cacheInstance->clean();
             }
         } else {
-            $tags = array();
-            if ($cache['config'] == 'on' || $cache['backend'] == 'on') {
+            $tags = [];
+            if ($cache['config'] === 'on' || $cache['backend'] === 'on') {
                 $tags[] = 'Shopware_Config';
                 $tags[] = 'Shopware_Plugin';
             }
-            if ($cache['search'] == 'on') {
+            if ($cache['search'] === 'on') {
                 $tags[] = 'Shopware_Modules_Search';
             }
-            if ($cache['backend'] == 'on') {
+            if ($cache['backend'] === 'on') {
                 $tags[] = 'Shopware_Config';
             }
-            if ($cache['proxy'] == 'on') {
+            if ($cache['proxy'] === 'on') {
                 $tags[] = 'Shopware_Models';
             }
             if (!empty($tags) && $tags < 7) {
@@ -115,31 +131,32 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
             }
         }
 
-        if ($cache['config'] == 'on' || $cache['backend'] == 'on' || $cache['frontend'] == 'on') {
-            $this->cacheManager->clearTemplateCache();
+        if ($cache['config'] === 'on' || $cache['backend'] === 'on' || $cache['frontend'] === 'on') {
+            $this->cacheManager->clearConfigCache();
         }
-        if ($cache['search'] == 'on') {
+        if ($cache['search'] === 'on') {
             $this->cacheManager->clearSearchCache();
         }
-        if ($cache['router'] == 'on') {
+        if ($cache['router'] === 'on') {
             $this->cacheManager->clearRewriteCache();
         }
-        if ($cache['template'] == 'on' || $cache['backend'] == 'on' || $cache['frontend'] == 'on') {
+        if ($cache['template'] === 'on' || $cache['backend'] === 'on' || $cache['frontend'] === 'on') {
             $this->cacheManager->clearTemplateCache();
         }
-        if ($cache['theme'] == 'on' || $cache['frontend'] == 'on') {
+        if ($cache['theme'] === 'on' || $cache['frontend'] === 'on') {
             $this->cacheManager->clearHttpCache();
         }
-        if ($cache['http'] == 'on' || $cache['frontend'] == 'on') {
+        if ($cache['http'] === 'on' || $cache['frontend'] === 'on') {
             $this->cacheManager->clearHttpCache();
         }
-        if ($cache['proxy'] == 'on') {
+        if ($cache['proxy'] === 'on') {
             $this->cacheManager->clearProxyCache();
+            $this->cacheManager->clearOpCache();
         }
 
-        $this->View()->assign(array(
-            'success' => true
-        ));
+        $this->View()->assign([
+            'success' => true,
+        ]);
     }
 
     /**
@@ -149,19 +166,20 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
     {
         $shopId = $this->Request()->get('shopId');
 
-        $repository = $this->get('models')->getRepository('Shopware\Models\Shop\Shop');
+        $repository = $this->get('models')->getRepository(\Shopware\Models\Shop\Shop::class);
 
-        $query = $repository->getShopsWithThemes(array('shop.id' => $shopId));
+        $query = $repository->getShopsWithThemes(['shop.id' => $shopId]);
 
-        /**@var $shop \Shopware\Models\Shop\Shop*/
+        /** @var $shop \Shopware\Models\Shop\Shop */
         $shop = $query->getResult(
             AbstractQuery::HYDRATE_OBJECT
         )[0];
 
         if (!$shop) {
-            $this->View()->assign(array(
-                'success' => false
-            ));
+            $this->View()->assign([
+                'success' => false,
+            ]);
+
             return;
         }
 
@@ -176,18 +194,19 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
             $compiler->compileLess('new', $shop->getTemplate(), $shop);
         } catch (Exception $e) {
             $this->View()->assign(['success' => false, 'message' => $e->getMessage()]);
+
             return;
         }
 
-        $this->View()->assign(array(
-            'success' => true
-        ));
+        $this->View()->assign([
+            'success' => true,
+        ]);
     }
 
     public function moveThemeFilesAction()
     {
-        /**@var $repository \Shopware\Models\Shop\Repository*/
-        $repository = $this->get('models')->getRepository('Shopware\Models\Shop\Shop');
+        /** @var $repository \Shopware\Models\Shop\Repository */
+        $repository = $this->get('models')->getRepository(\Shopware\Models\Shop\Shop::class);
         $shops = $repository->getShopsWithThemes()->getResult();
         $compiler = $this->container->get('theme_compiler');
         $pathResolver = $this->container->get('theme_path_resolver');
@@ -195,9 +214,9 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
         $time = time();
 
         foreach ($shops as $shop) {
-            $oldTimestamp = $compiler->getThemeTimestamp($shop);
-            if ($oldTimestamp == $time) {
-                $time++;
+            $oldTimestamp = (int) $compiler->getThemeTimestamp($shop);
+            if ($oldTimestamp === $time) {
+                ++$time;
             }
 
             $new = $pathResolver->getCssFilePath($shop, 'new');
@@ -237,5 +256,19 @@ class Shopware_Controllers_Backend_Cache extends Shopware_Controllers_Backend_Ex
             default:
                 break;
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function initAcl()
+    {
+        // read
+        $this->addAclPermission('getInfo', 'read', 'Insufficient Permissions');
+        // update
+        $this->addAclPermission('config', 'update', 'Insufficient Permissions');
+        // clear
+        $this->addAclPermission('clearCache', 'clear', 'Insufficient Permissions');
+        $this->addAclPermission('clearDirect', 'clear', 'Insufficient Permissions');
     }
 }

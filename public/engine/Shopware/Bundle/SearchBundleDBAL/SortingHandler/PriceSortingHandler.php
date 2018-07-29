@@ -24,31 +24,35 @@
 
 namespace Shopware\Bundle\SearchBundleDBAL\SortingHandler;
 
-use Shopware\Bundle\SearchBundleDBAL\PriceHelperInterface;
-use Shopware\Bundle\SearchBundleDBAL\SortingHandlerInterface;
+use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\Sorting\PriceSorting;
 use Shopware\Bundle\SearchBundle\SortingInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
+use Shopware\Bundle\SearchBundleDBAL\CriteriaAwareInterface;
+use Shopware\Bundle\SearchBundleDBAL\ListingPriceSwitcher;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilder;
+use Shopware\Bundle\SearchBundleDBAL\SortingHandlerInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\SortingHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class PriceSortingHandler implements SortingHandlerInterface
+class PriceSortingHandler implements SortingHandlerInterface, CriteriaAwareInterface
 {
     /**
-     * @var PriceHelperInterface
+     * @var Criteria
      */
-    private $priceHelper;
+    private $criteria;
 
     /**
-     * @param PriceHelperInterface $priceHelper
+     * @var ListingPriceSwitcher
      */
-    public function __construct(PriceHelperInterface $priceHelper)
+    private $listingPriceSwitcher;
+
+    public function __construct(ListingPriceSwitcher $listingPriceSwitcher)
     {
-        $this->priceHelper = $priceHelper;
+        $this->listingPriceSwitcher = $listingPriceSwitcher;
     }
 
     /**
@@ -56,7 +60,7 @@ class PriceSortingHandler implements SortingHandlerInterface
      */
     public function supportsSorting(SortingInterface $sorting)
     {
-        return ($sorting instanceof PriceSorting);
+        return $sorting instanceof PriceSorting;
     }
 
     /**
@@ -67,13 +71,14 @@ class PriceSortingHandler implements SortingHandlerInterface
         QueryBuilder $query,
         ShopContextInterface $context
     ) {
-        $selection = $this->priceHelper->getSelection($context);
+        $this->listingPriceSwitcher->joinPrice($query, $this->criteria, $context);
 
-        $this->priceHelper->joinPrices($query, $context);
-        $query->addSelect('MIN('. $selection .') as cheapest_price');
+        /* @var PriceSorting $sorting */
+        $query->addOrderBy('listing_price.cheapest_price', $sorting->getDirection());
+    }
 
-        /** @var PriceSorting $sorting */
-        $query->addOrderBy('cheapest_price', $sorting->getDirection())
-            ->addOrderBy('product.id', $sorting->getDirection());
+    public function setCriteria(Criteria $criteria)
+    {
+        $this->criteria = $criteria;
     }
 }

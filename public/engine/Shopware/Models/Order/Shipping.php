@@ -24,8 +24,9 @@
 
 namespace   Shopware\Models\Order;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
+use Shopware\Components\Security\AttributeCleanerTrait;
 use Shopware\Models\Customer\Address;
 
 /**
@@ -50,11 +51,75 @@ use Shopware\Models\Customer\Address;
  */
 class Shipping extends ModelEntity
 {
+    /*
+     * HTML Cleansing trait for different attributes in a class
+     * @see \Shopware\Components\Security\AttributeCleanerTrait
+     */
+    use AttributeCleanerTrait;
+
+    /**
+     * @var string
+     * @ORM\Column(name="title", type="string", length=100, nullable=true)
+     */
+    protected $title;
+
+    /**
+     * Contains the additional address line data
+     *
+     * @var string
+     * @ORM\Column(name="additional_address_line1", type="string", length=255, nullable=true)
+     */
+    protected $additionalAddressLine1 = null;
+
+    /**
+     * Contains the additional address line data 2
+     *
+     * @var string
+     * @ORM\Column(name="additional_address_line2", type="string", length=255, nullable=true)
+     */
+    protected $additionalAddressLine2 = null;
+
+    /**
+     * The customer property is the owning side of the association between customer and shipping.
+     * The association is joined over the shipping userID and the customer id
+     *
+     * @var \Shopware\Models\Customer\Customer
+     * @ORM\ManyToOne(targetEntity="Shopware\Models\Customer\Customer")
+     * @ORM\JoinColumn(name="userID", referencedColumnName="id")
+     */
+    protected $customer;
+
+    /**
+     * The customer property is the owning side of the association between order and billing.
+     * The association is joined over the billing orderID and the order id
+     *
+     * @var \Shopware\Models\Order\Order
+     * @ORM\OneToOne(targetEntity="Order", inversedBy="shipping")
+     * @ORM\JoinColumn(name="orderID", referencedColumnName="id")
+     */
+    protected $order;
+
+    /**
+     * @ORM\OneToOne(targetEntity="\Shopware\Models\Country\Country")
+     * @ORM\JoinColumn(name="countryID", referencedColumnName="id")
+     *
+     * @var \Shopware\Models\Country\Country
+     */
+    protected $country;
+
+    /**
+     * INVERSE SIDE
+     *
+     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\OrderShipping", mappedBy="orderShipping", orphanRemoval=true, cascade={"persist"})
+     *
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     */
+    protected $attribute;
     /**
      * The id property is an identifier property which means
      * doctrine associations can be defined over this field
      *
-     * @var integer $id
+     * @var int
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
@@ -65,21 +130,23 @@ class Shipping extends ModelEntity
      * If of the associated order. Used as foreign key for the
      * order - billing association.
      *
-     * @var integer $orderId
+     * @var int
      * @ORM\Column(name="orderID", type="integer", nullable=false)
      */
     private $orderId;
 
     /**
      * Contains the id of the country. Used for the shipping - country association.
-     * @var integer $country
+     *
+     * @var int
      * @ORM\Column(name="countryID", type="integer", nullable=false)
      */
     private $countryId = 0;
 
     /**
      * Contains the id of the state. Used for billing - state association.
-     * @var integer $stateId
+     *
+     * @var int
      * @ORM\Column(name="stateID", type="integer", nullable=true)
      */
     private $stateId = null;
@@ -88,134 +155,95 @@ class Shipping extends ModelEntity
      * If of the associated customer. Used as foreign key for the
      * customer - shipping association.
      *
-     * @var integer $customerId
+     * @var int
      * @ORM\Column(name="userID", type="integer", nullable=true)
      */
     private $customerId = null;
 
     /**
      * Contains the name of the shipping address company
-     * @var string $company
+     *
+     * @var string
      * @ORM\Column(name="company", type="string", length=255, nullable=false)
      */
     private $company = '';
 
     /**
      * Contains the department name of the shipping address company
-     * @var string $department
+     *
+     * @var string
      * @ORM\Column(name="department", type="string", length=35, nullable=false)
      */
     private $department = '';
 
     /**
      * Contains the customer salutation (Mr, Ms, Company)
-     * @var string $salutation
+     *
+     * @var string
      * @ORM\Column(name="salutation", type="string", length=30, nullable=false)
      */
     private $salutation = '';
 
     /**
      * Contains the first name of the shipping address
-     * @var string $firstName
+     *
+     * @var string
      * @ORM\Column(name="firstname", type="string", length=50, nullable=false)
      */
     private $firstName = '';
 
     /**
-     * @var string
-     * @ORM\Column(name="title", type="string", length=100, nullable=true)
-     */
-    protected $title;
-
-    /**
      * Contains the last name of the shipping address
-     * @var string $lastName
+     *
+     * @var string
      * @ORM\Column(name="lastname", type="string", length=60, nullable=false)
      */
     private $lastName = '';
 
     /**
      * Contains the street name of the shipping address
-     * @var string $street
+     *
+     * @var string
      * @ORM\Column(name="street", type="string", length=255, nullable=false)
      */
     private $street = '';
 
     /**
      * Contains the zip code of the shipping address
-     * @var string $zipCode
+     *
+     * @var string
      * @ORM\Column(name="zipcode", type="string", length=50, nullable=false)
      */
     private $zipCode = '';
 
     /**
      * Contains the city name of the shipping address
-     * @var string $city
+     *
+     * @var string
      * @ORM\Column(name="city", type="string", length=70, nullable=false)
      */
     private $city = '';
 
     /**
-     * Contains the additional address line data
+     * Contains the phone number of the shipping address
      *
-     * @var string $additionalAddressLine1
-     * @ORM\Column(name="additional_address_line1", type="string", length=255, nullable=true)
+     * @var string
+     * @ORM\Column(name="phone", type="string", length=40)
      */
-    protected $additionalAddressLine1 = null;
-
-    /**
-     * Contains the additional address line data 2
-     *
-     * @var string $additionalAddressLine2
-     * @ORM\Column(name="additional_address_line2", type="string", length=255, nullable=true)
-     */
-    protected $additionalAddressLine2 = null;
-
-    /**
-     * The customer property is the owning side of the association between customer and shipping.
-     * The association is joined over the shipping userID and the customer id
-     *
-     * @var \Shopware\Models\Customer\Customer $customer
-     * @ORM\ManyToOne(targetEntity="Shopware\Models\Customer\Customer")
-     * @ORM\JoinColumn(name="userID", referencedColumnName="id")
-     */
-    protected $customer;
-
-    /**
-     * The customer property is the owning side of the association between order and billing.
-     * The association is joined over the billing orderID and the order id
-     *
-     * @var \Shopware\Models\Order\Order $order
-     * @ORM\OneToOne(targetEntity="Order", inversedBy="shipping")
-     * @ORM\JoinColumn(name="orderID", referencedColumnName="id")
-     */
-    protected $order;
-
-    /**
-     * @ORM\OneToOne(targetEntity="\Shopware\Models\Country\Country")
-     * @ORM\JoinColumn(name="countryID", referencedColumnName="id")
-     * @var \Shopware\Models\Country\Country $country
-     */
-    protected $country;
+    private $phone = '';
 
     /**
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Country\State")
      * @ORM\JoinColumn(name="stateID", referencedColumnName="id")
+     *
      * @var \Shopware\Models\Country\State
      */
     private $state;
 
     /**
-     * INVERSE SIDE
-     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\OrderShipping", mappedBy="orderShipping", orphanRemoval=true, cascade={"persist"})
-     * @var \Doctrine\Common\Collections\ArrayCollection
-     */
-    protected $attribute;
-
-    /**
      * Getter function for the unique id identifier property
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -226,11 +254,13 @@ class Shipping extends ModelEntity
      * Setter function for the company column property
      *
      * @param string $company
+     *
      * @return Shipping
      */
     public function setCompany($company)
     {
-        $this->company = $company;
+        $this->company = $this->cleanup($company);
+
         return $this;
     }
 
@@ -248,11 +278,13 @@ class Shipping extends ModelEntity
      * Setter function for the department column property.
      *
      * @param string $department
+     *
      * @return Shipping
      */
     public function setDepartment($department)
     {
-        $this->department = $department;
+        $this->department = $this->cleanup($department);
+
         return $this;
     }
 
@@ -266,16 +298,17 @@ class Shipping extends ModelEntity
         return $this->department;
     }
 
-
     /**
      * Setter function for the salutation column property.
      *
      * @param string $salutation
+     *
      * @return Shipping
      */
     public function setSalutation($salutation)
     {
-        $this->salutation = $salutation;
+        $this->salutation = $this->cleanup($salutation);
+
         return $this;
     }
 
@@ -293,11 +326,13 @@ class Shipping extends ModelEntity
      * Setter function for the firstName column property.
      *
      * @param string $firstName
+     *
      * @return Shipping
      */
     public function setFirstName($firstName)
     {
-        $this->firstName = $firstName;
+        $this->firstName = $this->cleanup($firstName);
+
         return $this;
     }
 
@@ -315,11 +350,13 @@ class Shipping extends ModelEntity
      * Setter function for the lastName column property.
      *
      * @param string $lastName
+     *
      * @return Shipping
      */
     public function setLastName($lastName)
     {
-        $this->lastName = $lastName;
+        $this->lastName = $this->cleanup($lastName);
+
         return $this;
     }
 
@@ -337,11 +374,13 @@ class Shipping extends ModelEntity
      * Setter function for the street column property.
      *
      * @param string $street
+     *
      * @return Shipping
      */
     public function setStreet($street)
     {
-        $this->street = $street;
+        $this->street = $this->cleanup($street);
+
         return $this;
     }
 
@@ -359,11 +398,13 @@ class Shipping extends ModelEntity
      * Setter function for the zipCode column property.
      *
      * @param string $zipCode
+     *
      * @return Shipping
      */
     public function setZipCode($zipCode)
     {
-        $this->zipCode = $zipCode;
+        $this->zipCode = $this->cleanup($zipCode);
+
         return $this;
     }
 
@@ -381,11 +422,13 @@ class Shipping extends ModelEntity
      * Setter function for the city column property.
      *
      * @param string $city
+     *
      * @return Shipping
      */
     public function setCity($city)
     {
-        $this->city = $city;
+        $this->city = $this->cleanup($city);
+
         return $this;
     }
 
@@ -399,6 +442,29 @@ class Shipping extends ModelEntity
         return $this->city;
     }
 
+    /**
+     * Setter function for the phone column property.
+     *
+     * @param string $phone
+     *
+     * @return Shipping
+     */
+    public function setPhone($phone)
+    {
+        $this->phone = $phone;
+
+        return $this;
+    }
+
+    /**
+     * Getter function for the phone column property.
+     *
+     * @return string
+     */
+    public function getPhone()
+    {
+        return $this->phone;
+    }
 
     /**
      * Returns the instance of the Shopware\Models\Customer\Customer model which
@@ -488,6 +554,7 @@ class Shipping extends ModelEntity
 
     /**
      * @param \Doctrine\Common\Collections\ArrayCollection|array|null $attribute
+     *
      * @return \Doctrine\Common\Collections\ArrayCollection
      */
     public function setAttribute($attribute)
@@ -502,7 +569,7 @@ class Shipping extends ModelEntity
      */
     public function setAdditionalAddressLine2($additionalAddressLine2)
     {
-        $this->additionalAddressLine2 = $additionalAddressLine2;
+        $this->additionalAddressLine2 = $this->cleanup($additionalAddressLine2);
     }
 
     /**
@@ -522,7 +589,7 @@ class Shipping extends ModelEntity
      */
     public function setAdditionalAddressLine1($additionalAddressLine1)
     {
-        $this->additionalAddressLine1 = $additionalAddressLine1;
+        $this->additionalAddressLine1 = $this->cleanup($additionalAddressLine1);
     }
 
     /**
@@ -577,6 +644,6 @@ class Shipping extends ModelEntity
      */
     public function setTitle($title)
     {
-        $this->title = $title;
+        $this->title = $this->cleanup($title);
     }
 }

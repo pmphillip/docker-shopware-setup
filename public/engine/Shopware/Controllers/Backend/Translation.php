@@ -34,13 +34,10 @@ class Shopware_Controllers_Backend_Translation extends Shopware_Controllers_Back
 
     /**
      * Setup Translation Component
-     *
-     * @return void
      */
     public function init()
     {
         parent::init();
-        $this->translation = new Shopware_Components_Translation();
     }
 
     /**
@@ -50,12 +47,12 @@ class Shopware_Controllers_Backend_Translation extends Shopware_Controllers_Back
     {
         $node = (int) $this->Request()->getParam('node');
         $node = $node > 0 ? $node : null;
-        $sort = $this->Request()->getParam('sort', array());
-        $filter = $this->Request()->getParam('filter', array());
-        $filter[] = array(
+        $sort = $this->Request()->getParam('sort', []);
+        $filter = $this->Request()->getParam('filter', []);
+        $filter[] = [
             'property' => 'mainId',
-            'value' => $node
-        );
+            'value' => $node,
+        ];
 
         /** @var $repository Shopware\Models\Shop\Repository */
         $repository = 'Shopware\Models\Shop\Shop';
@@ -64,9 +61,9 @@ class Shopware_Controllers_Backend_Translation extends Shopware_Controllers_Back
         $query = $repository->getListQuery($filter, $sort);
 
         $data = $query->getArrayResult();
-        $this->View()->assign(array(
-            'success' => true, 'data' => $data, 'total' => count($data)
-        ));
+        $this->View()->assign([
+            'success' => true, 'data' => $data, 'total' => count($data),
+        ]);
     }
 
     /**
@@ -79,11 +76,11 @@ class Shopware_Controllers_Backend_Translation extends Shopware_Controllers_Back
         $key = (string) $this->Request()->getParam('key', 1);
         $language = (string) $this->Request()->getParam('language');
 
-        $data = $this->translation->read($language, $type, $key, $merge);
+        $data = $this->getTranslation()->read($language, $type, $key, $merge);
 
-        $this->View()->assign(array(
-            'data' => $data, 'success' => true
-        ));
+        $this->View()->assign([
+            'data' => $data, 'success' => true,
+        ]);
     }
 
     /**
@@ -95,16 +92,25 @@ class Shopware_Controllers_Backend_Translation extends Shopware_Controllers_Back
         $merge = (bool) $this->Request()->getParam('merge');
         $key = (string) $this->Request()->getParam('key', 1);
         $language = (string) $this->Request()->getParam('language');
-        $data = (array) $this->Request()->getParam('data', array());
+        $data = (array) $this->Request()->getParam('data', []);
 
-        $this->View()->assign(array(
-            'success' => $this->translation->write(
+        $this->View()->assign([
+            'success' => $this->getTranslation()->write(
                 $language,
                 $type,
                 $key,
                 $data,
                 $merge
-            )
-        ));
+            ),
+        ]);
+    }
+
+    protected function getTranslation()
+    {
+        if (!isset($this->translation)) {
+            $this->translation = $this->container->get('translation');
+        }
+
+        return $this->translation;
     }
 }

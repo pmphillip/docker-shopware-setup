@@ -24,8 +24,9 @@
 
 namespace   Shopware\Models\Order;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
+use Shopware\Components\Security\AttributeCleanerTrait;
 use Shopware\Models\Customer\Address;
 
 /**
@@ -51,11 +52,47 @@ use Shopware\Models\Customer\Address;
  */
 class Billing extends ModelEntity
 {
+    /*
+     * HTML Cleansing trait for different attributes in a class (implemented in setters)
+     * @see \Shopware\Components\Security\AttributeCleanerTrait
+     */
+    use AttributeCleanerTrait;
+
+    /**
+     * @var string
+     * @ORM\Column(name="title", type="string", length=100, nullable=true)
+     */
+    protected $title;
+
+    /**
+     * Contains the additional address line data
+     *
+     * @var string
+     * @ORM\Column(name="additional_address_line1", type="string", length=255, nullable=true)
+     */
+    protected $additionalAddressLine1 = null;
+
+    /**
+     * Contains the additional address line data 2
+     *
+     * @var string
+     * @ORM\Column(name="additional_address_line2", type="string", length=255, nullable=true)
+     */
+    protected $additionalAddressLine2 = null;
+
+    /**
+     * INVERSE SIDE
+     *
+     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\OrderBilling", mappedBy="orderBilling", orphanRemoval=true, cascade={"persist"})
+     *
+     * @var \Shopware\Models\Attribute\OrderBilling
+     */
+    protected $attribute;
     /**
      * The id property is an identifier property which means
      * doctrine associations can be defined over this field
      *
-     * @var integer $id
+     * @var int
      * @ORM\Id
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\GeneratedValue(strategy="IDENTITY")
@@ -66,7 +103,7 @@ class Billing extends ModelEntity
      * If of the associated customer. Used as foreign key for the
      * order - billing association.
      *
-     * @var integer $orderId
+     * @var int
      * @ORM\Column(name="orderID", type="integer", nullable=false)
      */
     private $orderId;
@@ -75,129 +112,120 @@ class Billing extends ModelEntity
      * If of the associated customer. Used as foreign key for the
      * customer - billing association.
      *
-     * @var integer $customerId
+     * @var int
      * @ORM\Column(name="userID", type="integer", nullable=true)
      */
     private $customerId = null;
 
     /**
      * Contains the id of the country. Used for the billing - country association.
-     * @var integer $country
+     *
+     * @var int
      * @ORM\Column(name="countryID", type="integer", nullable=false)
      */
     private $countryId = 0;
 
     /**
      * Contains the id of the state. Used for billing - state association.
-     * @var integer $stateId
+     *
+     * @var int
      * @ORM\Column(name="stateID", type="integer", nullable=true)
      */
     private $stateId = null;
 
     /**
      * Contains the name of the billing address company
-     * @var string $company
+     *
+     * @var string
      * @ORM\Column(name="company", type="string", length=255, nullable=false)
      */
     private $company = '';
 
     /**
      * Contains the department name of the billing address company
-     * @var string $department
+     *
+     * @var string
      * @ORM\Column(name="department", type="string", length=35, nullable=false)
      */
     private $department = '';
 
     /**
      * Contains the customer salutation (Mr, Ms, Company)
-     * @var string $salutation
+     *
+     * @var string
      * @ORM\Column(name="salutation", type="string", length=30, nullable=false)
      */
     private $salutation = '';
 
     /**
-     * @var string
-     * @ORM\Column(name="title", type="string", length=100, nullable=true)
-     */
-    protected $title;
-
-    /**
      * Contains the unique customer number
-     * @var string $number
+     *
+     * @var string
      * @ORM\Column(name="customernumber", type="string", length=30, nullable=true)
      */
     private $number = '';
 
     /**
      * Contains the first name of the billing address
-     * @var string $firstName
+     *
+     * @var string
      * @ORM\Column(name="firstname", type="string", length=50, nullable=false)
      */
     private $firstName = '';
 
     /**
      * Contains the last name of the billing address
-     * @var string $lastName
+     *
+     * @var string
      * @ORM\Column(name="lastname", type="string", length=60, nullable=false)
      */
     private $lastName = '';
 
     /**
      * Contains the street name of the billing address
-     * @var string $street
+     *
+     * @var string
      * @ORM\Column(name="street", type="string", length=255, nullable=false)
      */
     private $street = '';
 
     /**
      * Contains the zip code of the billing address
-     * @var string $zipCode
+     *
+     * @var string
      * @ORM\Column(name="zipcode", type="string", length=50, nullable=false)
      */
     private $zipCode = '';
 
     /**
      * Contains the city name of the billing address
-     * @var string $city
+     *
+     * @var string
      * @ORM\Column(name="city", type="string", length=70, nullable=false)
      */
     private $city = '';
 
     /**
      * Contains the phone number of the billing address
-     * @var string $phone
+     *
+     * @var string
      * @ORM\Column(name="phone", type="string", length=40, nullable=false)
      */
     private $phone = '';
 
     /**
      * Contains the vat id of the billing address
-     * @var string $vatId
+     *
+     * @var string
      * @ORM\Column(name="ustid", type="string", length=50, nullable=true)
      */
     private $vatId = '';
 
     /**
-     * Contains the additional address line data
-     *
-     * @var string $additionalAddressLine1
-     * @ORM\Column(name="additional_address_line1", type="string", length=255, nullable=true)
-     */
-    protected $additionalAddressLine1 = null;
-
-    /**
-     * Contains the additional address line data 2
-     *
-     * @var string $additionalAddressLine2
-     * @ORM\Column(name="additional_address_line2", type="string", length=255, nullable=true)
-     */
-    protected $additionalAddressLine2 = null;
-
-    /**
      * The customer property is the owning side of the association between customer and billing.
      * The association is joined over the billing userID and the customer id
      *
-     * @var \Shopware\Models\Customer\Customer $customer
+     * @var \Shopware\Models\Customer\Customer
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Customer\Customer")
      * @ORM\JoinColumn(name="userID", referencedColumnName="id")
      */
@@ -207,7 +235,7 @@ class Billing extends ModelEntity
      * The order property is the owning side of the association between order and billing.
      * The association is joined over the billing orderID and the order id
      *
-     * @var \Shopware\Models\Order\Order $order
+     * @var \Shopware\Models\Order\Order
      * @ORM\OneToOne(targetEntity="Order", inversedBy="billing")
      * @ORM\JoinColumn(name="orderID", referencedColumnName="id")
      */
@@ -216,6 +244,7 @@ class Billing extends ModelEntity
     /**
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Country\Country")
      * @ORM\JoinColumn(name="countryID", referencedColumnName="id")
+     *
      * @var \Shopware\Models\Country\Country
      */
     private $country;
@@ -223,21 +252,15 @@ class Billing extends ModelEntity
     /**
      * @ORM\OneToOne(targetEntity="\Shopware\Models\Country\State")
      * @ORM\JoinColumn(name="stateID", referencedColumnName="id")
+     *
      * @var \Shopware\Models\Country\State
      */
     private $state;
 
     /**
-     * INVERSE SIDE
-     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\OrderBilling", mappedBy="orderBilling", orphanRemoval=true, cascade={"persist"})
-     * @var \Shopware\Models\Attribute\OrderBilling
-     */
-    protected $attribute;
-
-    /**
      * Getter function for the unique id identifier property
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -248,11 +271,13 @@ class Billing extends ModelEntity
      * Setter function for the company column property
      *
      * @param string $company
+     *
      * @return Billing
      */
     public function setCompany($company)
     {
-        $this->company = $company;
+        $this->company = $this->cleanup($company);
+
         return $this;
     }
 
@@ -270,11 +295,13 @@ class Billing extends ModelEntity
      * Setter function for the department column property.
      *
      * @param string $department
+     *
      * @return Billing
      */
     public function setDepartment($department)
     {
-        $this->department = $department;
+        $this->department = $this->cleanup($department);
+
         return $this;
     }
 
@@ -292,11 +319,13 @@ class Billing extends ModelEntity
      * Setter function for the salutation column property.
      *
      * @param string $salutation
+     *
      * @return Billing
      */
     public function setSalutation($salutation)
     {
-        $this->salutation = $salutation;
+        $this->salutation = $this->cleanup($salutation);
+
         return $this;
     }
 
@@ -314,11 +343,13 @@ class Billing extends ModelEntity
      * Setter function for the customer number column property.
      *
      * @param string $number
+     *
      * @return Billing
      */
     public function setNumber($number)
     {
-        $this->number = $number;
+        $this->number = $this->cleanup($number);
+
         return $this;
     }
 
@@ -336,11 +367,13 @@ class Billing extends ModelEntity
      * Setter function for the firstName column property.
      *
      * @param string $firstName
+     *
      * @return Billing
      */
     public function setFirstName($firstName)
     {
-        $this->firstName = $firstName;
+        $this->firstName = $this->cleanup($firstName);
+
         return $this;
     }
 
@@ -358,11 +391,13 @@ class Billing extends ModelEntity
      * Setter function for the lastName column property.
      *
      * @param string $lastName
+     *
      * @return Billing
      */
     public function setLastName($lastName)
     {
-        $this->lastName = $lastName;
+        $this->lastName = $this->cleanup($lastName);
+
         return $this;
     }
 
@@ -380,11 +415,13 @@ class Billing extends ModelEntity
      * Setter function for the street column property.
      *
      * @param string $street
+     *
      * @return Billing
      */
     public function setStreet($street)
     {
-        $this->street = $street;
+        $this->street = $this->cleanup($street);
+
         return $this;
     }
 
@@ -402,11 +439,13 @@ class Billing extends ModelEntity
      * Setter function for the zipCode column property.
      *
      * @param string $zipCode
+     *
      * @return Billing
      */
     public function setZipCode($zipCode)
     {
-        $this->zipCode = $zipCode;
+        $this->zipCode = $this->cleanup($zipCode);
+
         return $this;
     }
 
@@ -424,11 +463,13 @@ class Billing extends ModelEntity
      * Setter function for the city column property.
      *
      * @param string $city
+     *
      * @return Billing
      */
     public function setCity($city)
     {
-        $this->city = $city;
+        $this->city = $this->cleanup($city);
+
         return $this;
     }
 
@@ -446,11 +487,13 @@ class Billing extends ModelEntity
      * Setter function for the phone column property.
      *
      * @param string $phone
+     *
      * @return Billing
      */
     public function setPhone($phone)
     {
-        $this->phone = $phone;
+        $this->phone = $this->cleanup($phone);
+
         return $this;
     }
 
@@ -469,11 +512,13 @@ class Billing extends ModelEntity
      * The vatId will be saved in the ustId table field.
      *
      * @param string $vatId
+     *
      * @return Billing
      */
     public function setVatId($vatId)
     {
-        $this->vatId = $vatId;
+        $this->vatId = $this->cleanup($vatId);
+
         return $this;
     }
 
@@ -580,6 +625,7 @@ class Billing extends ModelEntity
 
     /**
      * @param \Shopware\Models\Attribute\OrderBilling|array|null $attribute
+     *
      * @return \Shopware\Models\Attribute\OrderBilling
      */
     public function setAttribute($attribute)
@@ -594,7 +640,7 @@ class Billing extends ModelEntity
      */
     public function setAdditionalAddressLine2($additionalAddressLine2)
     {
-        $this->additionalAddressLine2 = $additionalAddressLine2;
+        $this->additionalAddressLine2 = $this->cleanup($additionalAddressLine2);
     }
 
     /**
@@ -614,7 +660,7 @@ class Billing extends ModelEntity
      */
     public function setAdditionalAddressLine1($additionalAddressLine1)
     {
-        $this->additionalAddressLine1 = $additionalAddressLine1;
+        $this->additionalAddressLine1 = $this->cleanup($additionalAddressLine1);
     }
 
     /**
@@ -672,6 +718,6 @@ class Billing extends ModelEntity
      */
     public function setTitle($title)
     {
-        $this->title = $title;
+        $this->title = $this->cleanup($title);
     }
 }

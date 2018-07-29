@@ -30,7 +30,6 @@ use Shopware\Bundle\MediaBundle\Struct\MediaPosition;
 
 /**
  * Class GarbageCollectorFactory
- * @package Shopware\Bundle\MediaBundle
  */
 class GarbageCollectorFactory
 {
@@ -51,8 +50,8 @@ class GarbageCollectorFactory
 
     /**
      * @param \Enlight_Event_EventManager $events
-     * @param Connection $connection
-     * @param MediaServiceInterface $mediaService
+     * @param Connection                  $connection
+     * @param MediaServiceInterface       $mediaService
      */
     public function __construct(\Enlight_Event_EventManager $events, Connection $connection, MediaServiceInterface $mediaService)
     {
@@ -62,6 +61,8 @@ class GarbageCollectorFactory
     }
 
     /**
+     * @throws \Enlight_Event_Exception
+     *
      * @return GarbageCollector
      */
     public function factory()
@@ -74,11 +75,11 @@ class GarbageCollectorFactory
     /**
      * Return default media-positions
      *
-     * @return ArrayCollection
+     * @return MediaPosition[]
      */
     private function getDefaultMediaPositions()
     {
-        return new ArrayCollection([
+        return [
             new MediaPosition('s_articles_img', 'media_id'),
             new MediaPosition('s_categories', 'mediaID'),
             new MediaPosition('s_emarketing_banners', 'img', 'path'),
@@ -98,16 +99,24 @@ class GarbageCollectorFactory
             new MediaPosition('s_cms_static', 'html', 'path', MediaPosition::PARSE_HTML),
             new MediaPosition('s_cms_support', 'text', 'path', MediaPosition::PARSE_HTML),
             new MediaPosition('s_cms_support', 'text2', 'path', MediaPosition::PARSE_HTML),
-            new MediaPosition('s_core_config_mails', 'contentHTML', 'path', MediaPosition::PARSE_HTML)
-        ]);
+            new MediaPosition('s_core_config_mails', 'contentHTML', 'path', MediaPosition::PARSE_HTML),
+            new MediaPosition('s_core_config_values', 'value', 'path', MediaPosition::PARSE_SERIALIZE),
+        ];
     }
 
     /**
+     * @throws \Enlight_Event_Exception
+     *
      * @return MediaPosition[]
      */
     private function getMediaPositions()
     {
-        $mediaPositions = $this->getDefaultMediaPositions();
+        $mediaPositions = new ArrayCollection(
+            array_merge(
+                $this->getDefaultMediaPositions(),
+                $this->getAttributeMediaPositions()
+            )
+        );
 
         $mediaPositions = $this->events->collect(
             'Shopware_Collect_MediaPositions',
@@ -115,5 +124,49 @@ class GarbageCollectorFactory
         );
 
         return $mediaPositions->toArray();
+    }
+
+    /**
+     * @return MediaPosition[]
+     */
+    private function getAttributeMediaPositions()
+    {
+        $mediaPositions = [];
+
+        // value is just the media ID
+        $singleSelectionColumns = $this->connection->createQueryBuilder()
+            ->select(['table_name', 'column_name'])
+            ->from('s_attribute_configuration')
+            ->andWhere('entity = :entityName')
+            ->andWhere('column_type = :columnType')
+            ->setParameters([
+                'entityName' => \Shopware\Models\Media\Media::class,
+                'columnType' => 'single_selection',
+            ])
+            ->execute()
+            ->fetchAll();
+
+        foreach ($singleSelectionColumns as $attribute) {
+            $mediaPositions[] = new MediaPosition($attribute['table_name'], $attribute['column_name']);
+        }
+
+        // values are separated by pipes '|'
+        $multiSelectionColumns = $this->connection->createQueryBuilder()
+            ->select(['table_name', 'column_name'])
+            ->from('s_attribute_configuration')
+            ->andWhere('entity = :entityName')
+            ->andWhere('column_type = :columnType')
+            ->setParameters([
+                'entityName' => \Shopware\Models\Media\Media::class,
+                'columnType' => 'multi_selection',
+            ])
+            ->execute()
+            ->fetchAll();
+
+        foreach ($multiSelectionColumns as $attribute) {
+            $mediaPositions[] = new MediaPosition($attribute['table_name'], $attribute['column_name'], 'id', MediaPosition::PARSE_PIPES);
+        }
+
+        return $mediaPositions;
     }
 }

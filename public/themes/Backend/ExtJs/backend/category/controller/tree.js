@@ -232,6 +232,8 @@ Ext.define('Shopware.apps.Category.controller.Tree', {
      */
     onItemClick : function (view, record) {
         var me = this,
+            window          = me.getMainWindow(),
+            mainForm        = window.formPanel,
             settingForm     = me.getSettingsForm(),
             defaultSettings = settingForm.defaultSettings,
             saveButton      = me.getSaveCategoryButton(),
@@ -262,14 +264,11 @@ Ext.define('Shopware.apps.Category.controller.Tree', {
                 // change fieldset header
                 defaultSettings.setTitle(Ext.String.format(title, me.detailRecord.get('name'), me.detailRecord.get('id')));
                 // load record into forms
-                settingForm.loadRecord(me.detailRecord);
+                mainForm.loadRecord(me.detailRecord);
 
                 var disableTab = !record.get('leaf');
                 if (me.detailRecord.get('streamId')) {
                     disableTab = true;
-                    settingForm.streamSelection.store.load({
-                        params: { id: me.detailRecord.get('streamId') }
-                    });
                 }
 
                 // Just create the selection view once, if created just refresh the stores and the detail record.
@@ -305,6 +304,7 @@ Ext.define('Shopware.apps.Category.controller.Tree', {
                 // fire event that a new record has been loaded.
                 settingForm.fireEvent('recordloaded', me.detailRecord, record);
 
+                window.customListing.loadCategory(me.detailRecord);
             }
         });
     },
@@ -629,6 +629,7 @@ Ext.define('Shopware.apps.Category.controller.Tree', {
         var me   = this,
             formPanel = me.getSettingsForm(),
             form = formPanel.getForm();
+
         formPanel.defaultSettings.disable();
         formPanel.createCategory.disable();
         formPanel.cmsSettings.disable();

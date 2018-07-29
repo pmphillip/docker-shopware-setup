@@ -27,17 +27,18 @@ namespace Shopware\Bundle\SearchBundle\Condition;
 use Assert\Assertion;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
 
-class SimilarProductCondition implements ConditionInterface
+class SimilarProductCondition implements ConditionInterface, \JsonSerializable
 {
     /** @var string $productName */
     protected $productName;
 
     /** @var int $productId */
-    private $productId;
+    protected $productId;
 
     /**
-     * @param int $productId
+     * @param int    $productId
      * @param string $productName
+     *
      * @throws \Exception
      */
     public function __construct($productId, $productName)
@@ -69,5 +70,13 @@ class SimilarProductCondition implements ConditionInterface
     public function getProductName()
     {
         return $this->productName;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function jsonSerialize()
+    {
+        return get_object_vars($this);
     }
 }

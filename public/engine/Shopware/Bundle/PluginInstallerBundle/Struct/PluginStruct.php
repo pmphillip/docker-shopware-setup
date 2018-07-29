@@ -26,7 +26,6 @@ namespace Shopware\Bundle\PluginInstallerBundle\Struct;
 
 /**
  * Class PluginStruct
- * @package Shopware\Bundle\PluginInstallerBundle\Struct
  */
 class PluginStruct implements \JsonSerializable
 {
@@ -65,7 +64,7 @@ class PluginStruct implements \JsonSerializable
     private $label;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $active = false;
 
@@ -90,7 +89,7 @@ class PluginStruct implements \JsonSerializable
     private $updateDate = null;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $updateAvailable = false;
 
@@ -100,27 +99,27 @@ class PluginStruct implements \JsonSerializable
     private $availableVersion = null;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $capabilityUpdate = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $capabilityInstall = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $capabilitySecureUninstall = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $capabilityDummy = false;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $capabilityActivate = false;
 
@@ -197,7 +196,7 @@ class PluginStruct implements \JsonSerializable
     private $producer;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $encrypted = false;
 
@@ -225,6 +224,26 @@ class PluginStruct implements \JsonSerializable
      * @var bool
      */
     private $localUpdateAvailable = false;
+
+    /**
+     * @var bool
+     */
+    private $inSafeMode;
+
+    /**
+     * @var string
+     */
+    private $link;
+
+    /**
+     * @var bool
+     */
+    private $redirectToStore = false;
+
+    /**
+     * @var float
+     */
+    private $lowestPrice;
 
     /**
      * @param string $technicalName
@@ -267,7 +286,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isActive()
     {
@@ -275,7 +294,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $active
+     * @param bool $active
      */
     public function setActive($active)
     {
@@ -363,7 +382,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {
@@ -419,7 +438,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasCapabilityUpdate()
     {
@@ -427,7 +446,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $capabilityUpdate
+     * @param bool $capabilityUpdate
      */
     public function setCapabilityUpdate($capabilityUpdate)
     {
@@ -435,7 +454,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasCapabilityInstall()
     {
@@ -443,7 +462,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $capabilityInstall
+     * @param bool $capabilityInstall
      */
     public function setCapabilityInstall($capabilityInstall)
     {
@@ -451,7 +470,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasCapabilityDummy()
     {
@@ -459,7 +478,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $capabilityDummy
+     * @param bool $capabilityDummy
      */
     public function setCapabilityDummy($capabilityDummy)
     {
@@ -467,7 +486,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasCapabilityActivate()
     {
@@ -475,7 +494,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $capabilityActivate
+     * @param bool $capabilityActivate
      */
     public function setCapabilityActivate($capabilityActivate)
     {
@@ -483,7 +502,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isUpdateAvailable()
     {
@@ -491,7 +510,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $updateAvailable
+     * @param bool $updateAvailable
      */
     public function setUpdateAvailable($updateAvailable)
     {
@@ -579,7 +598,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function useContactForm()
     {
@@ -587,7 +606,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $useContactForm
+     * @param bool $useContactForm
      */
     public function setUseContactForm($useContactForm)
     {
@@ -675,7 +694,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasFreeDownload()
     {
@@ -683,7 +702,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $freeDownload
+     * @param bool $freeDownload
      */
     public function setFreeDownload($freeDownload)
     {
@@ -739,7 +758,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isEncrypted()
     {
@@ -747,7 +766,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $encrypted
+     * @param bool $encrypted
      */
     public function setEncrypted($encrypted)
     {
@@ -755,7 +774,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasLicenceCheck()
     {
@@ -763,7 +782,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $licenceCheck
+     * @param bool $licenceCheck
      */
     public function setLicenceCheck($licenceCheck)
     {
@@ -771,7 +790,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isCertified()
     {
@@ -779,7 +798,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $certified
+     * @param bool $certified
      */
     public function setCertified($certified)
     {
@@ -803,7 +822,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasCapabilitySecureUninstall()
     {
@@ -811,7 +830,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $capabilitySecureUninstall
+     * @param bool $capabilitySecureUninstall
      */
     public function setCapabilitySecureUninstall($capabilitySecureUninstall)
     {
@@ -819,7 +838,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isLocalUpdateAvailable()
     {
@@ -827,7 +846,7 @@ class PluginStruct implements \JsonSerializable
     }
 
     /**
-     * @param boolean $localUpdateAvailable
+     * @param bool $localUpdateAvailable
      */
     public function setLocalUpdateAvailable($localUpdateAvailable)
     {
@@ -848,5 +867,69 @@ class PluginStruct implements \JsonSerializable
     public function setLocalDescription($localDescription)
     {
         $this->localDescription = $localDescription;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLink()
+    {
+        return $this->link;
+    }
+
+    /**
+     * @param string $link
+     */
+    public function setLink($link)
+    {
+        $this->link = $link;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRedirectToStore()
+    {
+        return $this->redirectToStore;
+    }
+
+    /**
+     * @param bool $redirectToStore
+     */
+    public function setRedirectToStore($redirectToStore)
+    {
+        $this->redirectToStore = $redirectToStore;
+    }
+
+    /**
+     * @return float
+     */
+    public function getLowestPrice()
+    {
+        return $this->lowestPrice;
+    }
+
+    /**
+     * @param float $lowestPrice
+     */
+    public function setLowestPrice($lowestPrice)
+    {
+        $this->lowestPrice = $lowestPrice;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInSafeMode()
+    {
+        return $this->inSafeMode;
+    }
+
+    /**
+     * @param bool $inSafeMode
+     */
+    public function setInSafeMode($inSafeMode)
+    {
+        $this->inSafeMode = $inSafeMode;
     }
 }

@@ -12,6 +12,7 @@
 namespace Symfony\Component\HttpKernel;
 
 use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
@@ -21,6 +22,7 @@ use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Event\PostResponseEvent;
+use Symfony\Component\HttpFoundation\Exception\ConflictingHeadersException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,13 +39,6 @@ class HttpKernel implements HttpKernelInterface, TerminableInterface
     protected $resolver;
     protected $requestStack;
 
-    /**
-     * Constructor.
-     *
-     * @param EventDispatcherInterface    $dispatcher   An EventDispatcherInterface instance
-     * @param ControllerResolverInterface $resolver     A ControllerResolverInterface instance
-     * @param RequestStack                $requestStack A stack for master/sub requests
-     */
     public function __construct(EventDispatcherInterface $dispatcher, ControllerResolverInterface $resolver, RequestStack $requestStack = null)
     {
         $this->dispatcher = $dispatcher;
@@ -61,6 +56,9 @@ class HttpKernel implements HttpKernelInterface, TerminableInterface
         try {
             return $this->handleRaw($request, $type);
         } catch (\Exception $e) {
+            if ($e instanceof ConflictingHeadersException) {
+                $e = new BadRequestHttpException('The request headers contain conflicting information regarding the origin of this request.', $e);
+            }
             if (false === $catch) {
                 $this->finishRequest($request, $type);
 
@@ -80,14 +78,12 @@ class HttpKernel implements HttpKernelInterface, TerminableInterface
     }
 
     /**
-     * @throws \LogicException If the request stack is empty
-     *
      * @internal
      */
-    public function terminateWithException(\Exception $exception)
+    public function terminateWithException(\Exception $exception, Request $request = null)
     {
-        if (!$request = $this->requestStack->getMasterRequest()) {
-            throw new \LogicException('Request stack is empty', 0, $exception);
+        if (!$request = $request ?: $this->requestStack->getMasterRequest()) {
+            throw $exception;
         }
 
         $response = $this->handleException($exception, $request, self::MASTER_REQUEST);
@@ -136,7 +132,7 @@ class HttpKernel implements HttpKernelInterface, TerminableInterface
         $arguments = $this->resolver->getArguments($request, $controller);
 
         // call controller
-        $response = call_user_func_array($controller, $arguments);
+        $response = \call_user_func_array($controller, $arguments);
 
         // view
         if (!$response instanceof Response) {

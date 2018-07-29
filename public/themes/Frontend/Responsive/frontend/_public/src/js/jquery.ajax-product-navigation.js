@@ -120,6 +120,8 @@
             if (!(isListing || isDetail)) {
                 return;
             }
+            
+            me.applyDataAttributes();
 
             me.storage = StorageManager.getStorage('session');
 
@@ -133,7 +135,7 @@
             me.$backButton = $el.find(opts.breadcrumbButtonSelector);
             me.$productDetails = $el.find(opts.productDetailsSelector);
 
-            me.categoryId = ~~(me.$productDetails.attr('data-category-id') || params && params.c);
+            me.categoryId = ~~(me.$productDetails.attr('data-category-id') || (params && params.c));
             me.orderNumber = me.$productDetails.attr('data-main-ordernumber');
             me.productState = me.getProductState();
             if (!me.categoryId) {
@@ -203,7 +205,7 @@
             var me = this,
                 state = JSON.parse(me.storage.getItem('lastProductState')) || {};
 
-            $.publish('plugin/swAjaxProductNavigation/onSetProductState', [ me, state ]);
+            $.publish('plugin/swAjaxProductNavigation/onGetProductState', [ me, state ]);
 
             return state;
         },

@@ -27,37 +27,48 @@ namespace Shopware\Bundle\SearchBundleES\ConditionHandler;
 use ONGR\ElasticsearchDSL\Query\TermsQuery;
 use ONGR\ElasticsearchDSL\Search;
 use Shopware\Bundle\SearchBundle\Condition\PropertyCondition;
-use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
-class PropertyConditionHandler implements HandlerInterface
+class PropertyConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * {@inheritdoc}
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof PropertyCondition);
+        return $criteriaPart instanceof PropertyCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
         ShopContextInterface $context
     ) {
-        /** @var PropertyCondition $criteriaPart */
-        $filter = new TermsQuery('properties.id', $criteriaPart->getValueIds());
+        /* @var PropertyCondition $criteriaPart */
+        $search->addFilter(
+            new TermsQuery('properties.id', $criteriaPart->getValueIds())
+        );
+    }
 
-        if ($criteria->hasBaseCondition($criteriaPart->getName())) {
-            $search->addFilter($filter);
-        } else {
-            $search->addPostFilter($filter);
-        }
+    /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        /* @var PropertyCondition $criteriaPart */
+        $search->addPostFilter(
+            new TermsQuery('properties.id', $criteriaPart->getValueIds())
+        );
     }
 }

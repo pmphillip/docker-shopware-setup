@@ -32,7 +32,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class SalesConditionHandler implements ConditionHandlerInterface
@@ -65,9 +65,10 @@ class SalesConditionHandler implements ConditionHandlerInterface
             $query->addState(self::STATE_INCLUDES_TOPSELLER_TABLE);
         }
 
-        $query->andWhere('topSeller.sales > :sales');
+        $key = ':sales' . md5(json_encode($condition));
+        $query->andWhere('topSeller.sales > ' . $key);
 
-        /** @var SalesCondition $condition */
-        $query->setParameter('sales', $condition->getMinSales());
+        /* @var SalesCondition $condition */
+        $query->setParameter($key, $condition->getMinSales());
     }
 }

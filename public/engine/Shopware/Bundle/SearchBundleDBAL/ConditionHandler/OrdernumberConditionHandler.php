@@ -33,7 +33,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.com)
  */
 class OrdernumberConditionHandler implements ConditionHandlerInterface
@@ -54,11 +54,13 @@ class OrdernumberConditionHandler implements ConditionHandlerInterface
         QueryBuilder $query,
         ShopContextInterface $context
     ) {
-        $query->andWhere('variant.ordernumber IN (:ordernumbers)');
+        $key = ':ordernumbers' . md5(json_encode($condition));
 
-        /** @var OrdernumberCondition $condition */
+        $query->andWhere('variant.ordernumber IN (' . $key . ')');
+
+        /* @var OrdernumberCondition $condition */
         $query->setParameter(
-            ':ordernumbers',
+            $key,
             $condition->getOrdernumbers(),
             Connection::PARAM_STR_ARRAY
         );

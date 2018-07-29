@@ -1,5 +1,5 @@
 {
-    "Version": "2.1.13.6",
+    "Version": "2.1.32.60",
     "Names": {
         "ADP": [
             "ADP",
@@ -27,7 +27,7 @@
         ],
         "ANG": [
             "ANG",
-            "fiorino delle Antille Olandesi"
+            "fiorino delle Antille olandesi"
         ],
         "AOA": [
             "AOA",
@@ -83,7 +83,7 @@
         ],
         "BAM": [
             "BAM",
-            "marco conv. Bosnia-Erzegovina"
+            "marco convertibile della Bosnia-Herzegovina"
         ],
         "BBD": [
             "BBD",
@@ -171,7 +171,7 @@
         ],
         "BTN": [
             "BTN",
-            "ngultrum butanese"
+            "ngultrum bhutanese"
         ],
         "BUK": [
             "BUK",
@@ -185,9 +185,13 @@
             "BYB",
             "nuovo rublo bielorusso (1994–1999)"
         ],
+        "BYN": [
+            "BYN",
+            "rublo bielorusso"
+        ],
         "BYR": [
             "BYR",
-            "rublo bielorusso"
+            "rublo bielorusso (2000–2016)"
         ],
         "BZD": [
             "BZD",
@@ -243,7 +247,7 @@
         ],
         "CVE": [
             "CVE",
-            "escudo del Capo Verde"
+            "escudo capoverdiano"
         ],
         "CYP": [
             "CYP",
@@ -263,7 +267,7 @@
         ],
         "DJF": [
             "DJF",
-            "franco gibutiano"
+            "franco di Gibuti"
         ],
         "DKK": [
             "DKK",
@@ -311,7 +315,7 @@
         ],
         "ETB": [
             "ETB",
-            "birr etiopico"
+            "birr etiope"
         ],
         "EUR": [
             "€",
@@ -335,7 +339,7 @@
         ],
         "GBP": [
             "£",
-            "sterlina inglese"
+            "sterlina britannica"
         ],
         "GEK": [
             "GEK",
@@ -359,7 +363,7 @@
         ],
         "GMD": [
             "GMD",
-            "dalasi del Gambia"
+            "dalasi gambiano"
         ],
         "GNF": [
             "GNF",
@@ -472,7 +476,7 @@
         ],
         "KGS": [
             "KGS",
-            "som Kirghiso"
+            "som kirghiso"
         ],
         "KHR": [
             "KHR",
@@ -480,7 +484,7 @@
         ],
         "KMF": [
             "KMF",
-            "franco Comoriano"
+            "franco comoriano"
         ],
         "KPW": [
             "KPW",
@@ -576,7 +580,7 @@
         ],
         "MKD": [
             "MKD",
-            "dinaro macedone"
+            "denar macedone"
         ],
         "MLF": [
             "MLF",
@@ -632,7 +636,7 @@
         ],
         "MYR": [
             "MYR",
-            "ringgit della Malesia"
+            "ringgit malese"
         ],
         "MZE": [
             "MZE",
@@ -676,11 +680,11 @@
         ],
         "OMR": [
             "OMR",
-            "rial dell’Oman"
+            "rial omanita"
         ],
         "PAB": [
             "PAB",
-            "balboa di Panama"
+            "balboa panamense"
         ],
         "PEI": [
             "PEI",
@@ -688,23 +692,23 @@
         ],
         "PEN": [
             "PEN",
-            "sol nuevo peruviano"
+            "sol peruviano"
         ],
         "PES": [
             "PES",
-            "sol peruviano"
+            "sol peruviano (1863–1965)"
         ],
         "PGK": [
             "PGK",
-            "kina della Papua Nuova Guinea"
+            "kina papuana"
         ],
         "PHP": [
             "PHP",
-            "peso delle Filippine"
+            "peso filippino"
         ],
         "PKR": [
             "PKR",
-            "rupia del Pakistan"
+            "rupia pakistana"
         ],
         "PLN": [
             "PLN",
@@ -720,11 +724,11 @@
         ],
         "PYG": [
             "PYG",
-            "guaraní del Paraguay"
+            "guaraní paraguayano"
         ],
         "QAR": [
             "QAR",
-            "rial del Qatar"
+            "rial qatariano"
         ],
         "RHD": [
             "RHD",
@@ -760,7 +764,7 @@
         ],
         "SBD": [
             "SBD",
-            "dollaro delle Isole Solomon"
+            "dollaro delle Isole Salomone"
         ],
         "SCR": [
             "SCR",
@@ -804,7 +808,7 @@
         ],
         "SRD": [
             "SRD",
-            "dollaro surinamese"
+            "dollaro del Suriname"
         ],
         "SRG": [
             "SRG",
@@ -812,7 +816,7 @@
         ],
         "SSP": [
             "SSP",
-            "sterlina sudsudanese"
+            "sterlina sud-sudanese"
         ],
         "STD": [
             "STD",
@@ -844,7 +848,7 @@
         ],
         "TJS": [
             "TJS",
-            "somoni del Tajikistan"
+            "somoni tagiko"
         ],
         "TMM": [
             "TMM",
@@ -860,7 +864,7 @@
         ],
         "TOP": [
             "TOP",
-            "paʻanga di Tonga"
+            "paʻanga tongano"
         ],
         "TPE": [
             "TPE",
@@ -924,11 +928,11 @@
         ],
         "UYU": [
             "UYU",
-            "peso uruguaiano"
+            "peso uruguayano"
         ],
         "UZS": [
             "UZS",
-            "sum dell’Uzbekistan"
+            "sum uzbeco"
         ],
         "VEB": [
             "VEB",
@@ -948,7 +952,7 @@
         ],
         "WST": [
             "WST",
-            "tala della Samoa Occidentale"
+            "tala samoano"
         ],
         "XAF": [
             "FCFA",
@@ -956,7 +960,7 @@
         ],
         "XCD": [
             "EC$",
-            "dollaro dei Caraibi Orientali"
+            "dollaro dei Caraibi orientali"
         ],
         "XFO": [
             "XFO",

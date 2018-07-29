@@ -24,57 +24,34 @@
 
 namespace Shopware\Bundle\SearchBundle\CriteriaRequestHandler;
 
-use Doctrine\DBAL\Connection;
 use Enlight_Controller_Request_RequestHttp as Request;
 use Shopware\Bundle\SearchBundle\Condition\CategoryCondition;
 use Shopware\Bundle\SearchBundle\Condition\CustomerGroupCondition;
+use Shopware\Bundle\SearchBundle\Condition\HeightCondition;
 use Shopware\Bundle\SearchBundle\Condition\ImmediateDeliveryCondition;
 use Shopware\Bundle\SearchBundle\Condition\IsAvailableCondition;
+use Shopware\Bundle\SearchBundle\Condition\LengthCondition;
 use Shopware\Bundle\SearchBundle\Condition\ManufacturerCondition;
 use Shopware\Bundle\SearchBundle\Condition\PriceCondition;
 use Shopware\Bundle\SearchBundle\Condition\SearchTermCondition;
 use Shopware\Bundle\SearchBundle\Condition\ShippingFreeCondition;
 use Shopware\Bundle\SearchBundle\Condition\VoteAverageCondition;
+use Shopware\Bundle\SearchBundle\Condition\WeightCondition;
+use Shopware\Bundle\SearchBundle\Condition\WidthCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\CriteriaRequestHandlerInterface;
-use Shopware\Bundle\SearchBundle\Facet\CategoryFacet;
-use Shopware\Bundle\SearchBundle\Facet\ImmediateDeliveryFacet;
-use Shopware\Bundle\SearchBundle\Facet\ManufacturerFacet;
-use Shopware\Bundle\SearchBundle\Facet\PriceFacet;
-use Shopware\Bundle\SearchBundle\Facet\ShippingFreeFacet;
-use Shopware\Bundle\SearchBundle\Facet\VoteAverageFacet;
 use Shopware\Bundle\SearchBundle\SearchTermPreProcessorInterface;
-use Shopware\Bundle\SearchBundle\Sorting\PopularitySorting;
-use Shopware\Bundle\SearchBundle\Sorting\PriceSorting;
-use Shopware\Bundle\SearchBundle\Sorting\ProductNameSorting;
-use Shopware\Bundle\SearchBundle\Sorting\ReleaseDateSorting;
-use Shopware\Bundle\SearchBundle\Sorting\SearchRankingSorting;
-use Shopware\Bundle\SearchBundle\SortingInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
- * @package Shopware\Bundle\SearchBundleDBAL\CriteriaRequestHandler
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
 {
-    const SORTING_RELEASE_DATE = 1;
-    const SORTING_POPULARITY = 2;
-    const SORTING_CHEAPEST_PRICE = 3;
-    const SORTING_HIGHEST_PRICE = 4;
-    const SORTING_PRODUCT_NAME_ASC = 5;
-    const SORTING_PRODUCT_NAME_DESC = 6;
-    const SORTING_SEARCH_RANKING = 7;
-
     /**
      * @var \Shopware_Components_Config
      */
     private $config;
-
-    /**
-     * @var Connection
-     */
-    private $connection;
 
     /**
      * @var SearchTermPreProcessorInterface
@@ -82,23 +59,20 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     private $searchTermPreProcessor;
 
     /**
-     * @param \Shopware_Components_Config $config
-     * @param Connection $connection
+     * @param \Shopware_Components_Config     $config
      * @param SearchTermPreProcessorInterface $searchTermPreProcessor
      */
     public function __construct(
         \Shopware_Components_Config $config,
-        Connection $connection,
         SearchTermPreProcessorInterface $searchTermPreProcessor
     ) {
         $this->config = $config;
-        $this->connection = $connection;
         $this->searchTermPreProcessor = $searchTermPreProcessor;
     }
 
     /**
-     * @param Request $request
-     * @param Criteria $criteria
+     * @param Request              $request
+     * @param Criteria             $criteria
      * @param ShopContextInterface $context
      */
     public function handleRequest(Request $request, Criteria $criteria, ShopContextInterface $context)
@@ -117,57 +91,35 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
         $this->addRatingCondition($request, $criteria);
         $this->addPriceCondition($request, $criteria);
 
-        $this->addSorting($request, $criteria);
-
-        $this->addFacets($criteria);
+        $this->addWeightCondition($request, $criteria);
+        $this->addHeightCondition($request, $criteria);
+        $this->addWidthCondition($request, $criteria);
+        $this->addLengthCondition($request, $criteria);
     }
 
     /**
-     * @param Criteria $criteria
-     */
-    private function addFacets(Criteria $criteria)
-    {
-        if ($this->config->get('showImmediateDeliveryFacet')) {
-            $criteria->addFacet(new ImmediateDeliveryFacet());
-        }
-
-        if ($this->config->get('showShippingFreeFacet')) {
-            $criteria->addFacet(new ShippingFreeFacet());
-        }
-
-        if ($this->config->get('showPriceFacet')) {
-            $criteria->addFacet(new PriceFacet());
-        }
-
-        if ($this->config->get('showVoteAverageFacet')) {
-            $criteria->addFacet(new VoteAverageFacet());
-        }
-
-        if ($this->config->get('showSupplierInCategories')) {
-            $criteria->addFacet(new ManufacturerFacet());
-        }
-
-        $criteria->addFacet(new CategoryFacet());
-    }
-
-
-    /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addCategoryCondition(Request $request, Criteria $criteria)
     {
-        $category = $request->getParam('sCategory', null);
-        if (!$category) {
-            return;
-        }
+        if ($request->has('sCategory')) {
+            $ids = explode('|', $request->getParam('sCategory'));
 
-        $condition = new CategoryCondition([$category]);
-        $criteria->addBaseCondition($condition);
+            $criteria->addBaseCondition(
+                new CategoryCondition($ids)
+            );
+        } elseif ($request->has('categoryFilter')) {
+            $ids = explode('|', $request->getParam('categoryFilter'));
+
+            $criteria->addCondition(
+                new CategoryCondition($ids)
+            );
+        }
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addManufacturerCondition(Request $request, Criteria $criteria)
@@ -187,7 +139,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addShippingFreeCondition(Request $request, Criteria $criteria)
@@ -201,7 +153,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addImmediateDeliveryCondition(Request $request, Criteria $criteria)
@@ -215,7 +167,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addRatingCondition(Request $request, Criteria $criteria)
@@ -229,7 +181,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addPriceCondition(Request $request, Criteria $criteria)
@@ -241,12 +193,12 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
             return;
         }
 
-        $condition = new PriceCondition((float)$min, (float)$max);
+        $condition = new PriceCondition((float) $min, (float) $max);
         $criteria->addCondition($condition);
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addSearchCondition(Request $request, Criteria $criteria)
@@ -260,55 +212,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
-     * @param Criteria $criteria
-     */
-    private function addSorting(Request $request, Criteria $criteria)
-    {
-        $defaultSort = $this->config->get('defaultListingSorting');
-        $sort = $request->getParam('sSort', $defaultSort);
-
-        switch ($sort) {
-            case self::SORTING_RELEASE_DATE:
-                $criteria->addSorting(
-                    new ReleaseDateSorting(SortingInterface::SORT_DESC)
-                );
-                break;
-            case self::SORTING_POPULARITY:
-                $criteria->addSorting(
-                    new PopularitySorting(SortingInterface::SORT_DESC)
-                );
-                break;
-            case self::SORTING_CHEAPEST_PRICE:
-                $criteria->addSorting(
-                    new PriceSorting(SortingInterface::SORT_ASC)
-                );
-                break;
-            case self::SORTING_HIGHEST_PRICE:
-                $criteria->addSorting(
-                    new PriceSorting(SortingInterface::SORT_DESC)
-                );
-                break;
-            case self::SORTING_PRODUCT_NAME_ASC:
-                $criteria->addSorting(
-                    new ProductNameSorting(SortingInterface::SORT_ASC)
-                );
-                break;
-            case self::SORTING_PRODUCT_NAME_DESC:
-                $criteria->addSorting(
-                    new ProductNameSorting(SortingInterface::SORT_DESC)
-                );
-                break;
-            case self::SORTING_SEARCH_RANKING:
-                $criteria->addSorting(
-                    new SearchRankingSorting(SortingInterface::SORT_DESC)
-                );
-                break;
-        }
-    }
-
-    /**
-     * @param Criteria $criteria
+     * @param Criteria             $criteria
      * @param ShopContextInterface $context
      */
     private function addCustomerGroupCondition(Criteria $criteria, ShopContextInterface $context)
@@ -320,7 +224,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addOffset(Request $request, Criteria $criteria)
@@ -335,7 +239,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Criteria $criteria
      */
     private function addLimit(Request $request, Criteria $criteria)
@@ -345,7 +249,7 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
         if ($max) {
             $limit = min($limit, $max);
         }
-        $limit = $limit >= 1 ? $limit: 1;
+        $limit = $limit >= 1 ? $limit : 1;
         $criteria->limit($limit);
     }
 
@@ -358,5 +262,57 @@ class CoreCriteriaRequestHandler implements CriteriaRequestHandlerInterface
             return;
         }
         $criteria->addBaseCondition(new IsAvailableCondition());
+    }
+
+    private function addWeightCondition(Request $request, Criteria $criteria)
+    {
+        $min = $request->getParam('minWeight', null);
+        $max = $request->getParam('maxWeight', null);
+
+        if (!$min && !$max) {
+            return;
+        }
+
+        $condition = new WeightCondition((float) $min, (float) $max);
+        $criteria->addCondition($condition);
+    }
+
+    private function addWidthCondition(Request $request, Criteria $criteria)
+    {
+        $min = $request->getParam('minWidth', null);
+        $max = $request->getParam('maxWidth', null);
+
+        if (!$min && !$max) {
+            return;
+        }
+
+        $condition = new WidthCondition((float) $min, (float) $max);
+        $criteria->addCondition($condition);
+    }
+
+    private function addLengthCondition(Request $request, Criteria $criteria)
+    {
+        $min = $request->getParam('minLength', null);
+        $max = $request->getParam('maxLength', null);
+
+        if (!$min && !$max) {
+            return;
+        }
+
+        $condition = new LengthCondition((float) $min, (float) $max);
+        $criteria->addCondition($condition);
+    }
+
+    private function addHeightCondition(Request $request, Criteria $criteria)
+    {
+        $min = $request->getParam('minHeight', null);
+        $max = $request->getParam('maxHeight', null);
+
+        if (!$min && !$max) {
+            return;
+        }
+
+        $condition = new HeightCondition((float) $min, (float) $max);
+        $criteria->addCondition($condition);
     }
 }

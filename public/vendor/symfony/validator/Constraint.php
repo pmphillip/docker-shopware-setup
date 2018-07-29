@@ -33,29 +33,21 @@ abstract class Constraint
 {
     /**
      * The name of the group given to all constraints with no explicit group.
-     *
-     * @var string
      */
     const DEFAULT_GROUP = 'Default';
 
     /**
      * Marks a constraint that can be put onto classes.
-     *
-     * @var string
      */
     const CLASS_CONSTRAINT = 'class';
 
     /**
      * Marks a constraint that can be put onto properties.
-     *
-     * @var string
      */
     const PROPERTY_CONSTRAINT = 'property';
 
     /**
      * Maps error codes to the names of their constants.
-     *
-     * @var array
      */
     protected static $errorNames = array();
 
@@ -129,6 +121,9 @@ abstract class Constraint
             unset($options['value']);
         }
 
+        if (is_array($options)) {
+            reset($options);
+        }
         if (is_array($options) && count($options) > 0 && is_string(key($options))) {
             foreach ($options as $option => $value) {
                 if (array_key_exists($option, $knownOptions)) {
@@ -138,7 +133,7 @@ abstract class Constraint
                     $invalidOptions[] = $option;
                 }
             }
-        } elseif (null !== $options && !(is_array($options) && count($options) === 0)) {
+        } elseif (null !== $options && !(is_array($options) && 0 === count($options))) {
             $option = $this->getDefaultOption();
 
             if (null === $option) {
@@ -206,9 +201,7 @@ abstract class Constraint
      *
      * @throws InvalidOptionsException If an invalid option name is given
      *
-     * @internal This method should not be used or overwritten in userland code.
-     *
-     * @since 2.6
+     * @internal this method should not be used or overwritten in userland code
      */
     public function __get($option)
     {
@@ -219,6 +212,16 @@ abstract class Constraint
         }
 
         throw new InvalidOptionsException(sprintf('The option "%s" does not exist in constraint %s', $option, get_class($this)), array($option));
+    }
+
+    /**
+     * @param string $option The option name
+     *
+     * @return bool
+     */
+    public function __isset($option)
+    {
+        return 'groups' === $option;
     }
 
     /**
@@ -296,8 +299,6 @@ abstract class Constraint
      * @internal This method may be replaced by an implementation of
      *           {@link \Serializable} in the future. Please don't use or
      *           overwrite it.
-     *
-     * @since 2.6
      */
     public function __sleep()
     {

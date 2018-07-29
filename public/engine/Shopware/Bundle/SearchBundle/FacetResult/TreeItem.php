@@ -29,7 +29,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Extendable;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\FacetResult
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class TreeItem extends Extendable
@@ -37,28 +37,28 @@ class TreeItem extends Extendable
     /**
      * @var int|string
      */
-    private $id;
+    protected $id;
 
     /**
      * @var string
      */
-    private $label;
+    protected $label;
 
     /**
      * @var bool
      */
-    private $active;
+    protected $active;
 
     /**
      * @var TreeItem[]
      */
-    private $values;
+    protected $values;
 
     /**
-     * @param int|string $id
-     * @param string $label
-     * @param boolean $active
-     * @param TreeItem[] $values
+     * @param int|string  $id
+     * @param string      $label
+     * @param bool        $active
+     * @param TreeItem[]  $values
      * @param Attribute[] $attributes
      */
     public function __construct($id, $label, $active, $values, $attributes = [])
@@ -79,7 +79,7 @@ class TreeItem extends Extendable
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isActive()
     {

@@ -1,6 +1,55 @@
+## Release 2.3.2
+
+This is likely to be the final release of the 2.x branch!
+
+- Backport #542 (Make id param optionnal for termvectors requests when doc is set in the body). (#683) [[c057d70]](http://github.com/elasticsearch/elasticsearch-php/commit/c057d70)
+
+## Release 2.3.1
+
+- Do not schedule connection pool checks on 4xx level errors  [[e8520e6]](http://github.com/elasticsearch/elasticsearch-php/commit/e8520e619fa2f5ffe9c7733338f273df1dfa296d)
+- fix: conflict when merging timeout param (#563) [[76265b7]](http://github.com/elasticsearch/elasticsearch-php/commit/76265b7)
+- [DOCS] Update futures.asciidoc (#510) [[840fd91]](http://github.com/elasticsearch/elasticsearch-php/commit/840fd91)
+- [DOCS] Added period at end of sentence [[caebfd6]](http://github.com/elasticsearch/elasticsearch-php/commit/caebfd6)
+- [DOCS] Fixed a typo [[24912ad]](http://github.com/elasticsearch/elasticsearch-php/commit/24912ad)
+- [DOCS] Fix a small typo [[faf81d0]](http://github.com/elasticsearch/elasticsearch-php/commit/faf81d0)
+- [DOCS] Fix wording, typos [[c549428]](http://github.com/elasticsearch/elasticsearch-php/commit/c549428)
+- [DOCS] Fix a typo, add a period [[af124ff]](http://github.com/elasticsearch/elasticsearch-php/commit/af124ff)
+- [DOCS] Fix wording, remove apostrophe, add period [[6ff41dd]](http://github.com/elasticsearch/elasticsearch-php/commit/6ff41dd)
+- [DOCS] Fix formatting, remove apostrophes, add a period [[bc008cc]](http://github.com/elasticsearch/elasticsearch-php/commit/bc008cc)
+- [Docs] Include namespace import [[b91ab4a]](http://github.com/elasticsearch/elasticsearch-php/commit/b91ab4a)
+
+## Release 2.3.0
+- Allow global connectionParam configuration (via ClientBuilder->setConnectionParams()) [[e768e0]](http://github.com/elasticsearch/elasticsearch-php/commit/e768e0d64ef365ecc7eb837e3bedf32c5e943a67)
+
+## Release 2.2.3
+- [Backport] Manually convert true/false to "true"/"false" before http_build_query() [[6a5d804]](http://github.com/elasticsearch/elasticsearch-php/commit/6a5d804)
+
+## Release 2.2.2
+- Normalizing Reindex name (#466) [[e0cc5f9]](http://github.com/elasticsearch/elasticsearch-php/commit/e0cc5f9)
+- Add "extended" host configuration syntax [[99cd83f]](http://github.com/elasticsearch/elasticsearch-php/commit/99cd83f)
+- Reindex endpoint should not be camel-cased ("ReIndex") [[7ca34ab]](http://github.com/elasticsearch/elasticsearch-php/commit/7ca34ab)
+- Allow ConnectionFactory to be overridable (#459) [[81b2a23]](http://github.com/elasticsearch/elasticsearch-php/commit/81b2a23)
+- Reindex endpoint should accept a body parameter [[21ca68b]](http://github.com/elasticsearch/elasticsearch-php/commit/21ca68b)
+
+### Documentation
+- Fix typo (#471) [[20af8fb]](http://github.com/elasticsearch/elasticsearch-php/commit/20af8fb)
+- [DOCS] Update index-operations.asciidoc (#470) [[74f2b19]](http://github.com/elasticsearch/elasticsearch-php/commit/74f2b19)
+- Php typos [[3d9d8e0]](http://github.com/elasticsearch/elasticsearch-php/commit/7fd0051)
+- [DOCS] Update changelog [[4c9aab0]](http://github.com/elasticsearch/elasticsearch-php/commit/4c9aab0)
+
+## Release 2.2.1
+
+- Reindex endpoint should accept a body parameter [[3d9d8e0]](http://github.com/elasticsearch/elasticsearch-php/commit/3d9d8e0)
+- `Tasks/Show` should be `Tasks/Get`. Deprecate `Show` [[fcc85b4]](http://github.com/elasticsearch/elasticsearch-php/commit/fcc85b4)
+- "Task" namespace should be plural ("Tasks") [[5e8bacf]](http://github.com/elasticsearch/elasticsearch-php/commit/5e8bacf)
+
+### Testing
+
+- Update travis to include 2.3 [[7108ca0]](http://github.com/elasticsearch/elasticsearch-php/commit/7108ca0)
+
 ## Release 2.2.0
 
-- 236a5e0 Added depracated tag on deletebyquery and mlt
+- 236a5e0 Added deprecated tag on deletebyquery and mlt
 - Update for 2.3 https://github.com/elastic/elasticsearch-php/pull/420
   - Add Reindex Endpoint
   - Add UpdateByQuery endpoint

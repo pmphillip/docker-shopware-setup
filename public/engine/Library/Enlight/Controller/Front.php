@@ -219,14 +219,7 @@ class Enlight_Controller_Front extends Enlight_Class implements Enlight_Hook
                 /**
                  * Dispatch request
                  */
-                try {
-                    $this->dispatcher->dispatch($this->request, $this->response);
-                } catch (Exception $e) {
-                    if ($this->throwExceptions()) {
-                        throw $e;
-                    }
-                    $this->response->setException($e);
-                }
+                $this->dispatcher->dispatch($this->request, $this->response);
             } catch (Exception $e) {
                 if ($this->throwExceptions()) {
                     throw $e;
@@ -386,7 +379,7 @@ class Enlight_Controller_Front extends Enlight_Class implements Enlight_Hook
     /**
      * Returns the response instance.
      *
-     * @return  Enlight_Controller_Response_ResponseHttp
+     * @return  Enlight_Controller_Response_Response
      */
     public function Response()
     {

@@ -24,10 +24,10 @@
 
 namespace Shopware\Bundle\SearchBundleES\ConditionHandler;
 
+use ONGR\ElasticsearchDSL\BuilderInterface;
 use ONGR\ElasticsearchDSL\Query\BoolQuery;
 use ONGR\ElasticsearchDSL\Query\ExistsQuery;
 use ONGR\ElasticsearchDSL\Query\MatchQuery;
-use ONGR\ElasticsearchDSL\Query\MissingQuery;
 use ONGR\ElasticsearchDSL\Query\PrefixQuery;
 use ONGR\ElasticsearchDSL\Query\RangeQuery;
 use ONGR\ElasticsearchDSL\Query\TermQuery;
@@ -36,12 +36,12 @@ use ONGR\ElasticsearchDSL\Query\WildcardQuery;
 use ONGR\ElasticsearchDSL\Search;
 use Shopware\Bundle\AttributeBundle\Service\CrudService;
 use Shopware\Bundle\SearchBundle\Condition\ProductAttributeCondition;
-use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
-class ProductAttributeConditionHandler implements HandlerInterface
+class ProductAttributeConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * @var CrudService
@@ -50,6 +50,7 @@ class ProductAttributeConditionHandler implements HandlerInterface
 
     /**
      * ProductAttributeConditionHandler constructor.
+     *
      * @param CrudService $attributeService
      */
     public function __construct(CrudService $attributeService)
@@ -62,19 +63,46 @@ class ProductAttributeConditionHandler implements HandlerInterface
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof ProductAttributeCondition);
+        return $criteriaPart instanceof ProductAttributeCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
         ShopContextInterface $context
     ) {
-        /** @var ProductAttributeCondition $criteriaPart */
+        /* @var ProductAttributeCondition $criteriaPart */
+        $search->addFilter(
+            $this->createQuery($criteriaPart)
+        );
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        /* @var ProductAttributeCondition $criteriaPart */
+        $search->addPostFilter(
+            $this->createQuery($criteriaPart)
+        );
+    }
+
+    /**
+     * @param ProductAttributeCondition $criteriaPart
+     *
+     * @return BuilderInterface
+     */
+    private function createQuery(ProductAttributeCondition $criteriaPart)
+    {
         $field = 'attributes.core.' . $criteriaPart->getField();
 
         $type = 'string';
@@ -89,74 +117,73 @@ class ProductAttributeConditionHandler implements HandlerInterface
                 if ($criteriaPart->getValue() === null) {
                     $filter = new BoolQuery();
                     $filter->add(new ExistsQuery($field), BoolQuery::MUST_NOT);
-                } else {
-                    $filter = new TermQuery($field, $criteriaPart->getValue());
+
+                    return $filter;
                 }
-                break;
+
+                return new TermQuery($field, $criteriaPart->getValue());
 
             case ProductAttributeCondition::OPERATOR_NEQ:
                 if ($criteriaPart->getValue() === null) {
-                    $filter = new ExistsQuery($field);
-                } else {
-                    $filter = new BoolQuery();
-                    $filter->add(new TermQuery($field, $criteriaPart->getValue()), BoolQuery::MUST_NOT);
+                    return new ExistsQuery($field);
                 }
-                break;
+                $filter = new BoolQuery();
+                $filter->add(new TermQuery($field, $criteriaPart->getValue()), BoolQuery::MUST_NOT);
+
+                return $filter;
 
             case ProductAttributeCondition::OPERATOR_LT:
-                $filter = new RangeQuery($field, ['lt' => $criteriaPart->getValue()]);
-                break;
+                return new RangeQuery($field, ['lt' => $criteriaPart->getValue()]);
 
             case ProductAttributeCondition::OPERATOR_LTE:
-                $filter = new RangeQuery($field, ['lte' => $criteriaPart->getValue()]);
-                break;
+                return new RangeQuery($field, ['lte' => $criteriaPart->getValue()]);
 
             case ProductAttributeCondition::OPERATOR_BETWEEN:
                 $value = $criteriaPart->getValue();
-                $filter = new RangeQuery($field, ['gte' => $value['min'], 'lte' => $value['max']]);
-                break;
+
+                return new RangeQuery($field, ['gte' => $value['min'], 'lte' => $value['max']]);
 
             case ProductAttributeCondition::OPERATOR_GT:
-                $filter = new RangeQuery($field, ['gt' => $criteriaPart->getValue()]);
-                break;
+                return new RangeQuery($field, ['gt' => $criteriaPart->getValue()]);
 
             case ProductAttributeCondition::OPERATOR_GTE:
-                $filter = new RangeQuery($field, ['gte' => $criteriaPart->getValue()]);
-                break;
+                return new RangeQuery($field, ['gte' => $criteriaPart->getValue()]);
 
             case ProductAttributeCondition::OPERATOR_CONTAINS:
-                $filter = new MatchQuery($field, $criteriaPart->getValue());
-                break;
+                return new MatchQuery($field, $criteriaPart->getValue());
+
+            case ProductAttributeCondition::OPERATOR_NOT_IN:
+                if ($type === 'string') {
+                    $field .= '.raw';
+                }
+                $filter = new BoolQuery();
+                $filter->add(new TermsQuery($field, $criteriaPart->getValue()), BoolQuery::MUST_NOT);
+
+                return $filter;
 
             case ProductAttributeCondition::OPERATOR_IN:
                 if ($type === 'string') {
                     $field .= '.raw';
                 }
-                $filter = new TermsQuery($field, $criteriaPart->getValue());
-                break;
+
+                return new TermsQuery($field, $criteriaPart->getValue());
 
             case ProductAttributeCondition::OPERATOR_STARTS_WITH:
                 if ($type === 'string') {
                     $field .= '.raw';
                 }
-                $filter = new PrefixQuery($field, $criteriaPart->getValue());
-                break;
+
+                return new PrefixQuery($field, $criteriaPart->getValue());
 
             case ProductAttributeCondition::OPERATOR_ENDS_WITH:
                 if ($type === 'string') {
                     $field .= '.raw';
                 }
-                $filter = new WildcardQuery($field, '*'. $criteriaPart->getValue());
-                break;
+
+                return new WildcardQuery($field, '*' . $criteriaPart->getValue());
 
             default:
-                return;
-        }
-
-        if ($criteria->hasBaseCondition($criteriaPart->getName())) {
-            $search->addFilter($filter);
-        } else {
-            $search->addPostFilter($filter);
+                throw new \RuntimeException(sprintf('Operator %s is not supported in elastic search', $criteriaPart->getOperator()));
         }
     }
 }

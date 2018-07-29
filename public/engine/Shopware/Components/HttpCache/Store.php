@@ -33,8 +33,6 @@ use Symfony\Component\HttpKernel\HttpCache\Store as BaseStore;
  * $httpCacheStore = new Shopware\Components\HttpCache\Store($root);
  * $httpCacheStore->purgeByHeader($name);
  * </code>
- *
- * @package   Shopware\Components\HttpCache
  */
 class Store extends BaseStore
 {
@@ -49,58 +47,28 @@ class Store extends BaseStore
     private $lookupOptimization;
 
     /**
-     * @param string $root
-     * @param string[] $cacheCookies
+     * @var array
      */
-    public function __construct($root, array $cacheCookies, $lookupOptimization)
-    {
+    private $ignoredUrlParameters;
+
+    /**
+     * @param string   $root
+     * @param string[] $cacheCookies
+     * @param bool     $lookupOptimization
+     * @param array    $ignoredUrlParameters
+     */
+    public function __construct(
+        $root,
+        array $cacheCookies,
+        $lookupOptimization,
+        array $ignoredUrlParameters
+    ) {
         $this->cacheCookies = $cacheCookies;
 
         parent::__construct($root);
+
         $this->lookupOptimization = $lookupOptimization;
-    }
-
-    /**
-     * Generate custom cache key including
-     * additional state from cookie and headers.
-     *
-     * {@inheritdoc}
-     */
-    protected function generateCacheKey(Request $request)
-    {
-        $uri = $this->sortQueryStringParameters($request->getUri());
-
-        foreach ($this->cacheCookies as $cookieName) {
-            if ($request->cookies->has($cookieName)) {
-                $uri .= '&__' . $cookieName . '=' . $request->cookies->get($cookieName);
-            }
-        }
-
-        return 'md' . hash('sha256', $uri);
-    }
-
-    /**
-     * @param string $url
-     * @return string
-     */
-    private function sortQueryStringParameters($url)
-    {
-        $pos = strpos($url, '?');
-        if ($pos === false) {
-            return $url;
-        }
-
-        $urlPath = substr($url, 0, $pos + 1);
-        $queryString = substr($url, $pos + 1);
-
-        $queryParts = [];
-        parse_str($queryString, $queryParts);
-        ksort($queryParts, SORT_STRING);
-
-
-        $queryString = http_build_query($queryParts);
-
-        return $urlPath . $queryString;
+        $this->ignoredUrlParameters = $ignoredUrlParameters;
     }
 
     /**
@@ -134,8 +102,9 @@ class Store extends BaseStore
     /**
      * Purges data for the given Header.
      *
-     * @param  string $name
-     * @param  string|null $value
+     * @param string      $name
+     * @param string|null $value
+     *
      * @return bool
      */
     public function purgeByHeader($name, $value = null)
@@ -200,31 +169,14 @@ class Store extends BaseStore
     }
 
     /**
-     * @param string $path The path of the directory to be iterated over.
-     * @return \RecursiveIteratorIterator
-     */
-    private function createRecursiveFileIterator($path)
-    {
-        $directoryIterator = new \RecursiveDirectoryIterator(
-            $path,
-            \RecursiveDirectoryIterator::SKIP_DOTS
-        );
-
-        return new \RecursiveIteratorIterator(
-            $directoryIterator,
-            \RecursiveIteratorIterator::LEAVES_ONLY
-        );
-    }
-
-    /**
      * When saving a page, also save the page's cacheKey in an optimized version
      * so we can look it up more quickly
      *
-     * @param Request $request
+     * @param Request  $request
      * @param Response $response
+     *
      * @return string
      */
-
     public function write(Request $request, Response $response)
     {
         $headerKey = parent::write($request, $response);
@@ -246,7 +198,6 @@ class Store extends BaseStore
                 $content = [];
             }
 
-
             // Storing the headerKey and the cacheKey will increase the lookup file size a bit
             // but save a lot of reads when invalidating
             $content[$cacheKey] = $headerKey;
@@ -259,11 +210,113 @@ class Store extends BaseStore
         return $headerKey;
     }
 
+    /**
+     * Generate custom cache key including
+     * additional state from cookie and headers.
+     *
+     * {@inheritdoc}
+     */
+    protected function generateCacheKey(Request $request)
+    {
+        $uri = $this->verifyIgnoredParameters($request);
+
+        foreach ($this->cacheCookies as $cookieName) {
+            if ($request->cookies->has($cookieName)) {
+                $uri .= '&__' . $cookieName . '=' . $request->cookies->get($cookieName);
+            }
+        }
+
+        return 'md' . hash('sha256', $uri);
+    }
+
+    /**
+     * Verify the URL parameters for a better cache hit rate
+     * Removes ignored URL parameters set in the Shopware configuration.
+     *
+     * @param Request $request
+     *
+     * @return string
+     */
+    private function verifyIgnoredParameters(Request $request)
+    {
+        $requestParams = $request->query->all();
+
+        if (count($requestParams) === 0) {
+            return $request->getUri();
+        }
+
+        $parsed = parse_url($request->getUri());
+        $query = [];
+
+        parse_str($parsed['query'], $query);
+
+        $params = array_diff_key(
+            $query,
+            array_flip($this->ignoredUrlParameters)
+        );
+
+        /**
+         * Sort query parameters
+         */
+        $stringParams = $this->sortQueryParameters($params);
+
+        $path = $request->getPathInfo();
+
+        /**
+         * Normalize URL to consistently return the same path even when variables are present
+         */
+        $uri = sprintf(
+            '%s%s%s',
+            $request->getSchemeAndHttpHost(),
+            $path,
+            empty($stringParams) ? '' : "?$stringParams"
+        );
+
+        return $uri;
+    }
+
+    /**
+     * Sort query parameters taking in account also the values of said parameters.
+     *
+     * @param array $params
+     *
+     * @return string
+     */
+    private function sortQueryParameters($params)
+    {
+        $sParams = urldecode(http_build_query($params));
+        $query = explode('&', $sParams);
+
+        usort($query, function ($val1, $val2) {
+            return strcmp($val1, $val2);
+        });
+
+        return implode('&', $query);
+    }
+
+    /**
+     * @param string $path the path of the directory to be iterated over
+     *
+     * @return \RecursiveIteratorIterator
+     */
+    private function createRecursiveFileIterator($path)
+    {
+        $directoryIterator = new \RecursiveDirectoryIterator(
+            $path,
+            \RecursiveDirectoryIterator::SKIP_DOTS
+        );
+
+        return new \RecursiveIteratorIterator(
+            $directoryIterator,
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+    }
 
     /**
      * Delete all pages with the given cache id
      *
      * @param $id
+     *
      * @return bool
      */
     private function purgeByShopwareId($id)
@@ -292,7 +345,6 @@ class Store extends BaseStore
 
         return true;
     }
-
 
     /**
      * Loads data for the given key.

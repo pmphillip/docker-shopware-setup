@@ -25,52 +25,53 @@
 namespace Shopware\Bundle\SearchBundle\FacetResult;
 
 use Shopware\Bundle\SearchBundle\FacetResultInterface;
+use Shopware\Bundle\SearchBundle\TemplateSwitchable;
 use Shopware\Bundle\StoreFrontBundle\Struct\Attribute;
 use Shopware\Bundle\StoreFrontBundle\Struct\Extendable;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\FacetResult
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class TreeFacetResult extends Extendable implements FacetResultInterface
+class TreeFacetResult extends Extendable implements FacetResultInterface, TemplateSwitchable
 {
     /**
      * @var string
      */
-    private $facetName;
+    protected $facetName;
 
     /**
      * @var string
      */
-    private $fieldName;
+    protected $fieldName;
 
     /**
      * @var bool
      */
-    private $active;
+    protected $active;
 
     /**
      * @var string
      */
-    private $label;
+    protected $label;
 
     /**
      * @var TreeItem[]
      */
-    private $values;
+    protected $values;
 
     /**
      * @var string|null
      */
-    private $template = null;
+    protected $template;
 
     /**
-     * @param string $facetName
-     * @param string $fieldName
-     * @param boolean $active
-     * @param string $label
-     * @param TreeItem[] $values
+     * @param string      $facetName
+     * @param string      $fieldName
+     * @param bool        $active
+     * @param string      $label
+     * @param TreeItem[]  $values
      * @param null|string $template
      * @param Attribute[] $attributes
      */
@@ -109,7 +110,7 @@ class TreeFacetResult extends Extendable implements FacetResultInterface
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isActive()
     {
@@ -133,10 +134,18 @@ class TreeFacetResult extends Extendable implements FacetResultInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getTemplate()
     {
         return $this->template;
+    }
+
+    /**
+     * @param null|string $template
+     */
+    public function setTemplate($template)
+    {
+        $this->template = $template;
     }
 }

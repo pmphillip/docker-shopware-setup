@@ -57,9 +57,8 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
     public function preDispatch()
     {
         $this->View()->setScope(Enlight_Template_Manager::SCOPE_PARENT);
-        if (!in_array($this->Request()->getActionName(), array('login', 'logout', 'password', 'resetPassword'))
-            && !$this->admin->sCheckUser()) {
-            return $this->forward('index', 'register');
+        if ($this->shouldForwardToRegister()) {
+            return $this->forward('index', 'register', 'frontend', $this->getForwardParameters());
         }
         $userData = $this->admin->sGetUserData();
 
@@ -69,8 +68,14 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         $this->View()->assign('activeBillingAddressId', $activeBillingAddressId);
         $this->View()->assign('activeShippingAddressId', $activeShippingAddressId);
         $this->View()->assign('sUserData', $userData);
+        $this->View()->assign('userInfo', $this->get('shopware_account.store_front_greeting_service')->fetch());
         $this->View()->assign('sUserLoggedIn', $this->admin->sCheckUser());
         $this->View()->assign('sAction', $this->Request()->getActionName());
+
+        if ($this->isOneTimeAccount() && $this->request->getParams()['action'] !== 'abort') {
+            $this->logoutAction();
+            $this->redirect(['controller' => 'register']);
+        }
     }
 
     /**
@@ -78,13 +83,6 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
      */
     public function indexAction()
     {
-        if (
-            $this->View()->sUserData['additional']['user']['accountmode'] == 1
-        ) {
-            $this->logoutAction();
-            return $this->redirect(array('controller'=> 'register'));
-        }
-
         if ($this->Request()->getParam('success')) {
             $this->View()->sSuccessAction = $this->Request()->getParam('success');
         }
@@ -98,7 +96,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
     public function paymentAction()
     {
         $this->View()->sPaymentMeans = $this->admin->sGetPaymentMeans();
-        $this->View()->sFormData = array('payment'=>$this->View()->sUserData['additional']['user']['paymentID']);
+        $this->View()->sFormData = ['payment' => $this->View()->sUserData['additional']['user']['paymentID']];
         $this->View()->sTarget = $this->Request()->getParam('sTarget', $this->Request()->getControllerName());
         $this->View()->sTargetAction = $this->Request()->getParam('sTargetAction', 'index');
 
@@ -128,11 +126,13 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
      */
     public function ordersAction()
     {
-        $destinationPage = (int)$this->Request()->sPage;
+        $destinationPage = (int) $this->Request()->sPage;
         $orderData = $this->admin->sGetOpenOrderData($destinationPage);
-        $this->View()->sOpenOrders = $orderData["orderData"];
-        $this->View()->sNumberPages = $orderData["numberOfPages"];
-        $this->View()->sPages = $orderData["pages"];
+        $orderData = $this->applyTrackingUrl($orderData);
+
+        $this->View()->sOpenOrders = $orderData['orderData'];
+        $this->View()->sNumberPages = $orderData['numberOfPages'];
+        $this->View()->sPages = $orderData['pages'];
 
         //this has to be assigned here because the config method in smarty can't handle array structures
         $this->View()->sDownloadAvailablePaymentStatus = Shopware()->Config()->get('downloadAvailablePaymentStatus');
@@ -145,18 +145,18 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
      */
     public function downloadsAction()
     {
-        $destinationPage = (int)$this->Request()->sPage;
+        $destinationPage = (int) $this->Request()->sPage;
 
         if (empty($destinationPage)) {
             $destinationPage = 1;
         }
 
         $orderData = $this->admin->sGetDownloads($destinationPage);
-        $this->View()->sDownloads = $orderData["orderData"];
-        $this->View()->sNumberPages = $orderData["numberOfPages"];
-        $this->View()->sPages = $orderData["pages"];
+        $this->View()->sDownloads = $orderData['orderData'];
+        $this->View()->sNumberPages = $orderData['numberOfPages'];
+        $this->View()->sPages = $orderData['pages'];
 
-        //this has to be assigned here because the config method in smarty can't handle array structures
+        // This has to be assigned here because the config method in smarty can't handle array structures
         $this->View()->sDownloadAvailablePaymentStatus = Shopware()->Config()->get('downloadAvailablePaymentStatus');
     }
 
@@ -170,7 +170,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
     {
         // show partner statistic menu
         $partnerModel = Shopware()->Models()->getRepository('Shopware\Models\Partner\Partner')
-                                            ->findOneBy(array('customerId' => Shopware()->Session()->sUserId));
+                                            ->findOneBy(['customerId' => Shopware()->Session()->sUserId]);
         if (!empty($partnerModel)) {
             $this->View()->partnerId = $partnerModel->getId();
             Shopware()->Session()->partnerId = $partnerModel->getId();
@@ -180,7 +180,6 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
     /**
      * Partner Statistic action method
      * This action returns all data for the partner statistic page
-     *
      */
     public function partnerStatisticAction()
     {
@@ -194,7 +193,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         $fromDate = $this->Request()->fromDate;
 
         //if a to date passed, format it over the \DateTime object. Otherwise create a new date with today
-        if (empty($fromDate) || !Zend_Date::isDate($fromDate)) {
+        if (empty($fromDate) || !Zend_Date::isDate($fromDate, 'Y-m-d')) {
             $fromDate = new \DateTime();
             $fromDate = $fromDate->sub(new DateInterval('P1M'));
         } else {
@@ -202,14 +201,14 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         }
 
         //if a to date passed, format it over the \DateTime object. Otherwise create a new date with today
-        if (empty($toDate) || !Zend_Date::isDate($toDate)) {
+        if (empty($toDate) || !Zend_Date::isDate($toDate, 'Y-m-d')) {
             $toDate = new \DateTime();
         } else {
             $toDate = new \DateTime($toDate);
         }
 
-        $this->View()->partnerStatisticToDate = $toDate->format("d.m.Y");
-        $this->View()->partnerStatisticFromDate = $fromDate->format("d.m.Y");
+        $this->View()->partnerStatisticToDate = $toDate->format('Y-m-d');
+        $this->View()->partnerStatisticFromDate = $fromDate->format('Y-m-d');
 
         //to get the right value cause 2012-02-02 is smaller than 2012-02-02 15:33:12
         $toDate = $toDate->add(new DateInterval('P1D'));
@@ -241,6 +240,16 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
     }
 
     /**
+     * Abort action method
+     *
+     * Abort one time order and delete session
+     */
+    public function abortAction()
+    {
+        $this->admin->logout();
+    }
+
+    /**
      * Login action method
      *
      * Login account and show login errors
@@ -262,15 +271,15 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
 
         if (empty($this->View()->sErrorMessages) && $this->admin->sCheckUser()) {
             return $this->redirect(
-                array(
+                [
                     'controller' => $this->Request()->getParam('sTarget', 'account'),
-                    'action' => $this->Request()->getParam('sTargetAction', 'index')
-                )
+                    'action' => $this->Request()->getParam('sTargetAction', 'index'),
+                ]
             );
         }
 
         $this->forward('index', 'register', 'frontend', [
-            'sTarget' => $this->Request()->getParam('sTarget')
+            'sTarget' => $this->Request()->getParam('sTarget'),
         ]);
     }
 
@@ -292,22 +301,22 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
                     $this->View()->sErrorFlag = $checkData['checkPayment']['sErrorFlag'];
                     $this->View()->sErrorMessages = $checkData['checkPayment']['sErrorMessages'];
                 }
+
                 return $this->forward('payment');
-            } else {
-                $previousPayment = $this->admin->sGetUserData();
-                $previousPayment = $previousPayment['additional']['user']['paymentID'];
+            }
+            $previousPayment = $this->admin->sGetUserData();
+            $previousPayment = $previousPayment['additional']['user']['paymentID'];
 
-                $previousPayment = $this->admin->sGetPaymentMeanById($previousPayment);
-                if ($previousPayment['paymentTable']) {
-                    $deleteSQL = 'DELETE FROM '.$previousPayment['paymentTable'].' WHERE userID=?';
-                    Shopware()->Db()->query($deleteSQL, array(Shopware()->Session()->sUserId));
-                }
+            $previousPayment = $this->admin->sGetPaymentMeanById($previousPayment);
+            if ($previousPayment['paymentTable']) {
+                $deleteSQL = 'DELETE FROM ' . $previousPayment['paymentTable'] . ' WHERE userID=?';
+                Shopware()->Db()->query($deleteSQL, [Shopware()->Session()->sUserId]);
+            }
 
-                $this->admin->sUpdatePayment();
+            $this->admin->sUpdatePayment();
 
-                if ($checkData['sPaymentObject'] instanceof \ShopwarePlugin\PaymentMethods\Components\BasePaymentMethod) {
-                    $checkData['sPaymentObject']->savePaymentData(Shopware()->Session()->sUserId, $this->Request());
-                }
+            if ($checkData['sPaymentObject'] instanceof \ShopwarePlugin\PaymentMethods\Components\BasePaymentMethod) {
+                $checkData['sPaymentObject']->savePaymentData(Shopware()->Session()->sUserId, $this->Request());
             }
         }
 
@@ -315,11 +324,11 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
             $target = 'account';
         }
         $targetAction = $this->Request()->getParam('sTargetAction', 'index');
-        $this->redirect(array(
+        $this->redirect([
             'controller' => $target,
             'action' => $targetAction,
-            'success' => 'payment'
-        ));
+            'success' => 'payment',
+        ]);
     }
 
     /**
@@ -332,7 +341,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         if ($this->Request()->isPost()) {
             $status = $this->Request()->getPost('newsletter') ? true : false;
             $this->admin->sUpdateNewsletter($status, $this->admin->sGetUserMailById(), true);
-            $successMessage =  $status ? 'newsletter' : 'deletenewsletter';
+            $successMessage = $status ? 'newsletter' : 'deletenewsletter';
             if (Shopware()->Config()->optinnewsletter && $status) {
                 $successMessage = 'optinnewsletter';
             }
@@ -362,7 +371,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
             AND oe.userID=?
             AND oe.orderdetailsID=?
         ';
-        $download = Shopware()->Db()->fetchRow($sql, array(Shopware()->Session()->sUserId, $esdID));
+        $download = Shopware()->Db()->fetchRow($sql, [Shopware()->Session()->sUserId, $esdID]);
 
         if (empty($download)) {
             $sql = '
@@ -374,32 +383,34 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
                 AND o.userID=?
                 AND od.id=?
             ';
-            $download = Shopware()->Db()->fetchRow($sql, array(Shopware()->Session()->sUserId, $esdID));
+            $download = Shopware()->Db()->fetchRow($sql, [Shopware()->Session()->sUserId, $esdID]);
         }
 
         if (empty($download['file'])) {
             $this->View()->sErrorCode = 1;
+
             return $this->forward('downloads');
         }
 
-        $file = 'files/'.Shopware()->Config()->get('sESDKEY').'/'.$download['file'];
+        $file = 'files/' . Shopware()->Config()->get('sESDKEY') . '/' . $download['file'];
 
-        $filePath = Shopware()->DocPath() . $file;
+        $filePath = $this->container->getParameter('shopware.app.rootdir') . $file;
 
         if (!file_exists($filePath)) {
             $this->View()->sErrorCode = 2;
+
             return $this->forward('downloads');
         }
 
-        switch (Shopware()->Config()->get("esdDownloadStrategy")) {
+        switch (Shopware()->Config()->get('esdDownloadStrategy')) {
             case 0:
-                $this->redirect($this->Request()->getBasePath() . '/' .  $file);
+                $this->redirect($this->Request()->getBasePath() . '/' . $file);
                 break;
             case 1:
                 @set_time_limit(0);
                 $this->Response()
                     ->setHeader('Content-Type', 'application/octet-stream')
-                    ->setHeader('Content-Disposition', 'attachment; filename="'.$download['file'].'"')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $download['file'] . '"')
                     ->setHeader('Content-Length', filesize($filePath));
 
                 $this->Front()->Plugins()->ViewRenderer()->setNoRender();
@@ -410,7 +421,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
                 // Apache2 + X-Sendfile
                 $this->Response()
                     ->setHeader('Content-Type', 'application/octet-stream')
-                    ->setHeader('Content-Disposition', 'attachment; filename="'.$download['file'].'"')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $download['file'] . '"')
                     ->setHeader('X-Sendfile', $filePath);
 
                 $this->Front()->Plugins()->ViewRenderer()->setNoRender();
@@ -420,8 +431,8 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
                 // Nginx + X-Accel
                 $this->Response()
                     ->setHeader('Content-Type', 'application/octet-stream')
-                    ->setHeader('Content-Disposition', 'attachment; filename="'.$download['file'].'"')
-                    ->setHeader('X-Accel-Redirect', '/'.$file);
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $download['file'] . '"')
+                    ->setHeader('X-Accel-Redirect', '/' . $file);
 
                 $this->Front()->Plugins()->ViewRenderer()->setNoRender();
 
@@ -450,7 +461,9 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
 
     /**
      * Send a mail asking the customer, if he actually wants to reset his password
+     *
      * @param string $email
+     *
      * @return array
      */
     public function sendResetPasswordConfirmationMail($email)
@@ -458,7 +471,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         $snippets = Shopware()->Snippets()->getNamespace('frontend/account/password');
 
         if (empty($email)) {
-            return array('sErrorMessages' => array($snippets->get('ErrorForgotMail')));
+            return ['sErrorMessages' => [$snippets->get('ErrorForgotMail')]];
         }
 
         $userID = Shopware()->Modules()->Admin()->sGetUserByMail($email);
@@ -468,11 +481,11 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
 
         $hash = \Shopware\Components\Random::getAlphanumericString(32);
 
-        $context = array(
-            'sUrlReset' => $this->Front()->Router()->assemble(array('controller' => 'account', 'action'=>'resetPassword', 'hash'=>$hash)),
-            'sUrl'      => $this->Front()->Router()->assemble(array('controller' => 'account', 'action'=>'resetPassword')),
-            'sKey'      => $hash
-        );
+        $context = [
+            'sUrlReset' => $this->Front()->Router()->assemble(['controller' => 'account', 'action' => 'resetPassword', 'hash' => $hash]),
+            'sUrl' => $this->Front()->Router()->assemble(['controller' => 'account', 'action' => 'resetPassword']),
+            'sKey' => $hash,
+        ];
 
         $sql = 'SELECT 
           s_user.accountmode,
@@ -500,6 +513,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
           WHERE id = ?';
 
         $user = $this->get('dbal_connection')->fetchAssoc($sql, [$userID]);
+        $email = $user['email'];
         $user['attributes'] = $this->get('dbal_connection')->fetchAssoc('SELECT * FROM s_user_attributes WHERE userID = ?', [$userID]);
 
         $context['user'] = $user;
@@ -510,8 +524,8 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         $mail->send();
 
         // Add the hash to the optin table
-        $sql = "INSERT INTO `s_core_optin` (`type`, `datum`, `hash`, `data`) VALUES ('password', NOW(), ?, ?)";
-        Shopware()->Db()->query($sql, array($hash, $userID));
+        $sql = "INSERT INTO `s_core_optin` (`type`, `datum`, `hash`, `data`) VALUES ('swPassword', NOW(), ?, ?)";
+        Shopware()->Db()->query($sql, [$hash, $userID]);
     }
 
     /**
@@ -541,10 +555,11 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
 
             foreach ($form->getErrors(true) as $error) {
                 $errors['sErrorFlag'][$error->getOrigin()->getName()] = true;
-                $errors['sErrorMessages'][]= $this->View()->fetch('string:' . $error->getMessage());
+                $errors['sErrorMessages'][] = $this->View()->fetch('string:' . $error->getMessage());
             }
 
             $this->View()->assign($errors);
+
             return;
         }
 
@@ -560,28 +575,12 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
             $target = 'account';
         }
 
-        $this->redirect(['controller' => $target, 'action' => 'index', 'success' => 'resetPassword']);
-    }
-
-    /**
-     * Delete old expired password-hashes after two hours
-     */
-    private function deleteExpiredOptInItems()
-    {
-        /** @var \Doctrine\DBAL\Connection $connection */
-        $connection = $this->get('dbal_connection');
-
-        $connection->executeUpdate(
-            'DELETE FROM s_core_optin WHERE datum <= (NOW() - INTERVAL 2 HOUR) AND type = "password"'
+        $this->get('dbal_connection')->executeQuery(
+            'DELETE FROM s_core_optin WHERE hash = ? AND type = ?',
+            [$hash, 'swPassword']
         );
-    }
 
-    /**
-     *
-     */
-    protected function refreshBasket()
-    {
-        Shopware()->Modules()->Basket()->sRefreshBasket();
+        $this->redirect(['controller' => $target, 'action' => 'index', 'success' => 'resetPassword']);
     }
 
     /**
@@ -602,9 +601,9 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
                 'birthday' => [
                     'day' => null,
                     'month' => null,
-                    'year' => null
-                ]
-            ]
+                    'year' => null,
+                ],
+            ],
         ];
 
         if (!empty($this->View()->sUserData['additional']['user']['birthday'])) {
@@ -618,7 +617,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
 
         if ($this->Request()->getParam('errors')) {
             foreach ($this->Request()->getParam('errors') as $error) {
-                $message = $this->View()->fetch('string:'.$error->getMessage());
+                $message = $this->View()->fetch('string:' . $error->getMessage());
                 $errorFlags[$error->getOrigin()->getName()] = true;
                 $errorMessages[] = $message;
             }
@@ -648,7 +647,9 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
 
         if ($form->isValid()) {
             $this->customerService->update($customer);
+            $this->container->get('session')->offsetSet('userInfo', null);
             $this->redirect(['controller' => 'account', 'action' => 'profile', 'success' => true, 'section' => 'profile']);
+
             return;
         }
 
@@ -671,8 +672,9 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         if ($form->isValid()) {
             $this->customerService->update($customer);
             $this->get('session')->offsetSet('sUserMail', $customer->getEmail());
-
+            $this->get('session')->offsetSet('userInfo', null);
             $this->redirect(['controller' => 'account', 'action' => 'profile', 'success' => true, 'section' => 'email']);
+
             return;
         }
 
@@ -696,16 +698,69 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
             $this->get('session')->offsetSet('sUserPassword', $customer->getPassword());
 
             $this->redirect(['controller' => 'account', 'action' => 'profile', 'success' => true, 'section' => 'password']);
+
             return;
         }
 
         $this->forward('profile', 'account', 'frontend', ['section' => 'password', 'errors' => $form->getErrors(true)]);
     }
 
+    protected function refreshBasket()
+    {
+        Shopware()->Modules()->Basket()->sRefreshBasket();
+    }
+
+    /**
+     * @param array $orderData
+     *
+     * @return array
+     */
+    private function applyTrackingUrl(array $orderData)
+    {
+        foreach ($orderData['orderData'] as &$order) {
+            if (!empty($order['trackingcode']) && !empty($order['dispatch']) && !empty($order['dispatch']['status_link'])) {
+                $order['dispatch']['status_link'] = $this->renderTrackingLink(
+                    $order['dispatch']['status_link'],
+                    $order['trackingcode']
+                );
+            }
+        }
+
+        return $orderData;
+    }
+
+    /**
+     * @param string $link
+     * @param string $trackingCode
+     *
+     * @return string
+     */
+    private function renderTrackingLink($link, $trackingCode)
+    {
+        $regEx = '/(\{\$offerPosition.trackingcode\})/';
+
+        return preg_replace($regEx, $trackingCode, $link);
+    }
+
+    /**
+     * Delete old expired password-hashes after two hours
+     */
+    private function deleteExpiredOptInItems()
+    {
+        /** @var \Doctrine\DBAL\Connection $connection */
+        $connection = $this->get('dbal_connection');
+
+        $connection->executeUpdate(
+            'DELETE FROM s_core_optin WHERE datum <= (NOW() - INTERVAL 2 HOUR) AND type = "swPassword"'
+        );
+    }
+
     /**
      * @param string $hash
-     * @return Customer
+     *
      * @throws Exception
+     *
+     * @return Customer
      */
     private function getCustomerByResetHash($hash)
     {
@@ -716,7 +771,7 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         /** @var $confirmModel \Shopware\Models\CommentConfirm\CommentConfirm */
         $confirmModel = $this->get('models')
             ->getRepository('Shopware\Models\CommentConfirm\CommentConfirm')
-            ->findOneBy(['hash' => $hash, 'type' => 'password']);
+            ->findOneBy(['hash' => $hash, 'type' => 'swPassword']);
 
         if (!$confirmModel) {
             throw new Exception(
@@ -728,14 +783,52 @@ class Shopware_Controllers_Frontend_Account extends Enlight_Controller_Action
         }
 
         /** @var $customer Customer */
-        $customer = $this->get('models')->find('Shopware\Models\Customer\Customer', $confirmModel->getData());
+        $customer = $this->get('models')->find(\Shopware\Models\Customer\Customer::class, $confirmModel->getData());
         if (!$customer) {
-            throw new Exception($resetPasswordNamespace->get(
-                sprintf('PasswordResetNewMissingId', $confirmModel->getData()),
-                sprintf('Could not find the user with the ID "%s".', $confirmModel->getData())
-            ));
+            throw new Exception(
+                $resetPasswordNamespace->get(
+                    'PasswordResetNewMissingId',
+                    'Your account could not be found. Please contact us to fix this problem.'
+                )
+            );
         }
 
         return $customer;
+    }
+
+    /**
+     * @return bool
+     */
+    private function shouldForwardToRegister()
+    {
+        return !in_array($this->Request()->getActionName(), ['login', 'logout', 'password', 'resetPassword'])
+            && !$this->admin->sCheckUser();
+    }
+
+    /**
+     * @return array
+     */
+    private function getForwardParameters()
+    {
+        if (!$this->Request()->getParam('sTarget') && !$this->Request()->getParam('sTargetAction')) {
+            return [
+                'sTarget' => $this->Request()->getControllerName(),
+                'sTargetAction' => $this->Request()->getActionName(),
+            ];
+        }
+
+        return [
+            'sTarget' => $this->Request()->getParam('sTarget'),
+            'sTargetAction' => $this->Request()->getParam('sTargetAction'),
+        ];
+    }
+
+    /**
+     * @return bool
+     */
+    private function isOneTimeAccount()
+    {
+        return $this->container->get('session')->offsetGet('sOneTimeAccount')
+            || $this->View()->sUserData['additional']['user']['accountmode'] == 1;
     }
 }

@@ -219,7 +219,7 @@ Ext.define('Shopware.apps.ProductStream.controller.Main', {
         var sort = me.getSorting();
 
         previewGrid.getStore().getProxy().extraParams = {
-            sort: Ext.JSON.encode(sort),
+            sort: sort,
             conditions: Ext.JSON.encode(conditions),
             shopId: shopCombo.getValue(),
             currencyId: currencyCombo.getValue(),
@@ -230,30 +230,26 @@ Ext.define('Shopware.apps.ProductStream.controller.Main', {
     },
 
     getSorting: function() {
-        var settingsPanel = this.getSettingsPanel();
+        var me = this,
+            sort,
+            record,
+            settingsPanel = this.getSettingsPanel();
 
-        var sort = settingsPanel.sortingCombo.getValue();
-        var store = settingsPanel.sortingCombo.getStore();
+        sort = settingsPanel.sortingCombo.store.getById(
+            settingsPanel.sortingCombo.getValue()
+        );
 
-        var sortModel = null;
-
-        store.each(function(item) {
-            if (item.get('value') == sort) {
-                sortModel = item;
-                return false;
-            }
-        });
-
-        var sortData = {};
-        if (!sortModel) {
-            return null;
+        if (sort) {
+            return sort.get('sortings');
         }
 
-        sortData[sortModel.get('key')] = {
-            direction: sortModel.get('direction')
-        };
+        record = me.getFormPanel().getForm().getRecord();
 
-        return sortData;
+        if (record && record.get('sorting').length) {
+            return record.get('sorting');
+        }
+
+        return {};
     },
 
     onDuplicateItem: function(grid, record) {

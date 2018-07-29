@@ -99,18 +99,17 @@ Ext.define('Shopware.form.field.TinyMCE',
     uses: [ 'Shopware.MediaManager.MediaSelection' ],
 
     /**
+     * Indicates if the TinyMCE editor is initialized
+     *
+     * @boolean
+     */
+    initialized: false,
+
+    /**
      * List of static methods, properties and attributes for this class
      * @object
      */
     statics: {
-
-        /**
-         * Indicates if the TinyMCE editor is initialized
-         *
-         * @static
-         * @boolean
-         */
-        initialized: false,
 
         /**
          * Global configuration for the TinyMCE editor.
@@ -140,8 +139,8 @@ Ext.define('Shopware.form.field.TinyMCE',
             theme_advanced_toolbar_align: "left",
             theme_advanced_statusbar_location: "bottom",
             extended_valid_elements : "font[size],iframe[frameborder|src|width|height|name|align|frameborder|allowfullscreen|id|class|style],script[src|type],object[width|height|classid|codebase|ID|value],param[name|value],embed[name|src|type|wmode|width|height|style|allowScriptAccess|menu|quality|pluginspage],video[autoplay|class|controls|id|lang|loop|onclick|ondblclick|onkeydown|onkeypress|onkeyup|onmousedown|onmousemove|onmouseout|onmouseover|onmouseup|preload|poster|src|style|title|width|height],audio[autoplay|class|controls|id|lang|loop|onclick|ondblclick|onkeydown|onkeypress|onkeyup|onmousedown|onmousemove|onmouseout|onmouseover|onmouseup|preload|src|style|title]",
-            document_base_url: '{"{url controller="index" fullPath}"|dirname}/',
-
+            document_base_url: '{"{url controller="index" fullPath}"}/'.replace('/backend', ''),
+            
             // Content CSS - Styles the tiny mce editor. Please note the append timestamp. It's used to prevent caching the stylesheet
             contentCSS: '{link file="backend/_resources/styles/tiny_mce.css" fullPath}?_dc=' + new Date().getTime(),
 
@@ -357,7 +356,9 @@ Ext.define('Shopware.form.field.TinyMCE',
         // (e.g. in order to click the save button in the ExtJS window).
         // This solution still as some drawbacks as it image-resize-actions won't trigger a undo-step usually.
         me.tinymce.onInit.add(function(ed, evt) {
-            me.statics.initialized = true;
+            me.initialized = true;
+
+            me.setValue(ed.getContent());
 
             var dom = ed.dom,
                 doc = ed.getDoc(),
@@ -393,6 +394,8 @@ Ext.define('Shopware.form.field.TinyMCE',
                 }
             });
 
+            me.fixImageSelection();
+
             me.changeSniffer = window.setInterval(function() {
                 var value = me.tinymce.getContent();
                 value = me.replaceImagePathsWithSmartyPlugin(value);
@@ -405,6 +408,37 @@ Ext.define('Shopware.form.field.TinyMCE',
 
         // Fire the "afterrendereditor" event
         me.fireEvent('afterrendereditor', me, me.tinymce, input.id, me.config.editor);
+    },
+
+    /**
+     * Replaces original onClick listener with bugfixed version to prevent
+     * on click console error in Webkit browsers.
+     *
+     */
+    fixImageSelection: function() {
+        var me = this;
+
+        delete me.tinymce.onClick.listeners[2];
+        me.tinymce.onClick.listeners = Ext.Array.clean(me.tinymce.onClick.listeners);
+
+        me.tinymce.onClick.add(function(editor, e) {
+            e = e.target;
+            var selection = editor.selection;
+
+            if (/^(IMG|HR)$/.test(e.nodeName)) {
+                try {
+                    selection.getSel().setBaseAndExtent(e, 0, e, 1); //Original behavior in 3.5.9; still works in Safari 10.1
+                } catch (ex) {
+                    selection.getSel().setBaseAndExtent(e, 0, e, 0); //Updated behavior for Chrome 58+ (and, I'm guessing, future versions of Safari)
+                }
+            }
+
+            if (e.nodeName === 'A' && dom.hasClass(e, 'mceItemAnchor')) {
+                selection.select(e);
+            }
+
+            editor.nodeChanged();
+        });
     },
 
     _findImagesInDOMContent: function(content) {
@@ -490,13 +524,18 @@ Ext.define('Shopware.form.field.TinyMCE',
         return rawContent;
     },
 
-    replacePlaceholderWithImage: function(rawContent) {
+    replacePlaceholderWithImage: function(rawContent, callback) {
         var me = this,
             imagesToLoad = [],
             content, params = '';
 
         if (!me.isValidContent(rawContent)) {
-            return rawContent;
+            if (Ext.isFunction(callback)) {
+                callback(rawContent);
+                return;
+            } else {
+                return rawContent;
+            }
         }
 
         content = me.HTMLBlobToDomElements(rawContent);
@@ -508,7 +547,12 @@ Ext.define('Shopware.form.field.TinyMCE',
         params = params.substring(0, params.length - 1);
 
         if (params.length <= 0) {
-            return;
+            if (Ext.isFunction(callback)) {
+                callback(rawContent);
+                return;
+            } else {
+                return rawContent;
+            }
         }
 
         Ext.Ajax.request({
@@ -529,7 +573,12 @@ Ext.define('Shopware.form.field.TinyMCE',
                 });
 
                 html = me.DOMElementsToHTMLBlob(content);
-                me.tinymce.setContent(html);
+
+                if (Ext.isFunction(callback)) {
+                    callback(html);
+                } else {
+                    me.tinymce.setContent(html);
+                }
             }
         });
     },
@@ -642,10 +691,21 @@ Ext.define('Shopware.form.field.TinyMCE',
      */
     setValue: function(value, editorChange) {
         var me = this;
-        me.callParent(arguments);
 
-        if(!me.statics.initialized) {
-            return false;
+        if(!me.initialized) {
+            value = me.replaceSmartyPluginWithImagePaths(value);
+
+            me.replacePlaceholderWithImage(value, function (value) {
+                value = value === null || value === undefined ? '' : value;
+                me.setRawValue(me.valueToRaw(value));
+                me.mixins.field.setValue.call(me, value);
+
+                if (me.tinymce) {
+                    me.tinymce.setContent(value);
+                }
+            });
+
+            return me;
         }
 
         if(!editorChange) {
@@ -656,6 +716,8 @@ Ext.define('Shopware.form.field.TinyMCE',
                 me.setEditorValue(me.emptyText, me);
             }
         }
+
+        me.callParent(arguments);
 
         return me;
     },
@@ -671,7 +733,7 @@ Ext.define('Shopware.form.field.TinyMCE',
         var me = this;
         me.callParent(arguments);
 
-        if(!me.statics.initialized) {
+        if(!me.initialized) {
             return false;
         }
 
@@ -688,7 +750,7 @@ Ext.define('Shopware.form.field.TinyMCE',
     setEditorValue: function(value, scope) {
         var me = scope;
 
-        if(!me.statics.initialized || !me.tinymce) {
+        if(!me.initialized || !me.tinymce) {
 
             me.on('afterrendereditor', function() {
                 me.setEditorValue(value, me);
@@ -778,7 +840,7 @@ Ext.define('Shopware.form.field.TinyMCE',
         var me = this;
         me.callParent(arguments);
 
-        if(!me.tinymce) {
+        if(!me.tinymce || !me.initialized) {
             return me;
         }
 
@@ -805,7 +867,7 @@ Ext.define('Shopware.form.field.TinyMCE',
         var me = this;
         me.callParent(arguments);
 
-        if(!me.tinymce) {
+        if(!me.tinymce || !me.initialized) {
             return me;
         }
 

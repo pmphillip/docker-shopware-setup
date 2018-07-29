@@ -24,11 +24,13 @@
 
                         {* Customer rating for the product *}
                         {block name='frontend_listing_box_article_rating'}
-                            <div class="product--rating-container">
-                                {if $sArticle.sVoteAverage.average}
-                                    {include file='frontend/_includes/rating.tpl' points=$sArticle.sVoteAverage.average type="aggregated" label=false microData=false}
-                                {/if}
-                            </div>
+                            {if !{config name=VoteDisable}}
+                                <div class="product--rating-container">
+                                    {if $sArticle.sVoteAverage.average}
+                                        {include file='frontend/_includes/rating.tpl' points=$sArticle.sVoteAverage.average type="aggregated" label=false microData=false}
+                                    {/if}
+                                </div>
+                            {/if}
                         {/block}
 
                         {* Product name *}
@@ -38,6 +40,25 @@
                                title="{$sArticle.articleName|escapeHtml}">
                                 {$sArticle.articleName|truncate:50|escapeHtml}
                             </a>
+                        {/block}
+
+                        {* Variant description *}
+                        {block name='frontend_listing_box_variant_description'}
+                            {if $sArticle.attributes.swagVariantConfiguration}
+                                <div class="variant--description">
+                                    <span title="
+                                        {foreach $sArticle.attributes.swagVariantConfiguration->get('value') as $group}
+                                                {$group.groupName}: {$group.optionName}
+                                        {/foreach}
+                                        ">
+                                        {foreach $sArticle.attributes.swagVariantConfiguration->get('value') as $group}
+                                            <span class="variant--description--line">
+                                                <span class="variant--groupName">{$group.groupName}:</span> {$group.optionName} {if !$group@last}|{/if}
+                                            </span>
+                                        {/foreach}
+                                    </span>
+                                </div>
+                            {/if}
                         {/block}
 
                         {* Product description *}
@@ -62,7 +83,19 @@
                             </div>
                         {/block}
 
-                        {* Product actions - Compare product, more information, buy now *}
+                        {block name="frontend_listing_box_article_buy"}
+                            {if {config name="displayListingBuyButton"}}
+                                <div class="product--btn-container">
+                                    {if $sArticle.allowBuyInListing}
+                                        {include file="frontend/listing/product-box/button-buy.tpl"}
+                                    {else}
+                                        {include file="frontend/listing/product-box/button-detail.tpl"}
+                                    {/if}
+                                </div>
+                            {/if}
+                        {/block}
+
+                        {* Product actions - Compare product, more information *}
                         {block name='frontend_listing_box_article_actions'}
                             {include file="frontend/listing/product-box/product-actions.tpl"}
                         {/block}

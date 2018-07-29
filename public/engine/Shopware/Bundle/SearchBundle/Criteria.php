@@ -25,6 +25,7 @@
 namespace Shopware\Bundle\SearchBundle;
 
 use Assert\Assertion;
+use Shopware\Bundle\StoreFrontBundle\Struct\Extendable;
 
 /**
  * The criteria object is used for the search gateway.
@@ -36,19 +37,21 @@ use Assert\Assertion;
  * own handler classes which implemented for each gateway engine.
  *
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class Criteria implements \JsonSerializable
+class Criteria extends Extendable
 {
     /**
      * Offset for the limitation
+     *
      * @var int
      */
     private $offset;
 
     /**
      * Count of result
+     *
      * @var int
      */
     private $limit;
@@ -76,10 +79,16 @@ class Criteria implements \JsonSerializable
     /**
      * @var bool
      */
+    private $generatePartialFacets = false;
+
+    /**
+     * @var bool
+     */
     private $fetchCount = true;
 
     /**
-     * @param integer $offset
+     * @param int $offset
+     *
      * @return $this
      */
     public function offset($offset)
@@ -91,13 +100,15 @@ class Criteria implements \JsonSerializable
     }
 
     /**
-     * @param integer $limit
+     * @param int $limit
+     *
      * @return $this
      */
     public function limit($limit)
     {
         if ($limit === null) {
             $this->limit = null;
+
             return $this;
         }
 
@@ -125,6 +136,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return bool
      */
     public function hasCondition($name)
@@ -138,6 +150,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return bool
      */
     public function hasBaseCondition($name)
@@ -147,6 +160,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return bool
      */
     public function hasUserCondition($name)
@@ -156,6 +170,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return bool
      */
     public function hasSorting($name)
@@ -165,6 +180,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return bool
      */
     public function hasFacet($name)
@@ -174,6 +190,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param FacetInterface $facet
+     *
      * @return $this
      */
     public function addFacet(FacetInterface $facet)
@@ -185,6 +202,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param ConditionInterface $condition
+     *
      * @return $this
      */
     public function addCondition(ConditionInterface $condition)
@@ -196,6 +214,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param ConditionInterface $condition
+     *
      * @return $this
      */
     public function addBaseCondition(ConditionInterface $condition)
@@ -207,6 +226,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param SortingInterface $sorting
+     *
      * @return $this
      */
     public function addSorting(SortingInterface $sorting)
@@ -218,6 +238,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param $name
+     *
      * @return null|ConditionInterface
      */
     public function getCondition($name)
@@ -235,6 +256,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return ConditionInterface
      */
     public function getBaseCondition($name)
@@ -244,6 +266,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return ConditionInterface
      */
     public function getUserCondition($name)
@@ -253,6 +276,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return null|FacetInterface
      */
     public function getFacet($name)
@@ -262,6 +286,7 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param string $name
+     *
      * @return null|SortingInterface
      */
     public function getSorting($name)
@@ -308,6 +333,7 @@ class Criteria implements \JsonSerializable
     public function resetSorting()
     {
         $this->sortings = [];
+
         return $this;
     }
 
@@ -319,6 +345,7 @@ class Criteria implements \JsonSerializable
     public function resetBaseConditions()
     {
         $this->baseConditions = [];
+
         return $this;
     }
 
@@ -330,6 +357,7 @@ class Criteria implements \JsonSerializable
     public function resetConditions()
     {
         $this->conditions = [];
+
         return $this;
     }
 
@@ -341,6 +369,7 @@ class Criteria implements \JsonSerializable
     public function resetFacets()
     {
         $this->facets = [];
+
         return $this;
     }
 
@@ -393,7 +422,7 @@ class Criteria implements \JsonSerializable
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function jsonSerialize()
     {
@@ -433,6 +462,30 @@ class Criteria implements \JsonSerializable
     /**
      * @return bool
      */
+    public function generatePartialFacets()
+    {
+        return $this->generatePartialFacets;
+    }
+
+    /**
+     * @param bool $generatePartialFacets
+     */
+    public function setGeneratePartialFacets($generatePartialFacets)
+    {
+        $this->generatePartialFacets = $generatePartialFacets;
+    }
+
+    /**
+     * @return ConditionInterface[]
+     */
+    public function getUserConditions()
+    {
+        return $this->conditions;
+    }
+
+    /**
+     * @return bool
+     */
     public function fetchCount()
     {
         return $this->fetchCount;
@@ -440,11 +493,40 @@ class Criteria implements \JsonSerializable
 
     /**
      * @param bool $fetchCount
+     *
      * @return $this
      */
     public function setFetchCount($fetchCount)
     {
         $this->fetchCount = $fetchCount;
+
         return $this;
+    }
+
+    /**
+     * @param string $class
+     *
+     * @return bool
+     */
+    public function hasConditionOfClass($class)
+    {
+        $conditions = $this->getConditionsByClass($class);
+
+        return !empty($conditions);
+    }
+
+    /**
+     * @param string $class
+     *
+     * @return ConditionInterface[]
+     */
+    public function getConditionsByClass($class)
+    {
+        return array_filter(
+            $this->getConditions(),
+            function (ConditionInterface $condition) use ($class) {
+                return $condition instanceof $class;
+            }
+        );
     }
 }

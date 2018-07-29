@@ -11,7 +11,7 @@
 
 namespace Symfony\Component\Form\Extension\Core\DataTransformer;
 
-@trigger_error('The class '.__NAMESPACE__.'\ChoicesToBooleanArrayTransformer is deprecated since version 2.7 and will be removed in 3.0. Use Symfony\Component\Form\Extension\Core\DataMapper\CheckboxListMapper instead.', E_USER_DEPRECATED);
+@trigger_error('The class '.__NAMESPACE__.'\ChoicesToBooleanArrayTransformer is deprecated since Symfony 2.7 and will be removed in 3.0. Use Symfony\Component\Form\Extension\Core\DataMapper\CheckboxListMapper instead.', E_USER_DEPRECATED);
 
 use Symfony\Component\Form\ChoiceList\ChoiceListInterface;
 use Symfony\Component\Form\DataTransformerInterface;
@@ -44,8 +44,8 @@ class ChoicesToBooleanArrayTransformer implements DataTransformerInterface
      *
      * @return mixed An array
      *
-     * @throws TransformationFailedException If the given value is not an array
-     *                                       or if the choices can not be retrieved.
+     * @throws TransformationFailedException if the given value is not an array
+     *                                       or if the choices can not be retrieved
      */
     public function transform($array)
     {
@@ -83,10 +83,10 @@ class ChoicesToBooleanArrayTransformer implements DataTransformerInterface
      *
      * @return mixed An array
      *
-     * @throws TransformationFailedException If the given value is not an array,
+     * @throws TransformationFailedException if the given value is not an array,
      *                                       if the recuperation of the choices
      *                                       fails or if some choice can't be
-     *                                       found.
+     *                                       found
      */
     public function reverseTransform($values)
     {

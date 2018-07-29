@@ -35,7 +35,7 @@ Ext.define('Shopware.attribute.SelectionFactory', {
     getLabelField: function(record) {
         var fields = this.getRelevantFields();
         var found = null;
-        var recordFields = record.fields.keys;
+        var recordFields = Ext.Object.getKeys(record.data);
 
         Ext.each(fields, function(field) {
             if (recordFields.indexOf(field) >= 0) {
@@ -50,12 +50,15 @@ Ext.define('Shopware.attribute.SelectionFactory', {
     getLabelOfObject: function(values) {
         var fields = this.getRelevantFields();
         var found = null;
-        Ext.each(Object.keys(values), function(field) {
-            if (fields.indexOf(field) >= 0) {
+        var recordFields = Object.keys(values);
+
+        Ext.each(fields, function(field) {
+            if (recordFields.indexOf(field) >= 0) {
                 found = field;
                 return false;
             }
         });
+
         if (found) {
             return values[found];
         } else {
@@ -94,7 +97,7 @@ Ext.define('Shopware.attribute.SelectionFactory', {
             model: extJsModel,
             proxy: {
                 type: 'ajax',
-                url: '{url controller="EntitySearch" action="search"}?model=' + attribute.get('entity'),
+                url: '{url controller="EntitySearch" action="search"}?model=' + entity,
                 reader: { type: 'json', root: 'data' }
             }
         });

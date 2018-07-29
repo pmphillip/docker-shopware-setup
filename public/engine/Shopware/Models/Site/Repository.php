@@ -25,11 +25,10 @@
 namespace   Shopware\Models\Site;
 
 use Shopware\Components\Model\ModelRepository;
-use Doctrine\ORM\Query\Expr;
 
 /**
  * Repository for the site model (Shopware\Models\Site\Site).
- * <br>
+ *
  * The premium model repository is responsible for loading site data.
  */
 class Repository extends ModelRepository
@@ -37,15 +36,17 @@ class Repository extends ModelRepository
     /**
      * Returns the \Doctrine\ORM\Query to select all categories for example for the backend tree
      *
-     * @param   array $filterBy
-     * @param   array $orderBy
-     * @param   null $limit
-     * @param   null $offset
-     * @return  \Doctrine\ORM\Query
+     * @param array|null $filterBy
+     * @param array|null $orderBy
+     * @param int|null   $limit
+     * @param int|null   $offset
+     *
+     * @return \Doctrine\ORM\Query
      */
     public function getGroupListQuery(array $filterBy = null, array $orderBy = null, $limit = null, $offset = null)
     {
         $builder = $this->getGroupListQueryBuilder($filterBy, $orderBy, $limit, $offset);
+
         return $builder->getQuery();
     }
 
@@ -53,25 +54,26 @@ class Repository extends ModelRepository
      * Helper method to create the query builder for the "getListQuery" function.
      * This function can be hooked to modify the query builder of the query object.
      *
-     * @param   array $filterBy
-     * @param   array $orderBy
-     * @param   null $limit
-     * @param   null $offset
-     * @return  \Doctrine\ORM\Query
+     * @param array|null $filterBy
+     * @param array|null $orderBy
+     * @param int|null   $limit
+     * @param int|null   $offset
+     *
+     * @return \Doctrine\ORM\Query
      */
     public function getGroupListQueryBuilder(array $filterBy = null, array $orderBy = null, $limit = null, $offset = null)
     {
         $builder = $this->getEntityManager()->createQueryBuilder();
-        $builder->from('Shopware\Models\Site\Group', 'g');
+        $builder->from(\Shopware\Models\Site\Group::class, 'g');
         $builder->leftJoin('g.mapping', 'm');
 
-        $builder->select(array(
+        $builder->select([
             'g.id as id',
             'g.key as key',
             'g.name as name',
             'g.active as active',
-            'm.id as mappingId'
-        ));
+            'm.id as mappingId',
+        ]);
         if ($filterBy !== null) {
             $builder->addFilter($filterBy);
         }
@@ -92,13 +94,15 @@ class Repository extends ModelRepository
      * Returns an instance of the \Doctrine\ORM\Query object which select all sites
      * for the passed node name and shop
      *
-     * @param $nodeName
-     * @param int $shopId
+     * @param string $nodeName
+     * @param int    $shopId
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getSitesByNodeNameQuery($nodeName, $shopId = null)
     {
         $builder = $this->getSitesByNodeNameQueryBuilder($nodeName, $shopId);
+
         return $builder->getQuery();
     }
 
@@ -106,26 +110,23 @@ class Repository extends ModelRepository
      * Helper function to create the query builder for the "getSitesByNodeNameQuery" function.
      * This function can be hooked to modify the query builder of the query object.
      *
-     * @param $nodeName
-     * @param int $shopId
+     * @param string $nodeName
+     * @param int    $shopId
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getSitesByNodeNameQueryBuilder($nodeName, $shopId = null)
     {
         $builder = $this->getEntityManager()->createQueryBuilder();
-        $builder->select(array('sites', 'children', 'attribute', 'childrenAttribute'))
-                ->from('Shopware\Models\Site\Site', 'sites')
+        $builder->select(['sites', 'children', 'attribute', 'childrenAttribute'])
+                ->from(\Shopware\Models\Site\Site::class, 'sites')
                 ->leftJoin('sites.attribute', 'attribute')
                 ->leftJoin('sites.children', 'children')
                 ->leftJoin('children.attribute', 'childrenAttribute')
-                ->where($builder->expr()->eq('sites.parentId', 0))
+                ->where('sites.parentId = 0')
                 ->andWhere(
-                    $builder->expr()->orX(
-                        $builder->expr()->eq('sites.grouping', '?1'),        // = gBottom
-                        $builder->expr()->like('sites.grouping', '?2'),      //like 'gBottom|%
-                        $builder->expr()->like('sites.grouping', '?3'),      //like '|gBottom
-                        $builder->expr()->like('sites.grouping', '?4')      //like '|gBottom|
-                    )
+                    // = gBottom, like 'gBottom|%', like '|gBottom', like '|gBottom|'
+                    '(sites.grouping = ?1 OR sites.grouping LIKE ?2 OR sites.grouping LIKE ?3 OR sites.grouping LIKE ?4)'
                 )
                 ->setParameter(1, $nodeName)
                 ->setParameter(2, $nodeName . '|%')
@@ -134,12 +135,7 @@ class Repository extends ModelRepository
 
         if ($shopId) {
             $builder
-                ->andWhere(
-                    $builder->expr()->orX(
-                        $builder->expr()->like('sites.shopIds', ':shopId'),
-                        $builder->expr()->isNull('sites.shopIds')
-                    )
-                )
+                ->andWhere('(sites.shopIds LIKE :shopId OR sites.shopIds IS NULL)')
                 ->setParameter('shopId', '%|' . $shopId . '|%');
         }
 
@@ -148,65 +144,78 @@ class Repository extends ModelRepository
 
     /**
      * Returns an instance of the \Doctrine\ORM\Query object which .....
-     * @param $siteId
+     *
+     * @param int $siteId
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getAttributesQuery($siteId)
     {
         $builder = $this->getAttributesQueryBuilder($siteId);
+
         return $builder->getQuery();
     }
 
     /**
      * Helper function to create the query builder for the "getAttributesQuery" function.
      * This function can be hooked to modify the query builder of the query object.
-     * @param $siteId
+     *
+     * @param int $siteId
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getAttributesQueryBuilder($siteId)
     {
         $builder = $this->getEntityManager()->createQueryBuilder();
-        $builder->select(array('attribute'))
-                      ->from('Shopware\Models\Attribute\Site', 'attribute')
+        $builder->select(['attribute'])
+                      ->from(\Shopware\Models\Site\Site::class, 'attribute')
                       ->where('attribute.siteId = ?1')
                       ->setParameter(1, $siteId);
+
         return $builder;
     }
 
     /**
      * Returns an instance of the \Doctrine\ORM\Query object which .....
-     * @param $siteId
+     *
+     * @param int $siteId
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getSiteQuery($siteId)
     {
         $builder = $this->getSiteQueryBuilder($siteId);
+
         return $builder->getQuery();
     }
 
     /**
      * Helper function to create the query builder for the "getSiteQuery" function.
      * This function can be hooked to modify the query builder of the query object.
-     * @param $siteId
+     *
+     * @param int $siteId
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getSiteQueryBuilder($siteId)
     {
         $builder = $this->getEntityManager()->createQueryBuilder();
-        $builder->select(array('site'))
-                ->from('Shopware\Models\Site\Site', 'site')
+        $builder->select(['site'])
+                ->from(\Shopware\Models\Site\Site::class, 'site')
                 ->leftJoin('site.attribute', 'attribute')
                 ->where('site.id = ?1')
                 ->setParameter(1, $siteId);
+
         return $builder;
     }
 
     /**
      * Returns a query with all site objects with an empty link
      *
-     * @param $shopId
-     * @param $offset
-     * @param $limit
+     * @param int $shopId
+     * @param int $offset
+     * @param int $limit
+     *
      * @return \Doctrine\ORM\Query
      */
     public function getSitesWithoutLinkQuery($shopId, $offset, $limit)
@@ -214,27 +223,24 @@ class Repository extends ModelRepository
         $builder = $this->getSitesWithoutLinkQueryBuilder($shopId);
         $builder->setFirstResult($offset)
             ->setMaxResults($limit);
+
         return $builder->getQuery();
     }
 
     /**
      * Returns the QueryBuilder object for getSitesWithoutLinkQuery
      *
-     * @param $shopId
+     * @param int $shopId
+     *
      * @return \Doctrine\ORM\QueryBuilder
      */
     public function getSitesWithoutLinkQueryBuilder($shopId = null)
     {
         $builder = $this->getEntityManager()->createQueryBuilder();
-        $builder->select(array('site'))
-            ->from('Shopware\Models\Site\Site', 'site')
+        $builder->select(['site'])
+            ->from(\Shopware\Models\Site\Site::class, 'site')
             ->where('site.link = \'\'')
-            ->andWhere(
-                $builder->expr()->orX(
-                    $builder->expr()->like('site.shopIds', ':shopId'),
-                    $builder->expr()->isNull('site.shopIds')
-                )
-            )
+            ->andWhere('(site.shopIds LIKE :shopId OR site.shopIds IS NULL)')
             ->setParameter('shopId', '%|' . $shopId . '|%');
 
         return $builder;

@@ -24,8 +24,8 @@
 
 namespace   Shopware\Models\Site;
 
-use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
 
 /**
  * Shopware Model Site
@@ -38,7 +38,16 @@ use Doctrine\ORM\Mapping as ORM;
 class Site extends ModelEntity
 {
     /**
-     * @var integer $id
+     * INVERSE SIDE
+     *
+     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\Site", mappedBy="site", orphanRemoval=true, cascade={"persist"})
+     *
+     * @var \Shopware\Models\Attribute\Site
+     */
+    protected $attribute;
+
+    /**
+     * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
@@ -47,119 +56,126 @@ class Site extends ModelEntity
     private $id;
 
     /**
-     * @var string $tpl1variable
+     * @var bool
+     *
+     * @ORM\Column(name="active", type="boolean", nullable=false)
+     */
+    private $active = true;
+
+    /**
+     * @var string
      *
      * @ORM\Column(name="tpl1variable", type="string", nullable=false)
      */
     private $tpl1variable;
 
     /**
-     * @var string $tpl1path
+     * @var string
      *
      * @ORM\Column(name="tpl1path", type="string", nullable=false)
      */
     private $tpl1path;
 
     /**
-     * @var string $tpl2variable
+     * @var string
      *
      * @ORM\Column(name="tpl2variable", type="string", nullable=false)
      */
     private $tpl2variable;
 
     /**
-     * @var string $tpl2path
+     * @var string
      *
      * @ORM\Column(name="tpl2path", type="string", nullable=false)
      */
     private $tpl2path;
 
     /**
-     * @var string $tpl3variable
+     * @var string
      *
      * @ORM\Column(name="tpl3variable", type="string", nullable=false)
      */
     private $tpl3variable;
 
     /**
-     * @var string $tpl3path
+     * @var string
      *
      * @ORM\Column(name="tpl3path", type="string", nullable=false)
      */
     private $tpl3path;
 
     /**
-     * @var string $description
+     * @var string
      *
      * @ORM\Column(name="description", type="string", nullable=false)
      */
     private $description;
 
     /**
-     * @var string $pageTitle
+     * @var string
      *
      * @ORM\Column(name="page_title", type="string", nullable=false)
      */
     private $pageTitle;
 
     /**
-     * @var string $metaKeywords
+     * @var string
      *
      * @ORM\Column(name="meta_keywords", type="string", nullable=false)
      */
     private $metaKeywords;
 
     /**
-     * @var string $metaDescription
+     * @var string
      *
      * @ORM\Column(name="meta_description", type="string", nullable=false)
      */
     private $metaDescription;
 
     /**
-     * @var string $html
+     * @var string
      *
      * @ORM\Column(name="html", type="string", nullable=false)
      */
     private $html;
 
     /**
-     * @var string $grouping
+     * @var string
      *
      * @ORM\Column(name="grouping", type="string", nullable=false)
      */
     private $grouping;
 
     /**
-     * @var integer $position
+     * @var int
      *
      * @ORM\Column(name="position", type="integer", nullable=false)
      */
     private $position;
 
     /**
-     * @var string $link
+     * @var string
      *
      * @ORM\Column(name="link", type="string", nullable=false)
      */
     private $link;
 
     /**
-     * @var string $target
+     * @var string
      *
      * @ORM\Column(name="target", type="string", nullable=false)
      */
     private $target;
 
     /**
-     * @var string $shopIds
+     * @var string
      *
      * @ORM\Column(name="shop_ids", type="string", nullable=false)
      */
     private $shopIds;
 
     /**
-     * @var \DateTime $changed
+     * @var \DateTime
      *
      * @ORM\Column(name="changed", type="datetime", nullable=false)
      */
@@ -175,24 +191,17 @@ class Site extends ModelEntity
     /**
      * The parent category
      *
-     * @var Site $parent
+     * @var Site
      * @ORM\ManyToOne(targetEntity="Site", inversedBy="children")
      * @ORM\JoinColumn(name="parentID", referencedColumnName="id")
      */
     private $parent;
 
     /**
-     * @var integer $parentId
+     * @var int
      * @ORM\Column(name="parentID", type="integer", nullable=true)
      */
     private $parentId;
-
-    /**
-     * INVERSE SIDE
-     * @ORM\OneToOne(targetEntity="Shopware\Models\Attribute\Site", mappedBy="site", orphanRemoval=true, cascade={"persist"})
-     * @var \Shopware\Models\Attribute\Site
-     */
-    protected $attribute;
 
     public function __construct()
     {
@@ -202,7 +211,7 @@ class Site extends ModelEntity
     /**
      * Returns the primary-key id
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -210,12 +219,30 @@ class Site extends ModelEntity
     }
 
     /**
+     * @return bool
+     */
+    public function getActive()
+    {
+        return $this->active;
+    }
+
+    /**
+     * @param bool $active
+     */
+    public function setActive($active)
+    {
+        $this->active = $active;
+    }
+
+    /**
      * @param string $tpl1variable
-     * @return string
+     *
+     * @return Site
      */
     public function setTpl1Variable($tpl1variable)
     {
         $this->tpl1variable = $tpl1variable;
+
         return $this;
     }
 
@@ -229,11 +256,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $tpl2variable
-     * @return string
+     *
+     * @return Site
      */
     public function setTpl2Variable($tpl2variable)
     {
         $this->tpl2variable = $tpl2variable;
+
         return $this;
     }
 
@@ -247,11 +276,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $tpl3variable
-     * @return string
+     *
+     * @return Site
      */
     public function setTpl3Variable($tpl3variable)
     {
         $this->tpl3variable = $tpl3variable;
+
         return $this;
     }
 
@@ -265,11 +296,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $tpl1path
-     * @return string
+     *
+     * @return Site
      */
     public function setTpl1Path($tpl1path)
     {
         $this->tpl1path = $tpl1path;
+
         return $this;
     }
 
@@ -283,11 +316,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $tpl2path
-     * @return string
+     *
+     * @return Site
      */
     public function setTpl2Path($tpl2path)
     {
         $this->tpl2path = $tpl2path;
+
         return $this;
     }
 
@@ -301,11 +336,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $tpl3path
-     * @return string
+     *
+     * @return Site
      */
     public function setTpl3Path($tpl3path)
     {
         $this->tpl3path = $tpl3path;
+
         return $this;
     }
 
@@ -319,11 +356,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $description
-     * @return string
+     *
+     * @return Site
      */
     public function setDescription($description)
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -337,11 +376,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $html
-     * @return string
+     *
+     * @return Site
      */
     public function setHtml($html)
     {
         $this->html = $html;
+
         return $this;
     }
 
@@ -355,11 +396,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $grouping
-     * @return string
+     *
+     * @return Site
      */
     public function setGrouping($grouping)
     {
         $this->grouping = $grouping;
+
         return $this;
     }
 
@@ -372,17 +415,19 @@ class Site extends ModelEntity
     }
 
     /**
-     * @param integer $position
-     * @return integer
+     * @param int $position
+     *
+     * @return Site
      */
     public function setPosition($position)
     {
         $this->position = $position;
+
         return $this;
     }
 
     /**
-     * @return integer
+     * @return int
      */
     public function getPosition()
     {
@@ -391,11 +436,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $link
-     * @return string
+     *
+     * @return Site
      */
     public function setLink($link)
     {
         $this->link = $link;
+
         return $this;
     }
 
@@ -409,11 +456,13 @@ class Site extends ModelEntity
 
     /**
      * @param string $target
-     * @return string
+     *
+     * @return Site
      */
     public function setTarget($target)
     {
         $this->target = $target;
+
         return $this;
     }
 
@@ -435,10 +484,14 @@ class Site extends ModelEntity
 
     /**
      * @param \Shopware\Models\Site\Site $parent
+     *
+     * @return Site
      */
     public function setParent($parent)
     {
         $this->parent = $parent;
+
+        return $this;
     }
 
     /**
@@ -451,10 +504,14 @@ class Site extends ModelEntity
 
     /**
      * @param \Doctrine\Common\Collections\ArrayCollection $children
+     *
+     * @return Site
      */
     public function setChildren($children)
     {
         $this->children = $children;
+
+        return $this;
     }
 
     /**
@@ -467,10 +524,14 @@ class Site extends ModelEntity
 
     /**
      * @param int $parentId
+     *
+     * @return Site
      */
     public function setParentId($parentId)
     {
         $this->parentId = $parentId;
+
+        return $this;
     }
 
     /**
@@ -483,6 +544,7 @@ class Site extends ModelEntity
 
     /**
      * @param \Shopware\Models\Attribute\Site|array|null $attribute
+     *
      * @return \Shopware\Models\Attribute\Site
      */
     public function setAttribute($attribute)
@@ -492,10 +554,14 @@ class Site extends ModelEntity
 
     /**
      * @param string $metaDescription
+     *
+     * @return Site
      */
     public function setMetaDescription($metaDescription)
     {
         $this->metaDescription = $metaDescription;
+
+        return $this;
     }
 
     /**
@@ -508,10 +574,14 @@ class Site extends ModelEntity
 
     /**
      * @param string $metaKeywords
+     *
+     * @return Site
      */
     public function setMetaKeywords($metaKeywords)
     {
         $this->metaKeywords = $metaKeywords;
+
+        return $this;
     }
 
     /**
@@ -524,10 +594,14 @@ class Site extends ModelEntity
 
     /**
      * @param string $pageTitle
+     *
+     * @return Site
      */
     public function setPageTitle($pageTitle)
     {
         $this->pageTitle = $pageTitle;
+
+        return $this;
     }
 
     /**
@@ -539,9 +613,8 @@ class Site extends ModelEntity
     }
 
     /**
-     * Set changed
-     *
      * @param \DateTime|string $changed
+     *
      * @return Site
      */
     public function setChanged($changed = 'now')
@@ -551,12 +624,11 @@ class Site extends ModelEntity
         } else {
             $this->changed = $changed;
         }
+
         return $this;
     }
 
     /**
-     * Get changed
-     *
      * @return \DateTime
      */
     public function getChanged()
@@ -582,7 +654,7 @@ class Site extends ModelEntity
     public function getExplodedShopIds()
     {
         if (empty($this->shopIds)) {
-            return array();
+            return [];
         }
 
         $explodedShopIds = explode('|', trim($this->shopIds, '|'));
@@ -596,10 +668,16 @@ class Site extends ModelEntity
     }
 
     /**
+     * Set the unexploded shop ids string (ex: |1|2|)
+     *
      * @param string $shopIds
+     *
+     * @return Site
      */
     public function setShopIds($shopIds)
     {
         $this->shopIds = $shopIds;
+
+        return $this;
     }
 }

@@ -26,38 +26,80 @@ namespace Shopware\Bundle\SearchBundleES\ConditionHandler;
 
 use ONGR\ElasticsearchDSL\Query\TermQuery;
 use ONGR\ElasticsearchDSL\Search;
-use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
 use Shopware\Bundle\SearchBundle\Condition\ImmediateDeliveryCondition;
+use Shopware\Bundle\SearchBundle\Condition\VariantCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
-class ImmediateDeliveryConditionHandler implements HandlerInterface
+class ImmediateDeliveryConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * {@inheritdoc}
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof ImmediateDeliveryCondition);
+        return $criteriaPart instanceof ImmediateDeliveryCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
         ShopContextInterface $context
     ) {
-        $filter = new TermQuery('hasAvailableVariant', 1);
+        $this->handle($criteria, $search);
+    }
 
-        /** @var ImmediateDeliveryCondition $criteriaPart */
-        if ($criteria->hasBaseCondition($criteriaPart->getName())) {
-            $search->addFilter($filter);
-        } else {
-            $search->addPostFilter($filter);
+    /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        $this->handle($criteria, $search);
+    }
+
+    private function handle(Criteria $criteria, Search $search)
+    {
+        $groupBy = $this->buildGroupBy($criteria);
+
+        if ($groupBy) {
+            $search->addPostFilter(new TermQuery($groupBy, 1));
+
+            return;
         }
+
+        $search->addPostFilter(
+            new TermQuery('hasAvailableVariant', 1)
+        );
+    }
+
+    private function buildGroupBy(Criteria $criteria)
+    {
+        $conditions = $criteria->getConditionsByClass(VariantCondition::class);
+
+        $conditions = array_filter($conditions, function (VariantCondition $condition) {
+            return $condition->expandVariants();
+        });
+
+        $groups = array_map(function (VariantCondition $condition) {
+            return $condition->getGroupId();
+        }, $conditions);
+
+        if (empty($conditions)) {
+            return null;
+        }
+
+        sort($groups, SORT_NUMERIC);
+
+        return 'availability.g' . implode('-', $groups);
     }
 }

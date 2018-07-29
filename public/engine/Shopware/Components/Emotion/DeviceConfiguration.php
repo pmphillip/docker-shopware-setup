@@ -44,25 +44,28 @@ class DeviceConfiguration
 
     /**
      * @param int $categoryId
-     * @throws \Exception
+     *
      * @return array
      */
     public function get($categoryId)
     {
         $query = $this->connection->createQueryBuilder();
 
-        $query->select(array(
+        $query->select([
             'emotion.id',
             'emotion.device as devices',
             'emotion.show_listing as showListing',
-            'emotion.fullscreen'
-        ));
+            'emotion.fullscreen',
+            'emotion.customer_stream_ids',
+            'emotion.replacement',
+        ]);
 
         $query->from('s_emotion', 'emotion')
-            ->where('emotion.active = 1')
+            ->andWhere('emotion.active = 1')
             ->andWhere('emotion.is_landingpage = 0')
             ->andWhere('(emotion.valid_to   >= NOW() OR emotion.valid_to IS NULL)')
             ->andWhere('(emotion.valid_from <= NOW() OR emotion.valid_from IS NULL)')
+            ->andWhere('emotion.preview_id IS NULL')
             ->addOrderBy('emotion.position', 'ASC')
             ->addOrderBy('emotion.id', 'ASC')
             ->setParameter(':categoryId', $categoryId);
@@ -75,13 +78,14 @@ class DeviceConfiguration
              AND category.category_id = :categoryId'
         );
 
-        /**@var $statement \PDOStatement */
+        /** @var $statement \PDOStatement */
         $statement = $query->execute();
 
         $emotions = $statement->fetchAll(\PDO::FETCH_ASSOC);
 
         $emotions = array_map(function ($emotion) {
             $emotion['devicesArray'] = explode(',', $emotion['devices']);
+
             return $emotion;
         }, $emotions);
 
@@ -90,24 +94,26 @@ class DeviceConfiguration
 
     /**
      * @param $emotionId
+     *
      * @throws \Exception
+     *
      * @return array
      */
     public function getById($emotionId)
     {
         $query = $this->connection->createQueryBuilder();
 
-        $query->select(array(
+        $query->select([
             'emotion.id',
             'emotion.device as devices',
-            'emotion.show_listing as showListing'
-        ));
+            'emotion.show_listing as showListing',
+        ]);
 
         $query->from('s_emotion', 'emotion')
             ->where('emotion.id = :emotionId')
             ->setParameter(':emotionId', $emotionId);
 
-        /**@var $statement \PDOStatement */
+        /** @var $statement \PDOStatement */
         $statement = $query->execute();
 
         return $statement->fetch(\PDO::FETCH_ASSOC);
@@ -115,7 +121,9 @@ class DeviceConfiguration
 
     /**
      * @param $id
+     *
      * @throws \Exception
+     *
      * @return array
      */
     public function getLandingPage($id)
@@ -131,6 +139,7 @@ class DeviceConfiguration
 
         $children = array_map(function ($emotion) {
             $emotion['devicesArray'] = explode(',', $emotion['devices']);
+
             return $emotion;
         }, $children);
 
@@ -143,6 +152,7 @@ class DeviceConfiguration
      * Get shops of landingpage by emotion id.
      *
      * @param $emotionId
+     *
      * @return array
      */
     public function getLandingPageShops($emotionId)
@@ -151,16 +161,15 @@ class DeviceConfiguration
 
         $query->setParameter(':id', $emotionId);
 
-        /**@var $statement \PDOStatement */
+        /** @var $statement \PDOStatement */
         $statement = $query->execute();
 
-        $shops = $statement->fetchAll(\PDO::FETCH_COLUMN);
-
-        return $shops;
+        return $statement->fetchAll(\PDO::FETCH_COLUMN);
     }
 
     /**
      * @param $id
+     *
      * @return array|null
      */
     private function getMasterLandingPage($id)
@@ -169,7 +178,7 @@ class DeviceConfiguration
             ->andWhere('emotion.id = :id')
             ->setParameter('id', $id);
 
-        /**@var $statement \PDOStatement */
+        /** @var $statement \PDOStatement */
         $statement = $query->execute();
 
         return $statement->fetch(\PDO::FETCH_ASSOC);
@@ -177,6 +186,7 @@ class DeviceConfiguration
 
     /**
      * @param int $parentId
+     *
      * @return array
      */
     private function getChildrenLandingPages($parentId)
@@ -185,7 +195,7 @@ class DeviceConfiguration
             ->andWhere('emotion.parent_id = :id')
             ->setParameter(':id', $parentId);
 
-        /**@var $statement \PDOStatement */
+        /** @var $statement \PDOStatement */
         $statement = $query->execute();
 
         return $statement->fetchAll(\PDO::FETCH_ASSOC);
@@ -207,7 +217,9 @@ class DeviceConfiguration
             'emotion.seo_description',
             'emotion.valid_from',
             'emotion.valid_to',
-            'now()'
+            'emotion.customer_stream_ids',
+            'emotion.replacement',
+            'now()',
         ]);
 
         $query->from('s_emotion', 'emotion')
@@ -231,7 +243,7 @@ class DeviceConfiguration
     {
         $query = $this->connection->createQueryBuilder();
 
-        $query->select([ 'shops.shop_id' ])
+        $query->select(['shops.shop_id'])
             ->from('s_emotion_shops', 'shops')
             ->where('shops.emotion_id = :id');
 

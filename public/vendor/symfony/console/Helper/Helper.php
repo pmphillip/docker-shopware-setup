@@ -23,9 +23,7 @@ abstract class Helper implements HelperInterface
     protected $helperSet = null;
 
     /**
-     * Sets the helper set associated with this helper.
-     *
-     * @param HelperSet $helperSet A HelperSet instance
+     * {@inheritdoc}
      */
     public function setHelperSet(HelperSet $helperSet = null)
     {
@@ -33,9 +31,7 @@ abstract class Helper implements HelperInterface
     }
 
     /**
-     * Gets the helper set associated with this helper.
-     *
-     * @return HelperSet A HelperSet instance
+     * {@inheritdoc}
      */
     public function getHelperSet()
     {
@@ -106,6 +102,11 @@ abstract class Helper implements HelperInterface
 
     public static function strlenWithoutDecoration(OutputFormatterInterface $formatter, $string)
     {
+        return self::strlen(self::removeDecoration($formatter, $string));
+    }
+
+    public static function removeDecoration(OutputFormatterInterface $formatter, $string)
+    {
         $isDecorated = $formatter->isDecorated();
         $formatter->setDecorated(false);
         // remove <...> formatting
@@ -114,6 +115,6 @@ abstract class Helper implements HelperInterface
         $string = preg_replace("/\033\[[^m]*m/", '', $string);
         $formatter->setDecorated($isDecorated);
 
-        return self::strlen($string);
+        return $string;
     }
 }

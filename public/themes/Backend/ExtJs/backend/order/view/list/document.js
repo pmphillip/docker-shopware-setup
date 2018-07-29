@@ -41,40 +41,40 @@ Ext.define('Shopware.apps.Order.view.list.Document', {
      * Extend from the standard ExtJS 4
      * @string
      */
-    extend:'Ext.grid.Panel',
+    extend: 'Ext.grid.Panel',
 
     /**
      * List of short aliases for class names. Most useful for defining xtypes for widgets.
      * @string
-    */
-    alias:'widget.order-document-list',
+     */
+    alias: 'widget.order-document-list',
 
     /**
      * Set css class
      * @string
      */
-    cls:Ext.baseCSSPrefix + 'document-grid',
+    cls: Ext.baseCSSPrefix + 'document-grid',
 
     /**
      * The view needs to be scrollable
      * @string
      */
-    autoScroll:true,
+    autoScroll: true,
 
     /**
      * Contains all snippets for the view component
      * @object
      */
-    snippets:{
+    snippets: {
         columns: {
-            name:'{s name=column/name}Name{/s}',
-            date:'{s name=column/date}Date{/s}',
-            amount:'{s name=column/amount}Amount{/s}',
+            name: '{s name=column/name}Name{/s}',
+            date: '{s name=column/date}Date{/s}',
+            amount: '{s name=column/amount}Amount{/s}',
             downloadDocument: '{s name=column/download}Download{/s}'
         }
     },
 
-    plugins: [        {
+    plugins: [{
         ptype: 'grid-attributes',
         table: 's_order_documents_attributes'
     }],
@@ -89,13 +89,12 @@ Ext.define('Shopware.apps.Order.view.list.Document', {
      *
      * @return void
      */
-    initComponent:function () {
+    initComponent: function() {
         var me = this;
         me.columns = me.getColumns();
         me.pagingbar = me.getPagingBar();
         me.callParent(arguments);
     },
-
 
     /**
      * Creates the grid columns.
@@ -119,8 +118,86 @@ Ext.define('Shopware.apps.Order.view.list.Document', {
                 dataIndex: 'amount',
                 flex: 1,
                 renderer: me.amountColumn
-            }
+            },
+            me.createActionColumn()
         ];
+    },
+
+    /**
+     * Creates the action columns
+     *
+     * @returns { Ext.grid.column.Action }
+     */
+    createActionColumn: function() {
+        var me = this;
+
+        return Ext.create('Ext.grid.column.Action', {
+            width: 60,
+            items: [
+                me.createDeleteColumn(),
+                me.createSendColumn()
+            ]
+        });
+    },
+
+    /**
+     * Creates the delete action column item for the grid.
+     *
+     * @return Object
+     */
+    createDeleteColumn: function() {
+        var me = this;
+
+        return {
+            iconCls: 'sprite-minus-circle-frame',
+            handler: Ext.bind(me.deleteDocument, me)
+        };
+    },
+
+    /**
+     * Handler for the delete action column.
+     *
+     * @param { Ext.grid.Panel } view
+     * @param { number } rowIndex
+     * @param { number } colIndex
+     * @param { object } item
+     * @param { object } opts
+     * @param { Ext.data.Model } record
+     */
+    deleteDocument: function(view, rowIndex, colIndex, item, opts, record) {
+        var me = this;
+
+        me.fireEvent('delete-document', view, record);
+    },
+
+    /**
+     * Creates the send mail action column item for the grid.
+     *
+     * @return Object
+     */
+    createSendColumn: function() {
+        var me = this;
+
+        return {
+            iconCls: 'sprite-mail-send',
+            handler: Ext.bind(me.openMail, me)
+        };
+    },
+
+    /**
+     * Handler for the send mail action column.
+     *
+     * @param { Ext.grid.Panel } view
+     * @param { number } rowIndex
+     * @param { number } colIndex
+     * @param { object } item
+     * @param { object } opts
+     * @param { Ext.data.Model } record
+     */
+    openMail: function(view, rowIndex, colIndex, item, opts, record) {
+        var me = this;
+
+        me.fireEvent('open-mail', record);
     },
 
     /**
@@ -139,7 +216,7 @@ Ext.define('Shopware.apps.Order.view.list.Document', {
      * Column renderer function which formats the date column of the document grid.
      * @param value
      */
-    dateColumn: function(value ) {
+    dateColumn: function(value) {
 
         if (!Ext.isDate(value)) {
             return value;

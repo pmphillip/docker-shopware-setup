@@ -25,20 +25,55 @@
 namespace Shopware\Bundle\SearchBundle\Facet;
 
 use Shopware\Bundle\SearchBundle\FacetInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundle\Facet
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class CategoryFacet implements FacetInterface
 {
     /**
-     * @inheritdoc
+     * @var null|string
+     */
+    protected $label;
+
+    /**
+     * @var int
+     */
+    protected $depth;
+
+    /**
+     * @param string|null $label
+     * @param int         $depth
+     */
+    public function __construct($label = null, $depth = 2)
+    {
+        $this->label = $label;
+        $this->depth = $depth;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getLabel()
+    {
+        return $this->label;
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function getName()
     {
         return 'category';
+    }
+
+    /**
+     * @return int
+     */
+    public function getDepth()
+    {
+        return $this->depth;
     }
 }

@@ -25,28 +25,25 @@
 namespace Shopware\Bundle\SearchBundleDBAL\FacetHandler;
 
 use Shopware\Bundle\SearchBundle\Condition\PriceCondition;
-use Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult;
-use Shopware\Bundle\SearchBundle\FacetInterface;
+use Shopware\Bundle\SearchBundle\Condition\VariantCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundleDBAL\PriceHelperInterface;
-use Shopware\Bundle\SearchBundleDBAL\FacetHandlerInterface;
 use Shopware\Bundle\SearchBundle\Facet;
+use Shopware\Bundle\SearchBundle\FacetInterface;
+use Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult;
+use Shopware\Bundle\SearchBundle\FacetResultInterface;
+use Shopware\Bundle\SearchBundleDBAL\ListingPriceSwitcher;
+use Shopware\Bundle\SearchBundleDBAL\PartialFacetHandlerInterface;
 use Shopware\Bundle\SearchBundleDBAL\QueryBuilderFactoryInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Components\QueryAliasMapper;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\FacetHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
-class PriceFacetHandler implements FacetHandlerInterface
+class PriceFacetHandler implements PartialFacetHandlerInterface
 {
-    /**
-     * @var PriceHelperInterface
-     */
-    private $priceHelper;
-
     /**
      * @var QueryBuilderFactoryInterface
      */
@@ -68,18 +65,16 @@ class PriceFacetHandler implements FacetHandlerInterface
     private $maxFieldName;
 
     /**
-     * @param PriceHelperInterface $priceHelper
-     * @param QueryBuilderFactoryInterface $queryBuilderFactory
-     * @param \Shopware_Components_Snippet_Manager $snippetManager
-     * @param QueryAliasMapper $queryAliasMapper
+     * @var ListingPriceSwitcher
      */
+    private $listingPriceSwitcher;
+
     public function __construct(
-        PriceHelperInterface $priceHelper,
         QueryBuilderFactoryInterface $queryBuilderFactory,
         \Shopware_Components_Snippet_Manager $snippetManager,
-        QueryAliasMapper $queryAliasMapper
+        QueryAliasMapper $queryAliasMapper,
+        ListingPriceSwitcher $listingPriceSwitcher
     ) {
-        $this->priceHelper = $priceHelper;
         $this->queryBuilderFactory = $queryBuilderFactory;
         $this->snippetNamespace = $snippetManager->getNamespace('frontend/listing/facet_labels');
 
@@ -90,6 +85,7 @@ class PriceFacetHandler implements FacetHandlerInterface
         if (!$this->maxFieldName = $queryAliasMapper->getShortAlias('priceMax')) {
             $this->maxFieldName = 'priceMax';
         }
+        $this->listingPriceSwitcher = $listingPriceSwitcher;
     }
 
     /**
@@ -97,48 +93,37 @@ class PriceFacetHandler implements FacetHandlerInterface
      */
     public function supportsFacet(FacetInterface $facet)
     {
-        return ($facet instanceof Facet\PriceFacet);
+        return $facet instanceof Facet\PriceFacet;
     }
 
     /**
-     * @param FacetInterface|Facet\PriceFacet $facet
-     * @param Criteria $criteria
+     * @param FacetInterface       $facet
+     * @param Criteria             $reverted
+     * @param Criteria             $criteria
      * @param ShopContextInterface $context
-     * @return RangeFacetResult
+     *
+     * @return FacetResultInterface
      */
-    public function generateFacet(
+    public function generatePartialFacet(
         FacetInterface $facet,
+        Criteria $reverted,
         Criteria $criteria,
         ShopContextInterface $context
     ) {
-        $queryCriteria = clone $criteria;
-        $queryCriteria->resetConditions();
-        $queryCriteria->resetSorting();
+        $query = $this->buildQuery($reverted, $criteria, $context);
 
-        $query = $this->queryBuilderFactory->createQuery(
-            $queryCriteria,
-            $context
-        );
+        $query->orderBy('listing_price.cheapest_price', 'ASC');
 
-        $query->resetQueryPart('orderBy');
-        $query->resetQueryPart('groupBy');
-
-        $selection = $this->priceHelper->getSelection($context);
-        $this->priceHelper->joinPrices($query, $context);
-
-        $query->select('MIN('. $selection .') as cheapest_price');
-
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $min = $statement->fetch(\PDO::FETCH_COLUMN);
 
-        $query->groupBy('product.id')
-            ->orderBy('cheapest_price', 'DESC')
-            ->setFirstResult(0)
-            ->setMaxResults(1);
+        $query = $this->buildQuery($reverted, $criteria, $context);
 
-        /**@var $statement \Doctrine\DBAL\Driver\ResultStatement */
+        $query->orderBy('listing_price.cheapest_price', 'DESC');
+
+        /** @var $statement \Doctrine\DBAL\Driver\ResultStatement */
         $statement = $query->execute();
 
         $max = $statement->fetch(\PDO::FETCH_COLUMN);
@@ -146,16 +131,27 @@ class PriceFacetHandler implements FacetHandlerInterface
         $activeMin = $min;
         $activeMax = $max;
 
-        /**@var $condition PriceCondition */
+        /** @var $condition PriceCondition */
         if ($condition = $criteria->getCondition($facet->getName())) {
             $activeMin = $condition->getMinPrice();
             $activeMax = $condition->getMaxPrice();
         }
 
+        if ($min == $max) {
+            return null;
+        }
+
+        /** @var Facet\PriceFacet $facet */
+        if (!empty($facet->getLabel())) {
+            $label = $facet->getLabel();
+        } else {
+            $label = $this->snippetNamespace->get($facet->getName(), 'Price');
+        }
+
         return new RangeFacetResult(
             $facet->getName(),
             $criteria->hasCondition($facet->getName()),
-            $this->snippetNamespace->get($facet->getName(), 'Price'),
+            $label,
             (float) $min,
             (float) $max,
             (float) $activeMin,
@@ -163,7 +159,35 @@ class PriceFacetHandler implements FacetHandlerInterface
             $this->minFieldName,
             $this->maxFieldName,
             [],
+            null,
+            2,
             'frontend/listing/filter/facet-currency-range.tpl'
         );
+    }
+
+    /**
+     * @param Criteria             $reverted
+     * @param Criteria             $criteria
+     * @param ShopContextInterface $context
+     *
+     * @return \Shopware\Bundle\SearchBundleDBAL\QueryBuilder
+     */
+    private function buildQuery(Criteria $reverted, Criteria $criteria, ShopContextInterface $context)
+    {
+        $tmp = clone $reverted;
+        $conditions = $criteria->getConditionsByClass(VariantCondition::class);
+        foreach ($conditions as $condition) {
+            $tmp->addBaseCondition($condition);
+        }
+
+        $query = $this->queryBuilderFactory->createQuery($tmp, $context);
+
+        $this->listingPriceSwitcher->joinPrice($query, $criteria, $context);
+        $query->select('listing_price.cheapest_price');
+        $query->setFirstResult(0);
+        $query->setMaxResults(1);
+        $query->addGroupBy('product.id');
+
+        return $query;
     }
 }

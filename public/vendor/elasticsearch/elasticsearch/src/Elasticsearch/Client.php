@@ -11,7 +11,7 @@ use Elasticsearch\Namespaces\ClusterNamespace;
 use Elasticsearch\Namespaces\IndicesNamespace;
 use Elasticsearch\Namespaces\NodesNamespace;
 use Elasticsearch\Namespaces\SnapshotNamespace;
-use Elasticsearch\Namespaces\TaskNamespace;
+use Elasticsearch\Namespaces\TasksNamespace;
 
 /**
  * Class Client
@@ -77,7 +77,7 @@ class Client
         $this->nodes = new NodesNamespace($transport, $endpoint);
         $this->snapshot = new SnapshotNamespace($transport, $endpoint);
         $this->cat = new CatNamespace($transport, $endpoint);
-        $this->tasks = new TaskNamespace($transport, $endpoint);
+        $this->tasks = new TasksNamespace($transport, $endpoint);
     }
 
     /**
@@ -1582,14 +1582,18 @@ class Client
      *
      * @return array
      */
-    public function reIndex($params = [])
+    public function reindex($params = [])
     {
+        $body = $this->extractArgument($params, 'body');
+
         /** @var callback $endpointBuilder */
         $endpointBuilder = $this->endpoints;
 
-        /** @var \Elasticsearch\Endpoints\ReIndex $endpoint */
+        /** @var \Elasticsearch\Endpoints\Reindex $endpoint */
         $endpoint = $endpointBuilder('Reindex');
-        $response = $endpoint->setParams($params)->performRequest();
+        $response = $endpoint->setParams($params)
+            ->setBody($body)
+            ->performRequest();
 
         return $endpoint->resultOrFuture($response);
     }
@@ -1764,7 +1768,7 @@ class Client
     /**
      * Operate on the Task namespace of commands
      *
-     * @return TaskNamespace
+     * @return TasksNamespace
      */
     public function tasks()
     {

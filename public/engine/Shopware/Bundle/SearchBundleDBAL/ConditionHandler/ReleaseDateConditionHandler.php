@@ -32,7 +32,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL\ConditionHandler
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class ReleaseDateConditionHandler implements ConditionHandlerInterface
@@ -42,7 +42,7 @@ class ReleaseDateConditionHandler implements ConditionHandlerInterface
      */
     public function supportsCondition(ConditionInterface $condition)
     {
-        return ($condition instanceof ReleaseDateCondition);
+        return $condition instanceof ReleaseDateCondition;
     }
 
     /**
@@ -60,23 +60,27 @@ class ReleaseDateConditionHandler implements ConditionHandlerInterface
 
         $dateNow = new \DateTime();
 
+        $min = ':releaseDateFrom' . md5(json_encode($condition));
+        $max = ':releaseDateTo' . md5(json_encode($condition));
+        $now = ':dateNow' . md5(json_encode($condition));
+
         switch ($condition->getDirection()) {
             case ReleaseDateCondition::DIRECTION_FUTURE:
                 $date->add($interval);
 
-                $query->andWhere('variant.releasedate <= :releaseDateFrom');
-                $query->andWhere('variant.releasedate > :dateNow');
-                $query->setParameter(':releaseDateFrom', $date->format('Y-m-d'));
-                $query->setParameter(':dateNow', $dateNow->format('Y-m-d'));
+                $query->andWhere('variant.releasedate <= ' . $min);
+                $query->andWhere('variant.releasedate > ' . $now);
+                $query->setParameter($min, $date->format('Y-m-d'));
+                $query->setParameter($now, $dateNow->format('Y-m-d'));
                 break;
 
             case ReleaseDateCondition::DIRECTION_PAST:
                 $date->sub($interval);
 
-                $query->andWhere('variant.releasedate >= :releaseDateTo');
-                $query->andWhere('variant.releasedate <= :dateNow');
-                $query->setParameter(':releaseDateTo', $date->format('Y-m-d'));
-                $query->setParameter(':dateNow', $dateNow->format('Y-m-d'));
+                $query->andWhere('variant.releasedate >= ' . $max);
+                $query->andWhere('variant.releasedate <= ' . $now);
+                $query->setParameter($max, $date->format('Y-m-d'));
+                $query->setParameter($now, $dateNow->format('Y-m-d'));
                 break;
         }
     }

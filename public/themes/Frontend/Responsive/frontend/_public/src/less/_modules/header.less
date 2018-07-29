@@ -19,26 +19,30 @@ More precise designations are commented inside the document.
     // Hide the currency and language switcher
     .top-bar { display: none }
 
-	// Logo
-	.logo-main {
-		.unitize-padding(10, 10);
+    // Logo
+    .logo-main {
+        .unitize-padding(10, 10);
 
-		.logo--link {
-			.unitize-height(35, 16);
-			display: inline-block;
+        .logo--link {
+            .unitize-height(35, 16);
+            display: inline-block;
             max-width: 100%;
-		}
+        }
 
-		// Smaller logo for mobile viewports
-		.logo--shop {
-			.unitize-height(35, 16);
-			width: 50%;
-		}
+        // Smaller logo for mobile viewports
+        .logo--shop {
+            .unitize-height(35, 16);
+            width: 50%;
+        }
 
-		.logo--supportinfo { display: none; }
-	}
+        .logo--supportinfo {
+            display: none;
+        }
+    }
 
-    .header--navigation { position: relative; }
+    .header--navigation {
+        position: relative;
+    }
 }
 
     // Small Checkout & Registration Header
@@ -87,7 +91,25 @@ More precise designations are commented inside the document.
         }
 
         .cart--link { .unitize-padding(2, 10, 2, 6); }
-        .account--link { .unitize-padding(2, 10, 2, 8); }
+        .account--link {
+            .unitize-padding(2, 10, 2, 8);
+
+            &.account--user-loggedin:after {
+                .unitize-width(16);
+                .unitize-height(16);
+                .unitize(top, -5);
+                .unitize(right, -5);
+                .unitize(line-height, 18);
+                .unitize(font-size, 8);
+                .border-radius(50%);
+                content: @sw-icon-check;
+                display: inline-block;
+                position: absolute;
+                background: @highlight-success;
+                font-family: @sw-icon-fontname;
+                color: #fff;
+            }
+        }
 
         .icon--basket,
         .icon--account {
@@ -140,7 +162,11 @@ More precise designations are commented inside the document.
         }
     }
 
-	.entry--cart {
+    .entry--account {
+        position: relative;
+    }
+
+    .entry--cart {
         .unitize(margin-right, 12);
         position: relative;
     }
@@ -206,6 +232,137 @@ More precise designations are commented inside the document.
 
     .main-search--text {
         display: none
+    }
+}
+
+.account--menu.is--personalized {
+    .navigation--logout-personalized {
+        display: inline-block;
+    }
+
+    .navigation--logout {
+        display: block;
+    }
+
+    .navigation--link.navigation--personalized  {
+        .unitize(padding-top, 9);
+        .unitize(padding-left, 23);
+        .unitize(padding-bottom, 9);
+        .unitize(line-height, 20);
+        position: relative;
+        color: @text-color;
+        font-weight: @font-base-weight;
+
+        &:before,
+        &::before {
+            .unitize(width, 16);
+            .unitize(height, 16);
+            .unitize(left, 2);
+            content: @sw-icon-logout;
+            font-family: @sw-icon-fontname;
+            position: absolute;
+        }
+
+        [class^="icon--"] {
+            .unitize-margin(0, 5, 0, 0);
+            display: inline-block;
+        }
+
+        .icon--logout {
+            position: relative;
+            .unitize(top, 10);
+        }
+
+        &:hover {
+            color: @brand-primary;
+        }
+    }
+}
+
+.off-canvas {
+    .account--menu.is--personalized {
+        .navigation--signin {
+            border-bottom: none;
+        }
+    }
+}
+
+
+// Drowdown menu for account navigation
+.account--dropdown-navigation {
+    display: none;
+    text-align: left;
+
+    .navigation--logout-personalized {
+        display: inline-block;
+    }
+
+    .navigation--logout {
+        display: block;
+    }
+
+    .navigation--signin {
+        .unitize(padding-top, 15);
+        .unitize(padding-bottom, 15);
+        .unitize(margin-top, 7);
+        border-bottom: 1px solid @border-color;
+        display: block;
+        text-align: center;
+
+        .navigation--signin-btn.btn {
+            .unitize(margin-bottom, 5);
+            width: 95%;
+            text-align: center;
+        }
+    }
+
+    .navigation--register {
+        .unitize(font-size, 13)
+    }
+
+    .navigation--link.link--logout.navigation--personalized {
+        .unitize(line-height, 20);
+        .unitize(padding-left, 33);
+        color: @text-color;
+        font-weight: @font-base-weight;
+
+        &:before,
+        &::before {
+            .unitize(left, 10);
+        }
+
+        &:hover {
+            color: @brand-primary;
+        }
+    }
+
+    &.off-canvas {
+        background: @gray;
+
+        .account--menu,
+        .sidebar--navigation {
+            text-align: left;
+
+            .navigation--entry {
+                display: block;
+                margin: 0;
+
+                .navigation--link.link--logout.navigation--personalized  {
+                    .unitize(padding-top, 9);
+                    .unitize(padding-bottom, 9);
+
+                     [class^="icon--"] {
+                        .unitize-margin(0, 5, 0, 0);
+                        display: inline-block;
+                    }
+                }
+            }
+        }
+
+        .account--close-off-canvas {
+            color: #fff;
+            font-weight: @font-bold-weight;
+        }
     }
 }
 
@@ -284,7 +441,7 @@ More precise designations are commented inside the document.
 }
 
 .results--list {
-	.unitize-padding(10, 10);
+    .unitize-padding(10, 10);
     .box-shadow(0 10px 25px -15px #000);
     border-top: 1px solid @border-color;
     border-bottom: 1px solid @border-color;
@@ -308,14 +465,14 @@ More precise designations are commented inside the document.
 
     .list--entry,
     .entry--all-results {
-		display: block;
+        display: block;
     }
 
     .entry--all-results.is--active {
-        font-weight: 600;
+        font-weight: @font-bold-weight;
 
         .entry--all-results-number {
-            font-weight: 600;
+            font-weight: @font-bold-weight;
         }
     }
 
@@ -330,18 +487,20 @@ More precise designations are commented inside the document.
         width: 100%;
         text-align: center;
         list-style: none;
-        font-weight: normal;
+        font-weight: @font-base-weight;
     }
 
     .is--active,
-	.list--entry:hover {
+    .list--entry:hover {
         color: @link-color;
 
         .entry--name,
-		.entry--price { color: @link-color; }
+        .entry--price {
+            color: @link-color;
+        }
     }
 
-	.search-result--link {
+    .search-result--link {
         .unitize-padding(6, 0);
         .clearfix();
         display: block;
@@ -358,8 +517,8 @@ More precise designations are commented inside the document.
 
     .entry--media {
         .unitize-height(30, 16);
-		width: 10%;
-		min-width: 10%;
+        width: 10%;
+        min-width: 10%;
         position: relative;
         text-align: center;
 
@@ -374,16 +533,16 @@ More precise designations are commented inside the document.
         }
     }
 
-	.entry--name {
-		.unitize(padding-left, 10);
-		width: 60%;
-		color: @text-color;
+    .entry--name {
+        .unitize(padding-left, 10);
+        width: 60%;
+        color: @text-color;
 
         // CSS truncating
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-	}
+    }
 
     .entry--price,
     .entry--all-results-number {
@@ -395,7 +554,7 @@ More precise designations are commented inside the document.
 
     .entry--all-results {
         .unitize-padding(6, 5);
-        font-weight: normal;
+        font-weight: @font-base-weight;
     }
 
     .entry--all-results-link {
@@ -410,7 +569,7 @@ More precise designations are commented inside the document.
     }
 
     .entry--all-results-number {
-        font-weight: normal;
+        font-weight: @font-base-weight;
         color: @link-color
     }
 }
@@ -471,6 +630,7 @@ More precise designations are commented inside the document.
                 .unitize(bottom, 0);
                 .unitize(right, 0);
                 .unitize-padding(0, 10);
+                .unitize(height, 40);
             }
         }
     }
@@ -537,7 +697,9 @@ More precise designations are commented inside the document.
                 float: left;
                 display: block;
 
-                li { line-height: normal; }
+                li {
+                    line-height: normal;
+                }
             }
 
             .navigation--entry,
@@ -545,61 +707,55 @@ More precise designations are commented inside the document.
                 color: @text-color;
                 cursor: pointer;
 
-                &:hover { color: @brand-primary; }
+                &:hover {
+                    color: @brand-primary;
+                }
             }
 
             .field--select,
-            .navigation--entry,
-            .js--fancy-select,
-            .js--fancy-select-text,
-            .js--fancy-select-trigger {
+            .navigation--entry {
                 .unitize-height(25, 16);
             }
 
-            // Normalize fancy select appearance
             .field--select {
                 position: relative;
-                margin: 0;
-                padding: 0;
             }
 
-            .js--fancy-select {
-                .reset-border-radius();
-                background: none;
-                border: 0 none;
-                width: auto;
+            .select-field {
+                .unitize-height(25);
 
-                select { border: 0 none; }
-            }
+                select {
+                    .reset-border-radius();
+                    .unitize-padding(0, 18, 0, 0);
+                    .unitize(line-height, 25);
+                    background: none;
+                    border: 0 none;
+                }
 
-            .js--fancy-select-text {
-                .unitize-padding(0, 18, 0, 0);
-                .unitize(line-height, 25);
-                border: 0 none;
-            }
-
-            .js--fancy-select-trigger {
-                .unitize(line-height, 27);
-                width: auto;
-                border: 0 none;
+                &:after {
+                    .unitize-height(25);
+                    .unitize(line-height, 24);
+                    width: auto;
+                    border: 0 none;
+                }
             }
 
             // Language switcher
             .top-bar--language {
-                .js--fancy-select-text {
-                    .unitize-width(32, 16);
-                    text-indent: -9999px;
-                    text-align: left;
-                    white-space: nowrap;
-                    overflow: hidden;
+                .select-field {
+                    .unitize-width(32);
+
+                    select {
+                        text-indent: -9999px;
+                    }
                 }
 
                 .language--flag {
                     .unitize(-6, 16, margin-top);
                     position: absolute;
                     z-index: @zindex-header-language-flag;
-                    top: 50%;
-                    left: 0;
+                    top: 50%; left: 0;
+                    pointer-events: none;
                 }
             }
 
@@ -673,13 +829,13 @@ More precise designations are commented inside the document.
             .unitize-padding(0, 0, 0, 10);
             width: 35%;
 
-			.logo--link { .unitize-height(50, 16); }
+            .logo--link { .unitize-height(50, 16); }
 
-			// Larger logo for tablet & desktop viewports
-			.logo--shop {
-				.unitize-height(50, 16);
-				width: 82%
-			}
+            // Larger logo for tablet & desktop viewports
+            .logo--shop {
+                .unitize-height(50, 16);
+                width: 82%
+            }
         }
     }
 
@@ -738,7 +894,7 @@ More precise designations are commented inside the document.
             }
         }
 
-        .entry--link { font-weight: normal; }
+        .entry--link { font-weight: @font-base-weight; }
         .entry--menu-left { display: none; }
 
         .cart--quantity,
@@ -769,6 +925,86 @@ More precise designations are commented inside the document.
     }
 
     .main-search--form { left: auto; }
+
+    // Drowdown menu for account navigation
+    .account--dropdown-navigation {
+        .unitize-min-width(200);
+        .unitize-max-width(250);
+        .unitize-padding(5, 0);
+        .unitize(top, 45);
+        display: none;
+        position: absolute;
+        right: 0;
+        z-index: @zindex-header-navigation-dropdown;
+        text-align: left;
+
+        .js--is--dropdown-active & {
+            display: block;
+        }
+
+        .navigation--signin {
+            .unitize(padding-bottom, 6);
+            .unitize(margin-bottom, 6);
+            .unitize(margin-top, 5);
+            padding-top: 0;
+
+            .navigation--signin-btn.btn {
+                width: 100%;
+                margin-bottom: 0;
+            }
+        }
+
+        .navigation--smartphone {
+            display: none;
+        }
+
+        .account--menu {
+            text-align: left;
+            background: #fff;
+
+            &::after {
+                .rotate(135deg);
+                .unitize-width(8);
+                .unitize-height(8);
+                .unitize(right, 18);
+                content: '';
+                display: block;
+                position: absolute;
+                background: #fff;
+                border-color: @border-color;
+                border-width: 0 0 1px 1px;
+                border-style: solid;
+                top: 0;
+            }
+
+            .sidebar--navigation {
+                text-align: left;
+
+                .navigation--entry {
+                    display: block;
+                }
+
+                .navigation--link {
+                    .unitize-padding(3, 0);
+                }
+
+                .link--logout {
+                    .unitize-padding(10, 0, 0, 23);
+
+                    &:before {
+                        .unitize(left, 2);
+                    }
+                }
+
+                .link--abort {
+                    .unitize(padding-top, 0);
+                    .unitize(margin-top, 0);
+                    border-top: 0 none;
+                    white-space: nowrap;
+                }
+            }
+        }
+    }
 
     .main-search--results {
         .clearfix();
@@ -838,7 +1074,15 @@ More precise designations are commented inside the document.
         }
 
         .entry--account {
-            .account--link { .unitize(padding-left, 36); }
+
+            .account--link {
+                .unitize(padding-left, 36);
+                &.account--user-loggedin:after {
+                    content: none;
+                    display: none;
+                }
+
+            }
 
             .icon--account {
                 .unitize(left, 8);
@@ -848,7 +1092,26 @@ More precise designations are commented inside the document.
             }
         }
 
-        .account--display { display: inline-block; }
+        .account--display {
+            display: inline-block;
+        }
+
+        .account--display.navigation--personalized {
+            .unitize(line-height, 16);
+            .unitize(font-size, 12);
+            .unitize(max-width, 90);
+            .unitize(margin-top, 2);
+            text-align: left;
+
+            .account--display-greeting {
+                display: block;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+                font-weight: @font-bold-weight;
+            }
+        }
+
     }
 }
 
@@ -902,6 +1165,12 @@ More precise designations are commented inside the document.
         .entry--cart { margin-right: 0; }
     }
 
+    .account--menu.is--personalized {
+        .navigation--link.navigation--personalized {
+            padding-bottom: 0;
+        }
+    }
+
     // Topbar navigation
     .header-main .top-bar--navigation {
         .service--list {
@@ -915,7 +1184,7 @@ More precise designations are commented inside the document.
 
     .cart--display {
         .unitize-margin(0, 25, 0, 5, 16);
-        font-weight: bold;
+        font-weight: @font-bold-weight;
         color: @text-color;
     }
 }

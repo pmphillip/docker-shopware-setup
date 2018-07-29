@@ -21,33 +21,16 @@ namespace Symfony\Component\Form\Extension\Core\View;
  */
 class ChoiceView
 {
-    /**
-     * The label displayed to humans.
-     *
-     * @var string
-     */
     public $label;
-
-    /**
-     * The view representation of the choice.
-     *
-     * @var string
-     */
     public $value;
-
-    /**
-     * The original choice value.
-     *
-     * @var mixed
-     */
     public $data;
 
     /**
      * Creates a new ChoiceView.
      *
-     * @param mixed  $data  The original choice.
-     * @param string $value The view representation of the choice.
-     * @param string $label The label displayed to humans.
+     * @param mixed  $data  The original choice
+     * @param string $value The view representation of the choice
+     * @param string $label The label displayed to humans
      */
     public function __construct($data, $value, $label)
     {
@@ -70,8 +53,6 @@ class ChoiceView extends LegacyChoiceView
 {
     /**
      * Additional attributes for the HTML tag.
-     *
-     * @var array
      */
     public $attr;
 

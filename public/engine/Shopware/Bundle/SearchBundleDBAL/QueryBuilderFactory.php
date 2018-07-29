@@ -26,14 +26,16 @@ namespace Shopware\Bundle\SearchBundleDBAL;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Connection;
+use Shopware\Bundle\SearchBundle\Condition\VariantCondition;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\SortingInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @category  Shopware
- * @package   Shopware\Bundle\SearchBundleDBAL
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class QueryBuilderFactory implements QueryBuilderFactoryInterface
@@ -59,16 +61,21 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     private $conditionHandlers;
 
     /**
-     * @param Connection $connection
+     * @param Connection                  $connection
      * @param \Enlight_Event_EventManager $eventManager
      * @param ConditionHandlerInterface[] $conditionHandlers
-     * @param SortingHandlerInterface[] $sortingHandlers
+     * @param SortingHandlerInterface[]   $sortingHandlers
+     * @param ContainerInterface          $container
+     *
+     * @throws \RuntimeException
+     * @throws \Enlight_Event_Exception
      */
     public function __construct(
         Connection $connection,
         \Enlight_Event_EventManager $eventManager,
-        $conditionHandlers = [],
-        $sortingHandlers = []
+        $conditionHandlers,
+        $sortingHandlers,
+        ContainerInterface $container
     ) {
         $this->connection = $connection;
         $this->conditionHandlers = $conditionHandlers;
@@ -77,10 +84,13 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
 
         $this->conditionHandlers = $this->registerConditionHandlers();
         $this->sortingHandlers = $this->registerSortingHandlers();
+
+        $container->set('shopware_searchdbal.condition_handlers', $this->conditionHandlers);
+        $container->set('shopware_searchdbal.sorting_handlers', $this->sortingHandlers);
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createQueryWithSorting(Criteria $criteria, ShopContextInterface $context)
     {
@@ -92,7 +102,7 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createProductQuery(Criteria $criteria, ShopContextInterface $context)
     {
@@ -104,13 +114,13 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
             $query->select([
                 'SQL_CALC_FOUND_ROWS product.id as __product_id',
                 'variant.id                     as __variant_id',
-                'variant.ordernumber            as __variant_ordernumber'
+                'variant.ordernumber            as __variant_ordernumber',
             ]);
         } else {
             $query->select([
                 'product.id as __product_id',
                 'variant.id                     as __variant_id',
-                'variant.ordernumber            as __variant_ordernumber'
+                'variant.ordernumber            as __variant_ordernumber',
             ]);
         }
 
@@ -131,33 +141,43 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
+     *
+     * @throws \Exception
      */
     public function createQuery(Criteria $criteria, ShopContextInterface $context)
     {
         $query = $this->createQueryBuilder();
 
-        $query->from('s_articles', 'product')
-            ->innerJoin(
+        $this->prepareHandlers($criteria);
+
+        $query->from('s_articles', 'product');
+
+        if ($criteria->hasConditionOfClass(VariantCondition::class)) {
+            $query->innerJoin(
+                'product',
+                's_articles_details',
+                'variant',
+                'variant.articleID = product.id
+                 AND variant.active = 1
+                 AND product.active = 1'
+            );
+        } else {
+            $query->innerJoin(
                 'product',
                 's_articles_details',
                 'variant',
                 'variant.id = product.main_detail_id
                  AND variant.active = 1
                  AND product.active = 1'
-            )
-            ->innerJoin(
-                'product',
-                's_core_tax',
-                'tax',
-                'tax.id = product.taxID'
-            )
-            ->innerJoin(
-                'variant',
-                's_articles_attributes',
-                'productAttribute',
-                'productAttribute.articledetailsID = variant.id'
             );
+        }
+        $query->innerJoin(
+            'variant',
+            's_articles_attributes',
+            'productAttribute',
+            'productAttribute.articledetailsID = variant.id'
+        );
 
         $this->addConditions($criteria, $query, $context);
 
@@ -165,7 +185,7 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function createQueryBuilder()
     {
@@ -173,9 +193,11 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     }
 
     /**
-     * @param Criteria $criteria
-     * @param QueryBuilder $query
+     * @param Criteria             $criteria
+     * @param QueryBuilder         $query
      * @param ShopContextInterface $context
+     *
+     * @throws \Exception
      */
     private function addConditions(Criteria $criteria, QueryBuilder $query, ShopContextInterface $context)
     {
@@ -186,9 +208,10 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     }
 
     /**
-     * @param Criteria $criteria
-     * @param QueryBuilder $query
+     * @param Criteria             $criteria
+     * @param QueryBuilder         $query
      * @param ShopContextInterface $context
+     *
      * @throws \Exception
      */
     private function addSorting(Criteria $criteria, QueryBuilder $query, ShopContextInterface $context)
@@ -197,11 +220,14 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
             $handler = $this->getSortingHandler($sorting);
             $handler->generateSorting($sorting, $query, $context);
         }
+        $query->addOrderBy('variant.id', 'ASC');
     }
 
     /**
      * @param SortingInterface $sorting
+     *
      * @throws \Exception
+     *
      * @return SortingHandlerInterface
      */
     private function getSortingHandler(SortingInterface $sorting)
@@ -212,12 +238,14 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
             }
         }
 
-        throw new \Exception(sprintf("Sorting %s not supported", get_class($sorting)));
+        throw new \Exception(sprintf('Sorting %s not supported', get_class($sorting)));
     }
 
     /**
      * @param ConditionInterface $condition
+     *
      * @throws \Exception
+     *
      * @return ConditionHandlerInterface
      */
     private function getConditionHandler(ConditionInterface $condition)
@@ -228,10 +256,13 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
             }
         }
 
-        throw new \Exception(sprintf("Condition %s not supported", get_class($condition)));
+        throw new \Exception(sprintf('Condition %s not supported', get_class($condition)));
     }
 
     /**
+     * @throws \RuntimeException
+     * @throws \Enlight_Event_Exception
+     *
      * @return SortingHandlerInterface[]
      */
     private function registerSortingHandlers()
@@ -248,6 +279,9 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
     }
 
     /**
+     * @throws \RuntimeException
+     * @throws \Enlight_Event_Exception
+     *
      * @return ConditionHandlerInterface[]
      */
     private function registerConditionHandlers()
@@ -263,10 +297,11 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
         return array_merge($conditionHandlers->toArray(), $this->conditionHandlers);
     }
 
-
     /**
      * @param ArrayCollection $objects
-     * @param string $class
+     * @param string          $class
+     *
+     * @throws \RuntimeException
      */
     private function assertCollectionIsInstanceOf(ArrayCollection $objects, $class)
     {
@@ -279,6 +314,23 @@ class QueryBuilderFactory implements QueryBuilderFactoryInterface
                         $class
                     )
                 );
+            }
+        }
+    }
+
+    /**
+     * @param Criteria $criteria
+     */
+    private function prepareHandlers($criteria)
+    {
+        $handlers = array_merge(
+            $this->conditionHandlers,
+            $this->sortingHandlers
+        );
+
+        foreach ($handlers as $handler) {
+            if ($handler instanceof CriteriaAwareInterface) {
+                $handler->setCriteria($criteria);
             }
         }
     }

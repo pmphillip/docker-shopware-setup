@@ -25,11 +25,12 @@
 namespace ShopwarePlugins\SwagUpdate\Components;
 
 use Shopware\Components\OpenSSLVerifier;
+use Shopware\Components\ShopwareReleaseStruct;
 use ShopwarePlugins\SwagUpdate\Components\Struct\Version;
 
 /**
  * @category  Shopware
- * @package   ShopwarePlugins\SwagUpdate\Components;
+ *
  * @copyright Copyright (c) shopware AG (http://www.shopware.de)
  */
 class UpdateCheck
@@ -55,17 +56,24 @@ class UpdateCheck
     private $verificator;
 
     /**
-     * @param string $apiEndpoint
-     * @param string $channel
-     * @param bool   $verifySignature
-     * @param OpenSSLVerifier $verificator
+     * @var ShopwareReleaseStruct
      */
-    public function __construct($apiEndpoint, $channel, $verifySignature, OpenSSLVerifier $verificator)
+    private $release;
+
+    /**
+     * @param string                $apiEndpoint
+     * @param string                $channel
+     * @param bool                  $verifySignature
+     * @param OpenSSLVerifier       $verificator
+     * @param ShopwareReleaseStruct $release
+     */
+    public function __construct($apiEndpoint, $channel, $verifySignature, OpenSSLVerifier $verificator, ShopwareReleaseStruct $release)
     {
-        $this->apiEndpoint     = rtrim($apiEndpoint, '/');
-        $this->channel         = $channel;
+        $this->apiEndpoint = rtrim($apiEndpoint, '/');
+        $this->channel = $channel;
         $this->verifySignature = $verifySignature;
-        $this->verificator     = $verificator;
+        $this->verificator = $verificator;
+        $this->release = $release;
     }
 
     /**
@@ -77,36 +85,19 @@ class UpdateCheck
     }
 
     /**
-     * @param string $signature
-     * @param string $body
-     *
-     * @throws \Exception
-     */
-    private function verifyBody($signature, $body)
-    {
-        if (!$this->verificator->isSystemSupported()) {
-            return;
-        }
-
-        if (!$this->verificator->isValid($body, $signature)) {
-            throw new \Exception('Signature is not valid');
-        }
-    }
-
-    /**
      * @param string $shopwareVersion
      * @param array  $params
      *
      * @return Version|null
      */
-    public function checkUpdate($shopwareVersion, $params = array())
+    public function checkUpdate($shopwareVersion, array $params = [])
     {
         $url = $this->apiEndpoint . '/release/update';
 
-        $client = new \Zend_Http_Client($url, array(
-            'timeout'   => 5,
-            'useragent' => 'Shopware/' . \Shopware::VERSION
-        ));
+        $client = new \Zend_Http_Client($url, [
+            'timeout' => 5,
+            'useragent' => 'Shopware/' . $this->release->getVersion(),
+        ]);
 
         $client->setParameterGet('shopware_version', $shopwareVersion);
         $client->setParameterGet('channel', $this->channel);
@@ -140,5 +131,22 @@ class UpdateCheck
         }
 
         return new Version($json);
+    }
+
+    /**
+     * @param string $signature
+     * @param string $body
+     *
+     * @throws \Exception
+     */
+    private function verifyBody($signature, $body)
+    {
+        if (!$this->verificator->isSystemSupported()) {
+            return;
+        }
+
+        if (!$this->verificator->isValid($body, $signature)) {
+            throw new \Exception('Signature is not valid');
+        }
     }
 }

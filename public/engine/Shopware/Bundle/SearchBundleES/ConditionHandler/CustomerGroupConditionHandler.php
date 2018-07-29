@@ -27,26 +27,26 @@ namespace Shopware\Bundle\SearchBundleES\ConditionHandler;
 use ONGR\ElasticsearchDSL\Query\BoolQuery;
 use ONGR\ElasticsearchDSL\Query\TermsQuery;
 use ONGR\ElasticsearchDSL\Search;
-use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
 use Shopware\Bundle\SearchBundle\Condition\CustomerGroupCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundleES\HandlerInterface;
+use Shopware\Bundle\SearchBundle\CriteriaPartInterface;
+use Shopware\Bundle\SearchBundleES\PartialConditionHandlerInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
-class CustomerGroupConditionHandler implements HandlerInterface
+class CustomerGroupConditionHandler implements PartialConditionHandlerInterface
 {
     /**
      * {@inheritdoc}
      */
     public function supports(CriteriaPartInterface $criteriaPart)
     {
-        return ($criteriaPart instanceof CustomerGroupCondition);
+        return $criteriaPart instanceof CustomerGroupCondition;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function handle(
+    public function handleFilter(
         CriteriaPartInterface $criteriaPart,
         Criteria $criteria,
         Search $search,
@@ -58,11 +58,24 @@ class CustomerGroupConditionHandler implements HandlerInterface
             new TermsQuery('blockedCustomerGroupIds', $criteriaPart->getCustomerGroupIds()),
             BoolQuery::MUST_NOT
         );
+        $search->addFilter($filter);
+    }
 
-        if ($criteria->hasBaseCondition($criteriaPart->getName())) {
-            $search->addFilter($filter);
-        } else {
-            $search->addPostFilter($filter);
-        }
+    /**
+     * {@inheritdoc}
+     */
+    public function handlePostFilter(
+        CriteriaPartInterface $criteriaPart,
+        Criteria $criteria,
+        Search $search,
+        ShopContextInterface $context
+    ) {
+        /** @var CustomerGroupCondition $criteriaPart */
+        $filter = new BoolQuery();
+        $filter->add(
+            new TermsQuery('blockedCustomerGroupIds', $criteriaPart->getCustomerGroupIds()),
+            BoolQuery::MUST_NOT
+        );
+        $search->addPostFilter($filter);
     }
 }
